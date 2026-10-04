@@ -1,0 +1,7 @@
+<h3>Installed system</h3>
+<p><strong>Installed on:</strong> <%= l installation.installed_on, format: :long %></p>
+<p><strong>Capacity:</strong> <%= installation.capacity_kw.to_f %> kW</p>
+<p><strong>Panels:</strong> <%= installation.panel_count || "—" %><%= " × #{installation.panel_brand}" if installation.panel_brand.present? %></p>
+<p><strong>Inverter:</strong> <%= installation.inverter_model.presence || "—" %></p>
+<p><strong>Site address:</strong> <%= installation.site_address.presence || "—" %></p>
+<% if installation.notes.present? %><p><strong>Notes:</strong> <%= installation.notes %></p><% end %>

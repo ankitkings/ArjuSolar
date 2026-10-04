@@ -1,0 +1,26 @@
+<p><%= link_to "← My tasks", staff_root_path %></p>
+<% req = @visit.service_request %>
+<h1>Maintenance — <%= @visit.title %></h1>
+<div class="two-col">
+  <div class="panel">
+    <h3>Customer</h3>
+    <p><strong>Name:</strong> <%= req.name %></p>
+    <p><strong>Phone:</strong> <%= link_to req.phone, "tel:#{req.phone.gsub(/[^\d+]/, '')}" %></p>
+    <p><strong>Due:</strong> <%= l @visit.due_on, format: :long %> <% if @visit.overdue? %><span class="badge cancelled">Overdue</span><% end %></p>
+    <p><strong>Status:</strong> <span class="badge <%= @visit.status %>"><%= @visit.status.humanize %></span></p>
+  </div>
+  <div class="panel"><%= render "shared/installation_summary", installation: @visit.installation %></div>
+</div>
+<div class="panel" style="margin-top:16px">
+  <% if @visit.status == "assigned" %>
+    <h3>Visit report</h3>
+    <%= form_with url: staff_maintenance_visit_path(@visit), method: :patch, class: "form" do %>
+      <%= label_tag :report, "What did you check / fix?" %>
+      <%= text_area_tag :report, nil, rows: 4, placeholder: "e.g. Panels cleaned, inverter readings normal" %>
+      <%= submit_tag "Mark maintenance done", class: "btn go" %>
+    <% end %>
+  <% else %>
+    <h3>Report</h3>
+    <p><%= @visit.report.presence || "No report written." %></p>
+  <% end %>
+</div>

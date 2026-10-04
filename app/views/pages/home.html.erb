@@ -1,0 +1,26 @@
+<section class="hero"><div class="wrap">
+  <h1>Powering Your Future</h1>
+  <p>Affordable, clean &amp; efficient solar energy solutions for homes &amp; businesses.</p>
+  <%= link_to "Get a Free Quote", contact_path, class: "btn" %>
+</div></section>
+
+<section class="wrap">
+  <h2>Why Choose Arju Solars</h2>
+  <div class="grid">
+    <div class="card"><h4>High Efficiency Panels</h4><p>We install premium-grade solar panels with proven performance and warranties.</p></div>
+    <div class="card"><h4>Professional Installation</h4><p>Certified technicians and safe, timely installations with full documentation.</p></div>
+    <div class="card"><h4>Service &amp; Support</h4><p>AMC, monitoring and fast on-site support to keep your system optimal.</p></div>
+  </div>
+</section>
+
+<section class="wrap">
+  <h2>Our Services <%= link_to "See all services", services_path, class: "small-link" %></h2>
+  <%= render "pages/service_cards" %>
+</section>
+
+<section class="cta"><div class="wrap">
+  <h2>Ready to go solar?</h2>
+  <p>Call us or send a WhatsApp message for a site visit &amp; free estimate.</p>
+  <%= link_to "Call +91 7049465926", "tel:+917049465926", class: "btn" %>
+  <%= link_to "WhatsApp", "https://wa.me/917049465926", class: "btn alt", target: "_blank", rel: "noopener noreferrer" %>
+</div></section>

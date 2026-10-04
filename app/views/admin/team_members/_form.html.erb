@@ -1,0 +1,13 @@
+<% if member.errors.any? %><div class="flash alert"><%= member.errors.full_messages.to_sentence %></div><% end %>
+<%= form_with model: member, url: (member.persisted? ? admin_team_member_path(member) : admin_team_members_path), class: "form" do |f| %>
+  <%= f.label :name %><%= f.text_field :name, required: true %>
+  <%= f.label :department %><%= f.select :department, TeamMember::DEPARTMENTS.map { |k, v| [v, k] } %>
+  <%= f.label :phone %><%= f.text_field :phone %>
+  <%= f.label :bio %><%= f.text_area :bio, rows: 3 %>
+  <h4>Dashboard login (optional)</h4>
+  <%= f.label :email, "Login email" %><%= f.email_field :email, autocomplete: "off" %>
+  <%= f.label :password, "Password (min 8 characters)" %><%= f.password_field :password, autocomplete: "new-password", placeholder: (member.password_digest.present? ? "Leave blank to keep current password" : "") %>
+  <label><%= f.check_box :show_on_website %> Show on public Team page</label>
+  <label><%= f.check_box :active %> Active</label>
+  <%= f.submit class: "btn" %>
+<% end %>

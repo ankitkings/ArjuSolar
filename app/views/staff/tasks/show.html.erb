@@ -1,0 +1,57 @@
+<% actions = RequestWorkflow.actions_for(@task.status) %>
+<p><%= link_to "← My tasks", staff_root_path %></p>
+<h1>Task #<%= @task.id %> — <%= @task.name %></h1>
+<div class="two-col">
+  <div class="panel">
+    <h3>Customer</h3>
+    <p><strong>Phone:</strong> <%= link_to @task.phone, "tel:#{@task.phone.gsub(/[^\d+]/, '')}" %></p>
+    <p><strong>Email:</strong> <%= @task.email.presence || "—" %></p>
+    <p><strong>Received:</strong> <%= l @task.created_at, format: :long %></p>
+    <p><strong>Message:</strong><br><%= simple_format(h(@task.message)) %></p>
+  </div>
+  <div class="panel">
+    <h3>Current stage</h3>
+    <div class="bar big"><i style="width:<%= @task.progress %>%"></i></div>
+    <p><span class="badge <%= @task.status %>"><%= @task.status_label %></span> <%= @task.progress %>% complete</p>
+    <% if actions.any? %>
+      <p class="muted small">After you speak to the client, choose the result. The request is handed to the next team automatically.</p>
+      <%= render "shared/stage_actions", actions: actions, url: advance_staff_task_path(@task) %>
+    <% elsif @task.status == "installation" %>
+      <p class="muted">When the installation is finished, fill in the system details below. The request is completed and the payment and maintenance tasks are created automatically.</p>
+    <% elsif @task.status == "cancelled" %>
+      <p class="muted">This request was cancelled.</p>
+    <% else %>
+      <p class="muted">This request is completed.</p>
+    <% end %>
+  </div>
+</div>
+
+<% if @task.status == "installation" %>
+  <div class="panel" style="margin-top:16px">
+    <h3>Installation done? Enter the system details</h3>
+    <%= render "shared/installation_form", installation: @installation, url: complete_staff_task_path(@task) %>
+  </div>
+<% end %>
+
+<% if @task.installation %>
+  <div class="panel" style="margin-top:16px"><%= render "shared/installation_summary", installation: @task.installation %></div>
+<% end %>
+
+<% if RequestWorkflow::ACTIVE_STATUSES.include?(@task.status) %>
+  <%= form_with url: staff_task_path(@task), method: :patch, class: "form", html: { style: "margin-top:16px" } do %>
+    <%= label_tag :note, "Add a note without changing the stage" %>
+    <%= text_area_tag :note, nil, rows: 2 %>
+    <%= submit_tag "Add note", class: "btn hold" %>
+  <% end %>
+<% end %>
+
+<h2>Timeline</h2>
+<ul class="timeline">
+  <% @task.updates.includes(:admin_user, :team_member).each do |u| %>
+    <li>
+      <b><%= u.status&.humanize %></b> · <%= u.progress %>%
+      <span class="muted"><%= l u.created_at, format: :short %><%= " by #{u.author_name}" if u.author_name %></span>
+      <% if u.note.present? %><br><%= u.note %><% end %>
+    </li>
+  <% end %>
+</ul>

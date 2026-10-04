@@ -1,0 +1,55 @@
+<h1>My tasks</h1>
+<div class="stats">
+  <%= link_to staff_root_path(filter: "open"), class: "stat" do %><b><%= @counts["open"] %></b><span>Open requests</span><% end %>
+  <div class="stat"><b><%= @visits.size %></b><span>Maintenance visits</span></div>
+  <div class="stat"><b><%= @payments.size %></b><span>Payments to collect</span></div>
+  <%= link_to staff_root_path(filter: "completed"), class: "stat" do %><b><%= @counts["completed"] %></b><span>Completed requests</span><% end %>
+</div>
+
+<h2><%= @filter.humanize %> requests</h2>
+<div class="table-wrap"><table>
+  <tr><th>#</th><th>Customer</th><th>Phone</th><th>Stage</th><th>Progress</th><th>Received</th><th></th></tr>
+  <% @tasks.each do |t| %>
+    <tr>
+      <td><%= t.id %></td><td><%= t.name %></td>
+      <td><%= link_to t.phone, "tel:#{t.phone.gsub(/[^\d+]/, '')}" %></td>
+      <td><span class="badge <%= t.status %>"><%= t.status_label %></span></td>
+      <td><div class="bar"><i style="width:<%= t.progress %>%"></i></div> <%= t.progress %>%</td>
+      <td><%= l t.created_at, format: :short %></td>
+      <td><%= link_to "Open", staff_task_path(t) %></td>
+    </tr>
+  <% end %>
+  <% if @tasks.empty? %><tr><td colspan="7" class="muted">No requests here. New work reaches you automatically when a request moves to your stage.</td></tr><% end %>
+</table></div>
+
+<% if @visits.any? || current_staff.department == "daily_servicing" %>
+  <h2>Maintenance visits</h2>
+  <div class="table-wrap"><table>
+    <tr><th>Customer</th><th>Visit</th><th>Due</th><th>Phone</th><th></th></tr>
+    <% @visits.each do |v| %>
+      <tr>
+        <td><%= v.service_request.name %></td><td><%= v.title %></td>
+        <td><%= l v.due_on, format: :short %> <% if v.overdue? %><span class="badge cancelled">Overdue</span><% end %></td>
+        <td><%= link_to v.service_request.phone, "tel:#{v.service_request.phone.gsub(/[^\d+]/, '')}" %></td>
+        <td><%= link_to "Open", staff_maintenance_visit_path(v) %></td>
+      </tr>
+    <% end %>
+    <% if @visits.empty? %><tr><td colspan="5" class="muted">No maintenance visits assigned. They are assigned automatically on their due date.</td></tr><% end %>
+  </table></div>
+<% end %>
+
+<% if @payments.any? || current_staff.department == "cashier" %>
+  <h2>Payments to collect</h2>
+  <div class="table-wrap"><table>
+    <tr><th>Customer</th><th>Request</th><th>Phone</th><th>Created</th><th></th></tr>
+    <% @payments.each do |p| %>
+      <tr>
+        <td><%= p.service_request.name %></td><td>#<%= p.service_request_id %></td>
+        <td><%= link_to p.service_request.phone, "tel:#{p.service_request.phone.gsub(/[^\d+]/, '')}" %></td>
+        <td><%= l p.created_at, format: :short %></td>
+        <td><%= link_to "Open", staff_payment_path(p) %></td>
+      </tr>
+    <% end %>
+    <% if @payments.empty? %><tr><td colspan="5" class="muted">No payments waiting. A payment task appears when an installation is completed.</td></tr><% end %>
+  </table></div>
+<% end %>

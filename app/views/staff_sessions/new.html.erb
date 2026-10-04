@@ -1,0 +1,8 @@
+<section class="wrap narrow"><h1>Staff Login</h1>
+  <p class="muted">For Arju Solars team members. Your admin creates your login.</p>
+  <%= form_with url: staff_login_path, class: "form" do %>
+    <%= label_tag :email %><%= email_field_tag :email, nil, required: true, autofocus: true %>
+    <%= label_tag :password %><%= password_field_tag :password, nil, required: true %>
+    <%= submit_tag "Log in", class: "btn" %>
+  <% end %>
+</section>

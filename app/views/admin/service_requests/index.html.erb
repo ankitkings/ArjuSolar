@@ -1,0 +1,7 @@
+<h1>Requests</h1>
+<%= form_with url: admin_service_requests_path, method: :get, class: "filters" do %>
+  <%= text_field_tag :q, params[:q], placeholder: "Search name / phone / email" %>
+  <%= select_tag :status, options_for_select([["All statuses", ""]] + ServiceRequest::STATUSES.map { |s| [s.humanize, s] }, params[:status]) %>
+  <%= submit_tag "Filter", class: "btn" %>
+<% end %>
+<%= render "table", requests: @requests %>

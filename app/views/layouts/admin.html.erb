@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Admin — Arju Solars</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <%= csrf_meta_tags %><%= csp_meta_tag %>
+  <%= stylesheet_link_tag "application" %>
+</head>
+<body class="admin">
+  <aside>
+    <h3>Arju Solars</h3>
+    <%= link_to "Dashboard", admin_root_path %>
+    <%= link_to "Requests", admin_service_requests_path %>
+    <%= link_to "Users", admin_users_path %>
+    <%= link_to "Visitors", admin_visits_path %>
+    <%= link_to "Maintenance", admin_maintenance_visits_path %>
+    <%= link_to "Team", admin_team_members_path %>
+    <%= link_to "View site", root_path %>
+    <%= button_to "Log out", admin_logout_path, method: :delete, class: "linklike" %>
+  </aside>
+  <main class="admin-main">
+    <% flash.each do |type, msg| %><div class="flash <%= type %>"><%= msg %></div><% end %>
+    <%= yield %>
+  </main>
+</body>
+</html>

@@ -1,0 +1,11 @@
+<h1>Users (customers)</h1>
+<p class="muted">People who have submitted a request, grouped by phone number.</p>
+<div class="table-wrap"><table>
+  <tr><th>Name</th><th>Phone</th><th>Email</th><th>Requests</th><th>First seen</th><th>Last request</th></tr>
+  <% @users.each do |u| %>
+    <tr><td><%= u.name %></td><td><%= u.phone %></td><td><%= u.email.presence || "—" %></td>
+        <td><%= link_to u.requests_count, admin_service_requests_path(q: u.phone) %></td>
+        <td><%= u.first_seen.to_s[0, 16] %></td><td><%= u.last_seen.to_s[0, 16] %></td></tr>
+  <% end %>
+  <% if @users.empty? %><tr><td colspan="6" class="muted">No users yet.</td></tr><% end %>
+</table></div>

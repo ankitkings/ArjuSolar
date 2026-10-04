@@ -1,0 +1,26 @@
+<section class="wrap"><h1>Contact Us</h1>
+  <p>Reach out for a site visit or free consultation.</p>
+  <div class="two-col">
+    <div>
+      <h3>Get in touch</h3>
+      <p><strong>Phone:</strong> <%= link_to "+91 7049465926", "tel:+917049465926" %></p>
+      <p><strong>Email:</strong> ankitparmar5035582@gmail.com</p>
+      <p><strong>Address:</strong> Indore, Madhya Pradesh, India</p>
+      <h4>Office Hours</h4><p>Mon - Sat: 9:00 AM - 6:00 PM</p>
+    </div>
+    <div>
+      <h3>Request a quote</h3>
+      <% if @service_request.errors.any? %>
+        <div class="flash alert"><%= @service_request.errors.full_messages.to_sentence %></div>
+      <% end %>
+      <%= form_with model: @service_request, url: service_requests_path, class: "form" do |f| %>
+        <div style="position:absolute;left:-9999px" aria-hidden="true"><%= text_field_tag :website, nil, tabindex: -1, autocomplete: "off" %></div>
+        <%= f.label :name %><%= f.text_field :name, required: true, maxlength: 100 %>
+        <%= f.label :phone %><%= f.telephone_field :phone, required: true %>
+        <%= f.label :email %><%= f.email_field :email %>
+        <%= f.label :message %><%= f.text_area :message, rows: 4, maxlength: 2000 %>
+        <%= f.submit "Send Request", class: "btn" %>
+      <% end %>
+    </div>
+  </div>
+</section>

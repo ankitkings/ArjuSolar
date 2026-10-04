@@ -1,0 +1,9 @@
+#!/usr/bin/env ruby
+require "fileutils"
+APP_ROOT = File.expand_path("..", __dir__)
+FileUtils.chdir APP_ROOT do
+  system!("bundle check") || system!("bundle install")
+  system!("bin/rails db:prepare")
+  system!("bin/rails db:seed")
+end
+BEGIN { def system!(*args) = system(*args) || abort("\n== Command #{args} failed ==") }

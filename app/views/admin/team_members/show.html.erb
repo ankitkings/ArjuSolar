@@ -1,0 +1,68 @@
+<p><%= link_to "← Team", admin_team_members_path %></p>
+<h1><%= @member.name %> <span class="muted" style="font-size:1rem">· <%= @member.department_label %></span></h1>
+<p class="muted">
+  <%= @member.phone.presence || "No phone" %> ·
+  <%= @member.email.presence || "No login email" %> ·
+  <%= @member.can_login? ? "Can log in" : "Cannot log in" %> ·
+  <%= link_to "Edit", edit_admin_team_member_path(@member) %>
+</p>
+
+<div class="stats">
+  <%= link_to admin_team_member_path(@member, filter: "open"), class: "stat" do %><b><%= @counts["open"] %></b><span>Open tasks</span><% end %>
+  <%= link_to admin_team_member_path(@member, filter: "completed"), class: "stat" do %><b><%= @counts["completed"] %></b><span>Completed</span><% end %>
+  <%= link_to admin_team_member_path(@member, filter: "all"), class: "stat" do %><b><%= @counts["all"] %></b><span>All assigned</span><% end %>
+</div>
+
+<h2><%= @filter.humanize %> tasks</h2>
+<div class="table-wrap"><table>
+  <tr><th>#</th><th>Customer</th><th>Phone</th><th>Status</th><th>Progress</th><th>Received</th><th>Last update</th><th></th></tr>
+  <% @tasks.each do |t| %>
+    <tr>
+      <td><%= t.id %></td><td><%= t.name %></td><td><%= t.phone %></td>
+      <td><span class="badge <%= t.status %>"><%= t.status_label %></span></td>
+      <td><div class="bar"><i style="width:<%= t.progress %>%"></i></div> <%= t.progress %>%</td>
+      <td><%= l t.created_at, format: :short %></td>
+      <td><%= l t.updated_at, format: :short %></td>
+      <td><%= link_to "Open", admin_service_request_path(t) %></td>
+    </tr>
+  <% end %>
+  <% if @tasks.empty? %><tr><td colspan="8" class="muted">No tasks here.</td></tr><% end %>
+</table></div>
+
+<h2>Recent activity by <%= @member.name %></h2>
+<ul class="timeline">
+  <% @activity.each do |u| %>
+    <li>
+      <b><%= u.status&.humanize %></b> · <%= u.progress %>% on
+      <%= link_to "request ##{u.service_request_id} (#{u.service_request.name})", admin_service_request_path(u.service_request) %>
+      <span class="muted"><%= l u.created_at, format: :short %></span>
+      <% if u.note.present? %><br><%= u.note %><% end %>
+    </li>
+  <% end %>
+  <% if @activity.empty? %><li class="muted">No updates made by this member yet.</li><% end %>
+</ul>
+
+<% if @visits.any? %>
+  <h2>Maintenance visits</h2>
+  <div class="table-wrap"><table>
+    <tr><th>Customer</th><th>Visit</th><th>Due</th><th>Status</th><th></th></tr>
+    <% @visits.each do |v| %>
+      <tr><td><%= v.service_request.name %></td><td><%= v.title %></td><td><%= l v.due_on, format: :short %></td>
+          <td><span class="badge <%= v.status %>"><%= v.status.humanize %></span></td>
+          <td><%= link_to "Open", admin_service_request_path(v.service_request) %></td></tr>
+    <% end %>
+  </table></div>
+<% end %>
+
+<% if @payments.any? %>
+  <h2>Payments</h2>
+  <div class="table-wrap"><table>
+    <tr><th>Customer</th><th>Status</th><th>Amount</th><th></th></tr>
+    <% @payments.each do |p| %>
+      <tr><td><%= p.service_request.name %></td>
+          <td><span class="badge <%= p.status %>"><%= p.status.humanize %></span></td>
+          <td><%= p.amount ? "₹#{number_with_delimiter(p.amount.to_i)}" : "—" %></td>
+          <td><%= link_to "Open", admin_service_request_path(p.service_request) %></td></tr>
+    <% end %>
+  </table></div>
+<% end %>

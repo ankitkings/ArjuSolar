@@ -1,0 +1,30 @@
+<p><%= link_to "← My tasks", staff_root_path %></p>
+<% req = @payment.service_request %>
+<h1>Payment — <%= req.name %></h1>
+<div class="two-col">
+  <div class="panel">
+    <h3>Customer</h3>
+    <p><strong>Name:</strong> <%= req.name %></p>
+    <p><strong>Phone:</strong> <%= link_to req.phone, "tel:#{req.phone.gsub(/[^\d+]/, '')}" %></p>
+    <p><strong>Request:</strong> #<%= req.id %></p>
+    <p><strong>Status:</strong> <span class="badge <%= @payment.status_in_database %>"><%= @payment.status_in_database.humanize %></span></p>
+  </div>
+  <div class="panel"><% if req.installation %><%= render "shared/installation_summary", installation: req.installation %><% end %></div>
+</div>
+<div class="panel" style="margin-top:16px">
+  <% if @payment.status_in_database == "pending" %>
+    <h3>Record payment</h3>
+    <% if @payment.errors.any? %><div class="flash alert"><%= @payment.errors.full_messages.to_sentence %></div><% end %>
+    <%= form_with url: staff_payment_path(@payment), method: :patch, class: "form" do %>
+      <%= label_tag :amount, "Amount received (₹)" %>
+      <%= number_field_tag :amount, nil, step: 0.01, min: 1, required: true %>
+      <%= label_tag :note, "Note (receipt no., mode…)" %>
+      <%= text_area_tag :note, nil, rows: 2 %>
+      <%= submit_tag "Payment received", class: "btn go" %>
+    <% end %>
+  <% else %>
+    <h3>Received</h3>
+    <p>₹<%= number_with_delimiter(@payment.amount.to_i) %> on <%= l @payment.received_on, format: :long %></p>
+    <% if @payment.note.present? %><p class="muted"><%= @payment.note %></p><% end %>
+  <% end %>
+</div>

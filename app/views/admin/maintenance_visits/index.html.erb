@@ -1,0 +1,53 @@
+<h1>Maintenance schedule</h1>
+<p class="muted">Each installed system gets maintenance dates automatically. On the due date a visit is assigned to the Daily Servicing team.</p>
+<div class="stats">
+  <%= link_to admin_maintenance_visits_path(filter: "upcoming"), class: "stat small" do %><b><%= @counts["scheduled"].to_i %></b><span>Scheduled</span><% end %>
+  <%= link_to admin_maintenance_visits_path(filter: "assigned"), class: "stat small" do %><b><%= @counts["assigned"].to_i %></b><span>Assigned (in progress)</span><% end %>
+  <%= link_to admin_maintenance_visits_path(filter: "done"), class: "stat small" do %><b><%= @counts["done"].to_i %></b><span>Done</span><% end %>
+  <%= link_to admin_maintenance_visits_path(filter: "all"), class: "stat small" do %><b><%= @counts.values.sum %></b><span>All</span><% end %>
+</div>
+
+<div class="panel" style="margin-bottom:16px">
+  <h3>Add a maintenance date</h3>
+  <% if @installations.empty? %>
+    <p class="muted">No installed systems yet. They appear here after an installation is completed.</p>
+  <% else %>
+    <%= form_with url: admin_maintenance_visits_path, class: "filters" do %>
+      <%= select_tag :installation_id, options_for_select(@installations.map { |i| ["#{i.service_request.name} — #{i.capacity_kw.to_f} kW (installed #{l i.installed_on, format: :short})", i.id] }) %>
+      <%= text_field_tag :title, nil, placeholder: "Title, e.g. 6-month check" %>
+      <%= date_field_tag :due_on, nil, required: true %>
+      <%= submit_tag "Add", class: "btn" %>
+    <% end %>
+  <% end %>
+</div>
+
+<h2><%= @filter.humanize %> visits</h2>
+<div class="table-wrap"><table>
+  <tr><th>Customer</th><th>Visit</th><th>Due date</th><th>Status</th><th>Assigned to</th><th></th></tr>
+  <% @visits.each do |v| %>
+    <tr>
+      <td><%= link_to v.service_request.name, admin_service_request_path(v.service_request) %></td>
+      <td><%= v.title %><% if v.report.present? %><br><span class="muted small"><%= v.report %></span><% end %></td>
+      <td>
+        <% if v.status == "done" %>
+          <%= l v.due_on, format: :short %>
+        <% else %>
+          <%= form_with url: admin_maintenance_visit_path(v), method: :patch, class: "inline-form" do %>
+            <%= date_field_tag :due_on, v.due_on, required: true %>
+            <%= submit_tag "Save", class: "btn hold" %>
+          <% end %>
+          <% if v.overdue? %><span class="badge cancelled">Overdue</span><% end %>
+        <% end %>
+      </td>
+      <td><span class="badge <%= v.status %>"><%= v.status.humanize %></span></td>
+      <td><%= v.team_member&.name || "—" %></td>
+      <td>
+        <% unless v.status == "done" %>
+          <%= button_to "Delete", admin_maintenance_visit_path(v), method: :delete, class: "linklike",
+                        form: { style: "display:inline", onsubmit: "return confirm('Delete this maintenance visit?')" } %>
+        <% end %>
+      </td>
+    </tr>
+  <% end %>
+  <% if @visits.empty? %><tr><td colspan="6" class="muted">Nothing here.</td></tr><% end %>
+</table></div>

@@ -1,0 +1,81 @@
+<% sr = @service_request %>
+<p><%= link_to "← All requests", admin_service_requests_path %></p>
+<h1>Request #<%= sr.id %> — <%= sr.name %></h1>
+<div class="two-col">
+  <div class="panel">
+    <h3>Customer</h3>
+    <p><strong>Phone:</strong> <%= link_to sr.phone, "tel:#{sr.phone.gsub(/[^\d+]/, '')}" %></p>
+    <p><strong>Email:</strong> <%= sr.email.presence || "—" %></p>
+    <p><strong>IP:</strong> <%= sr.ip_address || "—" %></p>
+    <p><strong>Received:</strong> <%= l sr.created_at, format: :long %></p>
+    <p><strong>Message:</strong><br><%= simple_format(h(sr.message)) %></p>
+  </div>
+  <div class="panel">
+    <h3>Stage &amp; assignment</h3>
+    <% if sr.errors.any? %><div class="flash alert"><%= sr.errors.full_messages.to_sentence %></div><% end %>
+    <div class="bar big"><i style="width:<%= sr.progress %>%"></i></div>
+    <p><span class="badge <%= sr.status %>"><%= sr.status_label %></span> <%= sr.progress %>% complete</p>
+    <p class="muted small">
+      Stage owner: <b><%= sr.stage_department_label || "—" %></b>.
+      Moving a request to a new stage automatically assigns the least busy active member of that department.
+    </p>
+    <%= form_with model: sr, url: admin_service_request_path(sr), method: :patch, class: "form" do |f| %>
+      <% if sr.status == "completed" %>
+        <p><b>Completed</b></p>
+      <% else %>
+        <%= f.label :status, "Move to stage (admin override)" %>
+        <%= f.select :status, (ServiceRequest::STATUSES).map { |s| [s.humanize, s] } %>
+      <% end %>
+      <%= f.label :team_member_id, "Assigned to" %>
+      <%= f.collection_select :team_member_id, TeamMember.where(active: true).order(:department, :name), :id, ->(m) { "#{m.name} (#{m.department_label})" }, include_blank: "Unassigned" %>
+      <%= label_tag :note, "Note" %>
+      <%= text_area_tag :note, nil, rows: 2 %>
+      <%= f.submit "Save", class: "btn" %>
+    <% end %>
+  </div>
+</div>
+
+<% if sr.status == "installation" %>
+  <div class="panel" style="margin-top:16px">
+    <h3>Installation done? Enter the system details (completes the request)</h3>
+    <%= render "shared/installation_form", installation: @installation, url: complete_admin_service_request_path(sr) %>
+  </div>
+<% end %>
+
+<% if sr.installation %>
+  <div class="two-col" style="margin-top:16px">
+    <div class="panel"><%= render "shared/installation_summary", installation: sr.installation %></div>
+    <div class="panel">
+      <h3>Follow-ups</h3>
+      <% pay = sr.payment %>
+      <p><strong>Payment:</strong>
+        <% if pay.nil? %>—
+        <% elsif pay.status == "received" %><span class="badge received">Received</span> ₹<%= number_with_delimiter(pay.amount.to_i) %> (<%= pay.team_member&.name %>)
+        <% else %><span class="badge pending">Pending</span> with <%= pay.team_member&.name || "no cashier" %>
+        <% end %>
+      </p>
+      <p><strong>Maintenance:</strong></p>
+      <ul class="timeline">
+        <% sr.maintenance_visits.each do |v| %>
+          <li><%= v.title %> — <%= l v.due_on, format: :short %>
+            <span class="badge <%= v.status %>"><%= v.status.humanize %></span>
+            <%= "· #{v.team_member.name}" if v.team_member %>
+            <% if v.report.present? %><br><span class="muted"><%= v.report %></span><% end %>
+          </li>
+        <% end %>
+      </ul>
+      <%= link_to "Manage maintenance dates", admin_maintenance_visits_path(filter: "all") %>
+    </div>
+  </div>
+<% end %>
+
+<h2>Timeline</h2>
+<ul class="timeline">
+  <% sr.updates.includes(:admin_user, :team_member).each do |u| %>
+    <li>
+      <b><%= u.status&.humanize %></b> · <%= u.progress %>%
+      <span class="muted"><%= l u.created_at, format: :short %><%= " by #{u.author_name}" if u.author_name %></span>
+      <% if u.note.present? %><br><%= u.note %><% end %>
+    </li>
+  <% end %>
+</ul>

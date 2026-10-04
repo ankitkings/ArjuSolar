@@ -1,0 +1,33 @@
+:root{--brand:#f59e0b;--dark:#0f172a;--bg:#f8fafc;--text:#1e293b;--muted:#64748b;--line:#e2e8f0}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--text);background:var(--bg);line-height:1.5}
+a{color:#b45309}.wrap{max-width:1100px;margin:0 auto;padding:24px 16px}.narrow{max-width:420px}
+.site-header{background:var(--dark)}.site-header .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;padding:14px 16px}
+.brand{color:var(--brand);font-weight:700;font-size:1.3rem;text-decoration:none}.site-header nav a{color:#e2e8f0;margin-left:16px;text-decoration:none}
+.hero{background:linear-gradient(135deg,#0f172a,#1e3a5f);color:#fff;text-align:center}.hero .wrap{padding:80px 16px}.hero h1{font-size:2.4rem;margin:0 0 8px}
+.btn,input[type=submit]{display:inline-block;background:var(--brand);color:#111;border:0;padding:10px 20px;border-radius:8px;font-weight:600;text-decoration:none;cursor:pointer;font-size:1rem}.btn.alt{background:#25d366}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}.card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px;overflow:hidden}
+.card img{width:calc(100% + 32px);margin:-16px -16px 12px;height:150px;object-fit:cover}.avatar{width:56px;height:56px;border-radius:50%;background:var(--brand);display:grid;place-items:center;font-weight:700;font-size:1.4rem}
+.cta{background:#fff7e6;text-align:center}.muted{color:var(--muted)}.small,.small-link{font-size:.85rem}.small-link{margin-left:12px;font-weight:400}
+.two-col{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px}
+.form{display:flex;flex-direction:column;gap:6px}.form input,.form select,.form textarea,.filters input,.filters select{padding:9px;border:1px solid #cbd5e1;border-radius:8px;font:inherit}
+.form label{font-weight:600;margin-top:6px}.form input[type=checkbox]{margin-right:6px}.form input[type=submit]{margin-top:12px;align-self:flex-start}
+.flash{padding:10px 16px;margin:0;background:#dcfce7}.flash.alert{background:#fee2e2}
+.site-footer{background:var(--dark);color:#cbd5e1}.site-footer a{color:var(--brand)}.site-footer h4{color:#fff;margin:0}
+/* admin */
+body.admin{display:flex;min-height:100vh}body.admin aside{width:200px;background:var(--dark);padding:20px;display:flex;flex-direction:column;gap:8px;flex-shrink:0}
+body.admin aside h3{color:var(--brand);margin:0 0 12px}body.admin aside a{color:#e2e8f0;text-decoration:none;padding:6px 0}
+.admin-main{flex:1;padding:24px;min-width:0}.linklike{background:none;border:0;color:#fca5a5;cursor:pointer;padding:6px 0;font:inherit}.admin-main .linklike{color:#b91c1c}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px}.stat,.panel{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px;text-decoration:none;color:inherit}
+.stat b{display:block;font-size:1.8rem}.stat.small b{font-size:1.3rem}.stat span{color:var(--muted)}
+.table-wrap{overflow-x:auto;background:#fff;border:1px solid var(--line);border-radius:12px}table{border-collapse:collapse;width:100%}th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}th{background:#f1f5f9;font-size:.85rem}
+.badge{padding:2px 10px;border-radius:99px;font-size:.8rem;background:#e2e8f0}.badge.pending{background:#fef3c7}.badge.contacted,.badge.site_visit{background:#dbeafe}.badge.quote_sent{background:#ede9fe}.badge.installation{background:#ffedd5}.badge.completed{background:#dcfce7}.badge.cancelled{background:#fee2e2}
+.bar{display:inline-block;width:90px;height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden;vertical-align:middle}.bar i{display:block;height:100%;background:#16a34a}.bar.big{display:block;width:100%;height:14px;margin-bottom:8px}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}.timeline{list-style:none;padding:0;border-left:3px solid var(--brand)}.timeline li{padding:6px 0 12px 16px}
+@media(max-width:700px){body.admin{flex-direction:column}body.admin aside{width:100%;flex-direction:row;flex-wrap:wrap}}
+
+/* workflow buttons + statuses */
+button.btn{border:0;font:inherit;font-weight:600;cursor:pointer;padding:10px 16px;border-radius:8px}
+.btn.go{background:#16a34a;color:#fff}.btn.stop{background:#dc2626;color:#fff}.btn.hold{background:#e2e8f0;color:#0f172a}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.inline-form{display:flex;gap:4px;align-items:center}.inline-form input[type=date]{padding:5px}
+.badge.scheduled{background:#dbeafe}.badge.assigned{background:#ffedd5}.badge.done,.badge.received{background:#dcfce7}

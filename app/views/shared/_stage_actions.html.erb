@@ -1,0 +1,10 @@
+<%= form_with url: url, method: :post, class: "form" do %>
+  <%= label_tag :note, "Note (optional)" %>
+  <%= text_area_tag :note, nil, rows: 2, placeholder: "e.g. Client wants a 3kW system" %>
+  <div class="actions">
+    <% actions.each do |a| %>
+      <%= button_tag a[:label], type: "submit", name: "to", value: a[:to], class: "btn #{a[:style]}",
+                     onclick: (a[:style] == "stop" ? "return confirm('Are you sure you want to cancel this request?')" : nil) %>
+    <% end %>
+  </div>
+<% end %>

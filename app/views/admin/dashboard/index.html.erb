@@ -1,0 +1,22 @@
+<h1>Dashboard</h1>
+<div class="stats">
+  <div class="stat"><b><%= @visits_total %></b><span>Total visits</span></div>
+  <div class="stat"><b><%= @visits_today %></b><span>Visits today</span></div>
+  <div class="stat"><b><%= @unique_visitors %></b><span>Unique visitors (IP)</span></div>
+  <div class="stat"><b><%= @requests_total %></b><span>Requests</span></div>
+</div>
+<div class="stats">
+  <%= link_to admin_service_requests_path(unassigned: 1), class: "stat" do %><b><%= @unassigned %></b><span>Unassigned requests</span><% end %>
+  <%= link_to admin_maintenance_visits_path, class: "stat" do %><b><%= @maintenance_due %></b><span>Maintenance due (7 days)</span><% end %>
+  <div class="stat"><b><%= @payments_pending %></b><span>Payments pending</span></div>
+</div>
+<h2>Requests by status</h2>
+<div class="stats">
+  <% ServiceRequest::STATUSES.each do |s| %>
+    <%= link_to admin_service_requests_path(status: s), class: "stat small" do %>
+      <b><%= @by_status[s].to_i %></b><span><%= s.humanize %></span>
+    <% end %>
+  <% end %>
+</div>
+<h2>Latest requests</h2>
+<%= render "admin/service_requests/table", requests: @recent %>

@@ -1,0 +1,14 @@
+<h1>Website visitors</h1>
+<div class="stats">
+  <div class="panel"><h4>Top pages</h4><% @top_pages.each do |p, c| %><p><%= p %> — <b><%= c %></b></p><% end %></div>
+  <div class="panel"><h4>Browsers</h4><% @browsers.each do |b, c| %><p><%= b %> — <b><%= c %></b></p><% end %></div>
+  <div class="panel"><h4>Devices</h4><% @devices.each do |d, c| %><p><%= d %> — <b><%= c %></b></p><% end %></div>
+</div>
+<h2>Latest 500 visits</h2>
+<div class="table-wrap"><table>
+  <tr><th>Time</th><th>IP</th><th>Page</th><th>Device</th><th>Browser</th><th>OS</th><th>Referrer</th></tr>
+  <% @visits.each do |v| %>
+    <tr><td><%= l v.visited_at, format: :short %></td><td><%= v.ip_address %></td><td><%= v.path %></td>
+        <td><%= v.device %></td><td><%= v.browser %></td><td><%= v.os %></td><td><%= v.referrer.presence || "direct" %></td></tr>
+  <% end %>
+</table></div>
