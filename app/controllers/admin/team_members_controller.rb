@@ -8,7 +8,9 @@ module Admin
       @members = TeamMember.order(:department, :name)
       @open_counts = ServiceRequest.where(status: RequestWorkflow::ACTIVE_STATUSES).where.not(team_member_id: nil).group(:team_member_id).count
       @visit_counts = MaintenanceVisit.where(status: "assigned").group(:team_member_id).count
-      @payment_counts = Payment.where(status: "pending").group(:team_member_id).count
+      @payment_counts = Payment.where(status: %w[pending partial]).group(:team_member_id).count
+      # money still to be collected, per cashier
+      @to_collect = Payment.where(status: %w[pending partial]).where.not(team_member_id: nil).includes(:receipts).group_by(&:team_member_id)
       @done_counts = Hash.new(0)
       [ServiceRequest.where(status: "completed"), MaintenanceVisit.where(status: "done"), Payment.where(status: "received")].each do |rel|
         rel.group(:team_member_id).count.each { |id, n| @done_counts[id] += n }
@@ -31,7 +33,10 @@ module Admin
                end
       @activity = @member.request_updates.includes(:service_request).order(created_at: :desc).limit(10)
       @visits = @member.maintenance_visits.includes(:service_request).order(:due_on)
-      @payments = @member.payments.includes(:service_request).order(created_at: :desc)
+      pay_scope = @member.payments.includes(:receipts, service_request: { installation: :solar_package }).order(:created_at)
+      @to_collect = pay_scope.where(status: %w[pending partial]).to_a
+      @collected = pay_scope.where(status: "received").to_a
+      @to_collect_total = @to_collect.sum { |p| p.balance || 0 }
     end
 
     def new

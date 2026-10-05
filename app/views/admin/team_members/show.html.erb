@@ -11,6 +11,9 @@
   <%= link_to admin_team_member_path(@member, filter: "open"), class: "stat" do %><b><%= @counts["open"] %></b><span>Open tasks</span><% end %>
   <%= link_to admin_team_member_path(@member, filter: "completed"), class: "stat" do %><b><%= @counts["completed"] %></b><span>Completed</span><% end %>
   <%= link_to admin_team_member_path(@member, filter: "all"), class: "stat" do %><b><%= @counts["all"] %></b><span>All assigned</span><% end %>
+  <% if @member.department == "cashier" %>
+    <div class="stat"><b><%= inr(@to_collect_total) %></b><span>Payments to collect (<%= @to_collect.size %>)</span></div>
+  <% end %>
 </div>
 
 <h2><%= @filter.humanize %> tasks</h2>
@@ -54,15 +57,44 @@
   </table></div>
 <% end %>
 
-<% if @payments.any? %>
-  <h2>Payments</h2>
+<% if @member.department == "cashier" || @to_collect.any? || @collected.any? %>
+  <h2>Payments to collect</h2>
+  <p class="muted">Money <%= @member.name %> still has to collect from clients (installations already completed).</p>
   <div class="table-wrap"><table>
-    <tr><th>Customer</th><th>Status</th><th>Amount</th><th></th></tr>
-    <% @payments.each do |p| %>
-      <tr><td><%= p.service_request.name %></td>
-          <td><span class="badge <%= p.status %>"><%= p.status.humanize %></span></td>
-          <td><%= p.amount ? "₹#{number_with_delimiter(p.amount.to_i)}" : "—" %></td>
-          <td><%= link_to "Open", admin_service_request_path(p.service_request) %></td></tr>
+    <tr><th>Client</th><th>Request</th><th>Phone</th><th>System</th><th>Due</th><th>Paid</th><th>Balance to collect</th><th>Status</th><th></th></tr>
+    <% @to_collect.each do |p| %>
+      <% req = p.service_request %>
+      <tr>
+        <td><%= req.name %></td>
+        <td><%= link_to "##{req.id}", admin_service_request_path(req) %></td>
+        <td><%= req.phone %></td>
+        <td><%= req.installation&.solar_package&.name || "—" %></td>
+        <td><%= inr(p.amount_due) %></td>
+        <td><%= inr(p.amount_paid) %></td>
+        <td><b><%= inr(p.balance) %></b></td>
+        <td><span class="badge <%= p.status %>"><%= p.status.humanize %></span></td>
+        <td><%= link_to "Open", admin_payment_path(p) %></td>
+      </tr>
     <% end %>
+    <% if @to_collect.empty? %>
+      <tr><td colspan="9" class="muted">Nothing to collect right now.</td></tr>
+    <% else %>
+      <tr><td colspan="6"><b>Total to collect</b></td><td><b><%= inr(@to_collect_total) %></b></td><td colspan="2"></td></tr>
+    <% end %>
+  </table></div>
+
+  <h2>Payments collected</h2>
+  <div class="table-wrap"><table>
+    <tr><th>Client</th><th>Request</th><th>Total received</th><th>Receipts</th><th></th></tr>
+    <% @collected.each do |p| %>
+      <tr>
+        <td><%= p.service_request.name %></td>
+        <td><%= link_to "##{p.service_request_id}", admin_service_request_path(p.service_request) %></td>
+        <td><%= inr(p.amount_paid) %></td>
+        <td><%= p.receipts.map(&:number).join(", ").presence || "—" %></td>
+        <td><%= link_to "Open", admin_payment_path(p) %></td>
+      </tr>
+    <% end %>
+    <% if @collected.empty? %><tr><td colspan="5" class="muted">No fully paid payments yet.</td></tr><% end %>
   </table></div>
 <% end %>

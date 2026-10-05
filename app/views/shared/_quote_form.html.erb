@@ -1,0 +1,37 @@
+<% packages = SolarPackage.available %>
+<% if quote.errors.any? %><div class="flash alert"><%= quote.errors.full_messages.to_sentence %></div><% end %>
+<% if packages.empty? %>
+  <p class="muted">No systems are set up yet. Ask the admin to add them (with prices) under Admin → Systems.</p>
+<% else %>
+  <%= form_with model: quote, url: url, method: :post, class: "form" do |f| %>
+    <%= f.label :solar_package_id, "System (from the price list)" %>
+    <%= f.select :solar_package_id,
+          options_for_select(packages.map { |p| [p.label, p.id, { "data-price" => p.price.to_s, "data-details" => p.details }] }, quote.solar_package_id),
+          { include_blank: "Select a system…" }, { required: true, id: "quote_solar_package_id" } %>
+    <p id="quote-preview" class="muted small"></p>
+
+    <%= f.label :discount, "Discount (₹, optional)" %>
+    <%= f.number_field :discount, step: 0.01, min: 0, value: (quote.discount.to_f.positive? ? quote.discount : nil), id: "quote_discount" %>
+    <%= f.label :valid_until, "Quote valid until" %>
+    <%= f.date_field :valid_until, value: (quote.valid_until || Date.current + Quote::DEFAULT_VALIDITY_DAYS), min: Date.current, required: true %>
+    <%= f.label :notes, "Notes for the client (optional)" %><%= f.text_area :notes, rows: 2 %>
+    <%= f.submit "Create quote", class: "btn go" %>
+  <% end %>
+  <script>
+    (function () {
+      var sel = document.getElementById("quote_solar_package_id");
+      var disc = document.getElementById("quote_discount");
+      var box = document.getElementById("quote-preview");
+      function inr(n) { return "₹" + Number(n).toLocaleString("en-IN", { maximumFractionDigits: 2 }); }
+      function update() {
+        var o = sel.options[sel.selectedIndex];
+        if (!o || !o.dataset.price) { box.textContent = "Choose a system to see its price."; return; }
+        var price = parseFloat(o.dataset.price), d = parseFloat(disc.value) || 0;
+        box.textContent = o.dataset.details + " — Price " + inr(price) + (d > 0 ? " − discount " + inr(d) + " = Total " + inr(price - d) : "");
+      }
+      sel.addEventListener("change", update);
+      disc.addEventListener("input", update);
+      update();
+    })();
+  </script>
+<% end %>

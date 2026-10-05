@@ -1,0 +1,6 @@
+<p class="no-print">
+  <%= @quote.service_request.team_member_id == current_staff.id ? link_to("← Back to request", staff_task_path(@quote.service_request)) : link_to("← My tasks", staff_root_path) %> ·
+  <span class="badge <%= @quote.status %>"><%= @quote.status.humanize %></span><%= " (expired)" if @quote.expired? %> ·
+  <%= button_tag "Print quote", type: "button", class: "btn go", onclick: "window.print()" %>
+</p>
+<%= render "shared/quote", quote: @quote %>

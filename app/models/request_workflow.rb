@@ -22,9 +22,9 @@ class RequestWorkflow
   ACTIONS = {
     "pending" => [AGREED, REJECTED],
     "contacted" => [AGREED, REJECTED],
+    # From "site_visit" the request moves on by creating a quote (see ServiceRequest#create_quote!)
     "site_visit" => [
-      { to: "quote_sent", label: "Site visit done → quote sent", style: "go" },
-      { to: "cancelled",  label: "Not feasible / client dropped → cancel", style: "stop" }
+      { to: "cancelled", label: "Not feasible / client dropped → cancel", style: "stop" }
     ],
     "quote_sent" => [
       { to: "installation", label: "Client accepted quote → start installation", style: "go" },

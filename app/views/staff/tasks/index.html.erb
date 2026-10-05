@@ -41,15 +41,16 @@
 <% if @payments.any? || current_staff.department == "cashier" %>
   <h2>Payments to collect</h2>
   <div class="table-wrap"><table>
-    <tr><th>Customer</th><th>Request</th><th>Phone</th><th>Created</th><th></th></tr>
+    <tr><th>Client</th><th>Request</th><th>Phone</th><th>Due</th><th>Paid</th><th>Balance</th><th>Status</th><th></th></tr>
     <% @payments.each do |p| %>
       <tr>
         <td><%= p.service_request.name %></td><td>#<%= p.service_request_id %></td>
         <td><%= link_to p.service_request.phone, "tel:#{p.service_request.phone.gsub(/[^\d+]/, '')}" %></td>
-        <td><%= l p.created_at, format: :short %></td>
-        <td><%= link_to "Open", staff_payment_path(p) %></td>
+        <td><%= inr(p.amount_due) %></td><td><%= inr(p.amount_paid) %></td><td><b><%= inr(p.balance) %></b></td>
+        <td><span class="badge <%= p.status %>"><%= p.status.humanize %></span></td>
+        <td><%= link_to "Collect", staff_payment_path(p) %></td>
       </tr>
     <% end %>
-    <% if @payments.empty? %><tr><td colspan="5" class="muted">No payments waiting. A payment task appears when an installation is completed.</td></tr><% end %>
+    <% if @payments.empty? %><tr><td colspan="8" class="muted">No payments waiting. A payment appears when an installation is completed.</td></tr><% end %>
   </table></div>
 <% end %>

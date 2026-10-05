@@ -1,6 +1,8 @@
 <h3>Installed system</h3>
+<% if installation.solar_package %><p><strong>System:</strong> <%= installation.solar_package.name %></p><% end %>
 <p><strong>Installed on:</strong> <%= l installation.installed_on, format: :long %></p>
 <p><strong>Capacity:</strong> <%= installation.capacity_kw.to_f %> kW</p>
+<% if installation.package_price %><p><strong>System price:</strong> <%= inr(installation.package_price) %></p><% end %>
 <p><strong>Panels:</strong> <%= installation.panel_count || "—" %><%= " × #{installation.panel_brand}" if installation.panel_brand.present? %></p>
 <p><strong>Inverter:</strong> <%= installation.inverter_model.presence || "—" %></p>
 <p><strong>Site address:</strong> <%= installation.site_address.presence || "—" %></p>

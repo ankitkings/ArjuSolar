@@ -9,6 +9,7 @@ class ServiceRequest < ApplicationRecord
 
   belongs_to :team_member, optional: true
   has_many :updates, -> { order(created_at: :desc) }, class_name: "RequestUpdate", dependent: :destroy
+  has_many :quotes, -> { order(:created_at, :id) }, dependent: :destroy
   has_one :installation, dependent: :destroy
   has_many :maintenance_visits, -> { order(:due_on) }, dependent: :destroy
   has_one :payment, dependent: :destroy
@@ -17,6 +18,7 @@ class ServiceRequest < ApplicationRecord
   validates :phone, presence: true, format: { with: /\A[+\d][\d\s-]{7,15}\z/, message: "is not a valid number" }
   validates :email, format: { with: URI::MailTo::EMAIL_REGEXP }, allow_blank: true
   validates :message, length: { maximum: 2000 }
+  validates :address, presence: true, length: { maximum: 500 }, on: :create
   validates :status, inclusion: { in: STATUSES }
   validates :progress, numericality: { in: 0..100 }
 
@@ -34,10 +36,12 @@ class ServiceRequest < ApplicationRecord
   # Move to another stage: progress follows, the next department's least busy
   # member gets the task automatically, and the change is logged in the timeline.
   def advance!(to:, by: nil, admin: nil, note: nil)
+    from = status
     self.status = to
     handover = assign_for_status
     transaction do
       save!
+      quote_followup(from, to)
       updates.create!(status: status, progress: progress, team_member: by, admin_user: admin,
                       note: [note.presence, handover].compact.join(" — ").presence)
     end
@@ -54,16 +58,43 @@ class ServiceRequest < ApplicationRecord
     end
   end
 
+  def latest_quote = quotes.reorder(id: :desc).first
+  def accepted_quote = quotes.where(status: "accepted").reorder(id: :desc).first
+
+  # Site visitor: make a quote from the price list. On the first quote the request
+  # moves to "Quote sent"; a later quote replaces the earlier one.
+  def create_quote!(package:, discount: nil, valid_until: nil, notes: nil, by: nil)
+    transaction do
+      quotes.where(status: "sent").update_all(status: "superseded")
+      quote = quotes.create!(solar_package: package, discount: discount.presence, valid_until: valid_until.presence,
+                             notes: notes.to_s.strip.presence, team_member: by)
+      text = "Quote #{quote.number} created: #{quote.system_name}, #{Rupees.display(quote.total)}"
+      text += " (after a discount of #{Rupees.display(quote.discount)})" if quote.discount.positive?
+      if status == "site_visit"
+        advance!(to: "quote_sent", by: by, note: text)
+      else
+        updates.create!(status: status, progress: progress, team_member: by, note: text)
+      end
+      quote
+    end
+  end
+
+  # What the client has to pay: the accepted quote, if it is for the system that was installed
+  def agreed_amount_for(inst)
+    q = accepted_quote
+    q && q.solar_package_id == inst.solar_package_id ? q.total : inst.package_price
+  end
+
   # Saves the installed system, completes the request and creates the follow-ups:
   # maintenance visits (servicing team, on their due dates) and a payment task (cashier).
   def complete_installation!(inst, by: nil, admin: nil)
     transaction do
       inst.save!
       visits = inst.schedule_maintenance!
-      pay = open_payment_task
+      pay = open_payment_task(agreed_amount_for(inst))
       notes = ["Installation completed (#{inst.summary})"]
       notes << "maintenance checks scheduled: #{visits.map { |v| v.due_on.strftime('%d %b %Y') }.join(', ')}" if visits.any?
-      notes << (pay.team_member ? "payment task assigned to #{pay.team_member.name} (Cashier)" : "payment task created, no active cashier – assign manually")
+      notes << (pay.team_member ? "payment of #{Rupees.display(pay.amount_due)} assigned to #{pay.team_member.name} (Cashier)" : "payment of #{Rupees.display(pay.amount_due)} created, no active cashier – assign manually")
       advance!(to: "completed", by: by, admin: admin, note: notes.join(" — "))
     end
   end
@@ -79,6 +110,15 @@ class ServiceRequest < ApplicationRecord
   end
 
   private
+
+  # Keeps the quote in step with the request: accepted when installation starts,
+  # declined when the request is cancelled at the quote stage.
+  def quote_followup(from, to)
+    quote = latest_quote
+    return unless quote && quote.status == "sent"
+    quote.update!(status: "accepted") if to == "installation"
+    quote.update!(status: "declined") if to == "cancelled" && from == "quote_sent"
+  end
 
   def assign_initial_owner
     assign_for_status if team_member_id.nil?
@@ -99,10 +139,10 @@ class ServiceRequest < ApplicationRecord
     end
   end
 
-  def open_payment_task
+  def open_payment_task(price = nil)
     return payment if payment
-    cashier = TeamMember.least_busy("cashier", :payments, "payments.status = 'pending'")
-    create_payment!(team_member: cashier)
+    cashier = TeamMember.least_busy("cashier", :payments, "payments.status IN ('pending','partial')")
+    create_payment!(team_member: cashier, amount_due: price)
   end
 
   def sync_progress_with_status

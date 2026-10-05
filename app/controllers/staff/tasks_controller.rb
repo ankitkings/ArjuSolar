@@ -19,11 +19,11 @@ module Staff
                else scope
                end
       @visits = current_staff.maintenance_visits.where(status: "assigned").includes(:service_request).order(:due_on).to_a
-      @payments = current_staff.payments.where(status: "pending").includes(:service_request).order(:created_at).to_a
+      @payments = current_staff.payments.where(status: %w[pending partial]).includes(:service_request, :receipts).order(:created_at).to_a
     end
 
     def show
-      @installation = Installation.new(installed_on: Date.current)
+      @installation = Installation.new(installed_on: Date.current, site_address: @task.address, solar_package_id: @task.accepted_quote&.solar_package_id)
     end
 
     # Add a note without changing the stage
@@ -77,7 +77,7 @@ module Staff
     end
 
     def installation_params
-      params.require(:installation).permit(:installed_on, :capacity_kw, :panel_count, :panel_brand, :inverter_model, :site_address, :notes)
+      params.require(:installation).permit(:installed_on, :solar_package_id, :site_address, :notes)
     end
   end
 end

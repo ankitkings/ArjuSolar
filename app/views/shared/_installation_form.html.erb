@@ -1,11 +1,32 @@
+<% packages = SolarPackage.available %>
 <% if installation.errors.any? %><div class="flash alert"><%= installation.errors.full_messages.to_sentence %></div><% end %>
-<%= form_with model: installation, url: url, method: :post, class: "form" do |f| %>
-  <%= f.label :installed_on, "Installation date" %><%= f.date_field :installed_on, required: true, max: Date.current %>
-  <%= f.label :capacity_kw, "System capacity (kW)" %><%= f.number_field :capacity_kw, step: 0.01, min: 0.1, required: true %>
-  <%= f.label :panel_count, "Number of panels" %><%= f.number_field :panel_count, min: 1 %>
-  <%= f.label :panel_brand, "Panel brand / model" %><%= f.text_field :panel_brand %>
-  <%= f.label :inverter_model, "Inverter model" %><%= f.text_field :inverter_model %>
-  <%= f.label :site_address, "Site address" %><%= f.text_area :site_address, rows: 2 %>
-  <%= f.label :notes, "Notes" %><%= f.text_area :notes, rows: 2 %>
-  <%= f.submit "Installation done → complete request", class: "btn go" %>
+<% if packages.empty? %>
+  <p class="muted">No systems have been set up yet. Ask the admin to add them under Admin → Systems.</p>
+<% else %>
+  <%= form_with model: installation, url: url, method: :post, class: "form" do |f| %>
+    <%= f.label :installed_on, "Installation date" %><%= f.date_field :installed_on, required: true, max: Date.current %>
+
+    <%= f.label :solar_package_id, "System installed" %>
+    <%= f.select :solar_package_id,
+          options_for_select(packages.map { |p| [p.label, p.id, { "data-details" => p.details }] }, installation.solar_package_id),
+          { include_blank: "Select the installed system…" }, { required: true, id: "installation_solar_package_id" } %>
+    <p id="package-details" class="muted small"></p>
+
+    <%= f.label :site_address, "Site address (entered by the client – change only if needed)" %>
+    <%= f.text_area :site_address, rows: 2, required: true %>
+    <%= f.label :notes, "Notes" %><%= f.text_area :notes, rows: 2 %>
+    <%= f.submit "Installation done → complete request", class: "btn go" %>
+  <% end %>
+  <script>
+    (function () {
+      var sel = document.getElementById("installation_solar_package_id");
+      var box = document.getElementById("package-details");
+      function show() {
+        var o = sel.options[sel.selectedIndex];
+        box.textContent = (o && o.dataset.details) ? o.dataset.details : "Choose a system to see its details.";
+      }
+      sel.addEventListener("change", show);
+      show();
+    })();
+  </script>
 <% end %>

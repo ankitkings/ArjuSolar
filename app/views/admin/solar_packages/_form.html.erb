@@ -1,0 +1,11 @@
+<% if package.errors.any? %><div class="flash alert"><%= package.errors.full_messages.to_sentence %></div><% end %>
+<%= form_with model: package, url: (package.persisted? ? admin_solar_package_path(package) : admin_solar_packages_path), class: "form" do |f| %>
+  <%= f.label :name, "Name (e.g. 3 kW Home)" %><%= f.text_field :name, required: true %>
+  <%= f.label :capacity_kw, "System capacity (kW)" %><%= f.number_field :capacity_kw, step: 0.01, min: 0.1, required: true %>
+  <%= f.label :price, "Package amount (₹)" %><%= f.number_field :price, step: 0.01, min: 1, required: true %>
+  <%= f.label :panel_count, "Number of panels" %><%= f.number_field :panel_count, min: 1, required: true %>
+  <%= f.label :panel_brand, "Panel brand / model" %><%= f.text_field :panel_brand, required: true %>
+  <%= f.label :inverter_model, "Inverter model" %><%= f.text_field :inverter_model, required: true %>
+  <label><%= f.check_box :active %> Available for selection</label>
+  <%= f.submit class: "btn" %>
+<% end %>

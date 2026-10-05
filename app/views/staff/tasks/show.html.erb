@@ -6,6 +6,7 @@
     <h3>Customer</h3>
     <p><strong>Phone:</strong> <%= link_to @task.phone, "tel:#{@task.phone.gsub(/[^\d+]/, '')}" %></p>
     <p><strong>Email:</strong> <%= @task.email.presence || "—" %></p>
+    <p><strong>Address:</strong> <%= @task.address.presence || "—" %></p>
     <p><strong>Received:</strong> <%= l @task.created_at, format: :long %></p>
     <p><strong>Message:</strong><br><%= simple_format(h(@task.message)) %></p>
   </div>
@@ -14,7 +15,11 @@
     <div class="bar big"><i style="width:<%= @task.progress %>%"></i></div>
     <p><span class="badge <%= @task.status %>"><%= @task.status_label %></span> <%= @task.progress %>% complete</p>
     <% if actions.any? %>
-      <p class="muted small">After you speak to the client, choose the result. The request is handed to the next team automatically.</p>
+      <% if @task.status == "site_visit" %>
+        <p class="muted small">After the site visit, create the quote below. Use this button only if the client drops out.</p>
+      <% else %>
+        <p class="muted small">After you speak to the client, choose the result. The request is handed to the next team automatically.</p>
+      <% end %>
       <%= render "shared/stage_actions", actions: actions, url: advance_staff_task_path(@task) %>
     <% elsif @task.status == "installation" %>
       <p class="muted">When the installation is finished, fill in the system details below. The request is completed and the payment and maintenance tasks are created automatically.</p>
@@ -25,6 +30,33 @@
     <% end %>
   </div>
 </div>
+
+<% quotes = @task.quotes.to_a %>
+<% if @task.status == "site_visit" || (@task.status == "quote_sent" && quotes.empty?) %>
+  <div class="panel" style="margin-top:16px">
+    <h3>Site visit done? Create the quote</h3>
+    <p class="muted small">Pick the system from the price list – the price is filled in automatically. Creating the quote moves the request to "Quote sent".</p>
+    <%= render "shared/quote_form", quote: (@quote || Quote.new), url: staff_task_quotes_path(@task) %>
+  </div>
+<% end %>
+<% if quotes.any? %>
+  <h2>Quotes</h2>
+  <div class="table-wrap"><table>
+    <tr><th>Quote no.</th><th>System</th><th>Total</th><th>Valid until</th><th>Status</th><th></th></tr>
+    <% quotes.each do |q| %>
+      <tr><td><%= q.number %></td><td><%= q.system_name %></td><td><b><%= inr(q.total) %></b></td>
+          <td><%= l q.valid_until, format: :short %></td>
+          <td><span class="badge <%= q.status %>"><%= q.status.humanize %></span></td>
+          <td><%= link_to "View / print", staff_quote_path(q) %></td></tr>
+    <% end %>
+  </table></div>
+  <% if @task.status == "quote_sent" %>
+    <details style="margin-top:12px">
+      <summary><b>Revise the quote</b> (creates a new quote that replaces the old one)</summary>
+      <div class="panel" style="margin-top:8px"><%= render "shared/quote_form", quote: (@quote || Quote.new), url: staff_task_quotes_path(@task) %></div>
+    </details>
+  <% end %>
+<% end %>
 
 <% if @task.status == "installation" %>
   <div class="panel" style="margin-top:16px">

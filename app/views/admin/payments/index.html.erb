@@ -1,0 +1,28 @@
+<h1>Payments</h1>
+<div class="stats">
+  <div class="stat"><b><%= inr(@total_due) %></b><span>Total due</span></div>
+  <div class="stat"><b><%= inr(@collected) %></b><span>Collected</span></div>
+  <div class="stat"><b><%= inr(@outstanding) %></b><span>Outstanding</span></div>
+</div>
+<%= form_with url: admin_payments_path, method: :get, class: "filters" do %>
+  <%= text_field_tag :q, params[:q], placeholder: "Search client name / phone" %>
+  <%= select_tag :status, options_for_select([["All payments", ""], ["Pending", "pending"], ["Partly paid", "partial"], ["Fully paid", "received"]], @filter) %>
+  <%= submit_tag "Filter", class: "btn" %>
+<% end %>
+<div class="table-wrap"><table>
+  <tr><th>Client</th><th>Phone</th><th>Request</th><th>System</th><th>Due</th><th>Paid</th><th>Balance</th><th>Status</th><th>Cashier</th><th>Receipts</th><th></th></tr>
+  <% @payments.each do |p| %>
+    <% req = p.service_request %>
+    <tr>
+      <td><%= req.name %></td><td><%= req.phone %></td>
+      <td><%= link_to "##{req.id}", admin_service_request_path(req) %></td>
+      <td><%= req.installation&.solar_package&.name || req.installation&.summary || "—" %></td>
+      <td><%= inr(p.amount_due) %></td><td><%= inr(p.amount_paid) %></td><td><b><%= inr(p.balance) %></b></td>
+      <td><span class="badge <%= p.status %>"><%= p.status.humanize %></span></td>
+      <td><%= p.team_member&.name || "—" %></td>
+      <td><%= p.receipts.size %></td>
+      <td><%= link_to "Open", admin_payment_path(p) %></td>
+    </tr>
+  <% end %>
+  <% if @payments.empty? %><tr><td colspan="11" class="muted">No payments found.</td></tr><% end %>
+</table></div>

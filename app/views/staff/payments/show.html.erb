@@ -1,30 +1,54 @@
 <p><%= link_to "← My tasks", staff_root_path %></p>
 <% req = @payment.service_request %>
 <h1>Payment — <%= req.name %></h1>
+<div class="stats">
+  <div class="stat"><b><%= inr(@payment.amount_due) %></b><span>Total due</span></div>
+  <div class="stat"><b><%= inr(@payment.amount_paid) %></b><span>Received so far</span></div>
+  <div class="stat"><b><%= inr(@payment.balance) %></b><span>Balance</span></div>
+</div>
 <div class="two-col">
   <div class="panel">
-    <h3>Customer</h3>
+    <h3>Client</h3>
     <p><strong>Name:</strong> <%= req.name %></p>
     <p><strong>Phone:</strong> <%= link_to req.phone, "tel:#{req.phone.gsub(/[^\d+]/, '')}" %></p>
-    <p><strong>Request:</strong> #<%= req.id %></p>
-    <p><strong>Status:</strong> <span class="badge <%= @payment.status_in_database %>"><%= @payment.status_in_database.humanize %></span></p>
+    <p><strong>Address:</strong> <%= req.address.presence || "—" %></p>
+    <p><strong>Request:</strong> #<%= req.id %> · <span class="badge <%= @payment.status %>"><%= @payment.status.humanize %></span></p>
   </div>
   <div class="panel"><% if req.installation %><%= render "shared/installation_summary", installation: req.installation %><% end %></div>
 </div>
+
 <div class="panel" style="margin-top:16px">
-  <% if @payment.status_in_database == "pending" %>
-    <h3>Record payment</h3>
-    <% if @payment.errors.any? %><div class="flash alert"><%= @payment.errors.full_messages.to_sentence %></div><% end %>
-    <%= form_with url: staff_payment_path(@payment), method: :patch, class: "form" do %>
-      <%= label_tag :amount, "Amount received (₹)" %>
-      <%= number_field_tag :amount, nil, step: 0.01, min: 1, required: true %>
-      <%= label_tag :note, "Note (receipt no., mode…)" %>
-      <%= text_area_tag :note, nil, rows: 2 %>
-      <%= submit_tag "Payment received", class: "btn go" %>
-    <% end %>
+  <% if @payment.fully_paid? %>
+    <h3>Fully paid</h3>
+    <p class="muted">Nothing more to collect.</p>
   <% else %>
-    <h3>Received</h3>
-    <p>₹<%= number_with_delimiter(@payment.amount.to_i) %> on <%= l @payment.received_on, format: :long %></p>
-    <% if @payment.note.present? %><p class="muted"><%= @payment.note %></p><% end %>
+    <h3>Collect payment</h3>
+    <% if @error %><div class="flash alert"><%= @error %></div><% end %>
+    <%= form_with url: staff_payment_path(@payment), method: :patch, class: "form" do %>
+      <% if @payment.amount_due.nil? %>
+        <%= label_tag :amount_due, "Total amount due (₹) – no price was saved for this system" %>
+        <%= number_field_tag :amount_due, nil, step: 0.01, min: 1, required: true %>
+      <% end %>
+      <%= label_tag :amount, "Amount received now (₹)" %>
+      <%= number_field_tag :amount, @payment.balance, step: 0.01, min: 1, required: true %>
+      <%= label_tag :mode, "Payment mode" %>
+      <%= select_tag :mode, options_for_select(Receipt::MODES.map { |k, v| [v, k] }) %>
+      <%= label_tag :reference, "Reference (UPI id, cheque no., …)" %>
+      <%= text_field_tag :reference %>
+      <%= label_tag :note, "Note" %>
+      <%= text_area_tag :note, nil, rows: 2 %>
+      <%= submit_tag "Collect & generate receipt", class: "btn go" %>
+    <% end %>
   <% end %>
 </div>
+
+<h2>Receipts</h2>
+<div class="table-wrap"><table>
+  <tr><th>Receipt no.</th><th>Date</th><th>Amount</th><th>Mode</th><th>Reference</th><th></th></tr>
+  <% @payment.receipts.each do |r| %>
+    <tr><td><%= r.number %></td><td><%= l r.received_on, format: :short %></td><td><%= inr(r.amount) %></td>
+        <td><%= r.mode_label %></td><td><%= r.reference.presence || "—" %></td>
+        <td><%= link_to "View / print", staff_receipt_path(r) %></td></tr>
+  <% end %>
+  <% if @payment.receipts.empty? %><tr><td colspan="6" class="muted">No receipts yet.</td></tr><% end %>
+</table></div>

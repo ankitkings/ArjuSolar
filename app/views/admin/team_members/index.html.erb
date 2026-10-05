@@ -1,11 +1,21 @@
 <h1>Team <%= link_to "+ Add member", new_admin_team_member_path, class: "btn" %></h1>
 <div class="table-wrap"><table>
-  <tr><th>Name</th><th>Department</th><th>Phone</th><th>Open tasks</th><th>Completed</th><th>Login</th><th>On website</th><th>Active</th><th></th></tr>
+  <tr><th>Name</th><th>Department</th><th>Phone</th><th>Open tasks</th><th>Payments to collect</th><th>Completed</th><th>Login</th><th>On website</th><th>Active</th><th></th></tr>
   <% @members.each do |m| %>
     <tr>
       <td><%= link_to m.name, admin_team_member_path(m) %></td>
       <td><%= m.department_label %></td><td><%= m.phone %></td>
       <td><b><%= @open_counts[m.id].to_i + @visit_counts[m.id].to_i + @payment_counts[m.id].to_i %></b></td>
+      <td>
+        <% if m.department == "cashier" %>
+          <% list = @to_collect[m.id] || [] %>
+          <% if list.any? %>
+            <b><%= inr(list.sum { |p| p.balance || 0 }) %></b> <span class="muted small">(<%= list.size %> <%= list.size == 1 ? "payment" : "payments" %>)</span>
+          <% else %>
+            <span class="muted">Nothing pending</span>
+          <% end %>
+        <% else %>—<% end %>
+      </td>
       <td><%= @done_counts[m.id].to_i %></td>
       <td><%= m.can_login? ? "Yes" : "No" %></td>
       <td><%= m.show_on_website ? "Yes" : "No" %></td><td><%= m.active ? "Yes" : "No" %></td>

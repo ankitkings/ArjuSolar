@@ -1,0 +1,37 @@
+<% pay = receipt.payment %>
+<% req = pay.service_request %>
+<% inst = req.installation %>
+<div class="receipt">
+  <div class="receipt-head">
+    <div>
+      <h2>Arju Solars</h2>
+      <p>Indore, Madhya Pradesh, India</p>
+      <p>+91 7049465926</p>
+    </div>
+    <div class="right">
+      <h3>RECEIPT</h3>
+      <p><b><%= receipt.number %></b></p>
+      <p>Date: <%= l receipt.received_on, format: :long %></p>
+    </div>
+  </div>
+  <hr>
+  <p><strong>Received from:</strong> <%= req.name %> · <%= req.phone %></p>
+  <% if req.address.present? %><p><strong>Address:</strong> <%= req.address %></p><% end %>
+  <p><strong>Against:</strong> Solar installation, request #<%= req.id %>
+    <% if inst %>— <%= inst.solar_package&.name || inst.summary %> (<%= format("%g", inst.capacity_kw.to_f) %> kW)<% end %></p>
+
+  <div class="table-wrap"><table>
+    <tr><th>Description</th><th class="right">Amount</th></tr>
+    <tr>
+      <td>Payment received by <%= receipt.mode_label %><%= " · Ref: #{receipt.reference}" if receipt.reference.present? %></td>
+      <td class="right"><b><%= inr(receipt.amount) %></b></td>
+    </tr>
+    <tr><td>Total amount due</td><td class="right"><%= inr(pay.amount_due) %></td></tr>
+    <tr><td>Total received up to this receipt</td><td class="right"><%= inr(receipt.paid_to_date) %></td></tr>
+    <tr><td><b>Balance after this receipt</b></td><td class="right"><b><%= inr(receipt.balance_after) %></b></td></tr>
+  </table></div>
+
+  <% if receipt.note.present? %><p><strong>Note:</strong> <%= receipt.note %></p><% end %>
+  <p><strong>Received by:</strong> <%= receipt.team_member&.name || "—" %> (Cashier)</p>
+  <p class="muted small">This is a computer-generated receipt.</p>
+</div>

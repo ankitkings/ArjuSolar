@@ -1,0 +1,36 @@
+<% req = quote.service_request %>
+<div class="receipt quote">
+  <div class="receipt-head">
+    <div>
+      <h2>Arju Solars</h2>
+      <p>Indore, Madhya Pradesh, India</p>
+      <p>+91 7049465926</p>
+    </div>
+    <div class="right">
+      <h3>QUOTATION</h3>
+      <p><b><%= quote.number %></b></p>
+      <p>Date: <%= l quote.created_at.to_date, format: :long %></p>
+      <p>Valid until: <b><%= l quote.valid_until, format: :long %></b></p>
+    </div>
+  </div>
+  <hr>
+  <p><strong>Prepared for:</strong> <%= req.name %> · <%= req.phone %></p>
+  <% if req.address.present? %><p><strong>Site address:</strong> <%= req.address %></p><% end %>
+
+  <div class="table-wrap"><table>
+    <tr><th>System</th><th class="right">Amount</th></tr>
+    <tr>
+      <td><b><%= quote.system_name %></b> — <%= format("%g", quote.capacity_kw.to_f) %> kW solar system<br>
+          <span class="muted small"><%= quote.panel_count %> panels · <%= quote.panel_brand %> · Inverter <%= quote.inverter_model %></span></td>
+      <td class="right"><%= inr(quote.list_price) %></td>
+    </tr>
+    <% if quote.discount.positive? %>
+      <tr><td>Discount</td><td class="right">− <%= inr(quote.discount) %></td></tr>
+    <% end %>
+    <tr><td><b>Total</b></td><td class="right"><b><%= inr(quote.total) %></b></td></tr>
+  </table></div>
+
+  <% if quote.notes.present? %><p><strong>Notes:</strong> <%= quote.notes %></p><% end %>
+  <p><strong>Prepared by:</strong> <%= quote.team_member&.name || "Arju Solars" %><%= " (Site Visitor)" if quote.team_member %></p>
+  <p class="muted small">This quotation is valid until the date shown above. This is a computer-generated document.</p>
+</div>

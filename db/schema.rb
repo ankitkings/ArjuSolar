@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_01_03_000000) do
+ActiveRecord::Schema[7.1].define(version: 2026_01_06_000000) do
   create_table "admin_users", force: :cascade do |t|
     t.string "email", null: false
     t.string "password_digest", null: false
@@ -30,7 +30,10 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_03_000000) do
     t.text "notes"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "solar_package_id"
+    t.decimal "package_price", precision: 10, scale: 2
     t.index ["service_request_id"], name: "index_installations_on_service_request_id", unique: true
+    t.index ["solar_package_id"], name: "index_installations_on_solar_package_id"
   end
 
   create_table "maintenance_visits", force: :cascade do |t|
@@ -60,8 +63,49 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_03_000000) do
     t.text "note"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.decimal "amount_due", precision: 10, scale: 2
     t.index ["service_request_id"], name: "index_payments_on_service_request_id", unique: true
     t.index ["team_member_id"], name: "index_payments_on_team_member_id"
+  end
+
+  create_table "quotes", force: :cascade do |t|
+    t.integer "service_request_id", null: false
+    t.integer "solar_package_id"
+    t.integer "team_member_id"
+    t.string "number"
+    t.string "status", default: "sent", null: false
+    t.string "system_name"
+    t.string "panel_brand"
+    t.string "inverter_model"
+    t.decimal "capacity_kw", precision: 6, scale: 2
+    t.integer "panel_count"
+    t.decimal "list_price", precision: 10, scale: 2, null: false
+    t.decimal "discount", precision: 10, scale: 2, default: "0.0", null: false
+    t.decimal "total", precision: 10, scale: 2, null: false
+    t.date "valid_until", null: false
+    t.text "notes"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["number"], name: "index_quotes_on_number", unique: true
+    t.index ["service_request_id"], name: "index_quotes_on_service_request_id"
+    t.index ["solar_package_id"], name: "index_quotes_on_solar_package_id"
+    t.index ["team_member_id"], name: "index_quotes_on_team_member_id"
+  end
+
+  create_table "receipts", force: :cascade do |t|
+    t.integer "payment_id", null: false
+    t.integer "team_member_id"
+    t.string "number"
+    t.decimal "amount", precision: 10, scale: 2, null: false
+    t.string "mode", default: "cash", null: false
+    t.string "reference"
+    t.date "received_on", null: false
+    t.text "note"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["number"], name: "index_receipts_on_number", unique: true
+    t.index ["payment_id"], name: "index_receipts_on_payment_id"
+    t.index ["team_member_id"], name: "index_receipts_on_team_member_id"
   end
 
   create_table "request_updates", force: :cascade do |t|
@@ -89,8 +133,21 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_03_000000) do
     t.integer "team_member_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.text "address"
     t.index ["status"], name: "index_service_requests_on_status"
     t.index ["team_member_id"], name: "index_service_requests_on_team_member_id"
+  end
+
+  create_table "solar_packages", force: :cascade do |t|
+    t.string "name", null: false
+    t.decimal "capacity_kw", precision: 6, scale: 2, null: false
+    t.integer "panel_count", null: false
+    t.string "panel_brand", null: false
+    t.string "inverter_model", null: false
+    t.boolean "active", default: true, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.decimal "price", precision: 10, scale: 2
   end
 
   create_table "team_members", force: :cascade do |t|
@@ -121,11 +178,17 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_03_000000) do
   end
 
   add_foreign_key "installations", "service_requests"
+  add_foreign_key "installations", "solar_packages"
   add_foreign_key "maintenance_visits", "installations"
   add_foreign_key "maintenance_visits", "service_requests"
   add_foreign_key "maintenance_visits", "team_members"
   add_foreign_key "payments", "service_requests"
   add_foreign_key "payments", "team_members"
+  add_foreign_key "quotes", "service_requests"
+  add_foreign_key "quotes", "solar_packages"
+  add_foreign_key "quotes", "team_members"
+  add_foreign_key "receipts", "payments"
+  add_foreign_key "receipts", "team_members"
   add_foreign_key "request_updates", "admin_users"
   add_foreign_key "request_updates", "service_requests"
   add_foreign_key "request_updates", "team_members"

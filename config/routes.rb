@@ -18,9 +18,12 @@ Rails.application.routes.draw do
         post :advance
         post :complete
       end
+      resources :quotes, only: :create
     end
+    resources :quotes, only: :show
     resources :maintenance_visits, only: %i[show update]
     resources :payments, only: %i[show update]
+    resources :receipts, only: :show
   end
 
   namespace :admin do
@@ -31,6 +34,10 @@ Rails.application.routes.draw do
       member { post :complete }
     end
     resources :maintenance_visits, only: %i[index create update destroy]
+    resources :payments, only: %i[index show update]
+    resources :receipts, only: :show
+    resources :quotes, only: :show
+    resources :solar_packages, except: :show
     resources :team_members
   end
 

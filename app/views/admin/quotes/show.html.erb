@@ -1,0 +1,6 @@
+<p class="no-print">
+  <%= link_to "← Back to request", admin_service_request_path(@quote.service_request) %> ·
+  <span class="badge <%= @quote.status %>"><%= @quote.status.humanize %></span><%= " (expired)" if @quote.expired? %> ·
+  <%= button_tag "Print quote", type: "button", class: "btn go", onclick: "window.print()" %>
+</p>
+<%= render "shared/quote", quote: @quote %>
