@@ -31,3 +31,18 @@ button.btn{border:0;font:inherit;font-weight:600;cursor:pointer;padding:10px 16p
 .actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
 .inline-form{display:flex;gap:4px;align-items:center}.inline-form input[type=date]{padding:5px}
 .badge.scheduled{background:#dbeafe}.badge.assigned{background:#ffedd5}.badge.done,.badge.received{background:#dcfce7}
+
+/* receipts */
+.receipt{background:#fff;border:1px solid var(--line);border-radius:12px;padding:24px;max-width:720px}
+.receipt-head{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.receipt-head h2,.receipt-head h3,.receipt-head p{margin:0 0 4px}
+.receipt th,.receipt td{white-space:normal}
+.right{text-align:right}.badge.partial{background:#fef3c7}
+@media print{
+  body.admin aside,.no-print,.flash{display:none !important}
+  body.admin{display:block}.admin-main{padding:0}
+  .receipt{border:0;max-width:none;padding:0}
+}
+
+/* quote statuses */
+.badge.sent{background:#dbeafe}.badge.accepted{background:#dcfce7}.badge.declined{background:#fee2e2}.badge.superseded{background:#e2e8f0;color:#64748b}

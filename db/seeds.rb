@@ -33,6 +33,28 @@ end
 end
 
 # ---------------------------------------------------------------
+# System catalog (the installation team picks from this list)
+# Prices are examples - change them in Admin > Systems.
+# ---------------------------------------------------------------
+[
+  ["1 kW Starter",     1,  2,  "Waaree 540W",           "Luminous 1kW",  60_000],
+  ["2 kW Home",        2,  4,  "Adani Solar 540W",      "Growatt 2kW",   120_000],
+  ["3 kW Home",        3,  6,  "Waaree 540W",           "Luminous 3kW",  180_000],
+  ["5 kW Home Plus",   5,  10, "Tata Power Solar 540W", "Sungrow 5kW",   300_000],
+  ["10 kW Commercial", 10, 19, "Tata Power Solar 540W", "Sungrow 10kW",  550_000],
+  ["20 kW Commercial", 20, 38, "Adani Solar 540W",      "Sungrow 20kW",  1_050_000]
+].each do |name, kw, panels, brand, inverter, price|
+  pkg = SolarPackage.find_or_create_by!(name: name) do |p|
+    p.capacity_kw = kw
+    p.panel_count = panels
+    p.panel_brand = brand
+    p.inverter_model = inverter
+    p.price = price
+  end
+  pkg.update!(price: price) if pkg.price.nil?
+end
+
+# ---------------------------------------------------------------
 # DEMO DATA (requests, installations, maintenance, payments, visitors)
 # Skipped in production or with SEED_DEMO=false. Runs only if tables are empty.
 # ---------------------------------------------------------------
@@ -69,8 +91,9 @@ if !Rails.env.production? && ENV["SEED_DEMO"] != "false"
     ]
 
     # installed system data + payment for the three completed requests (in order)
-    installs = [[3, 6, "Waaree 500W", "Luminous 3kW"], [2, 4, "Adani Solar 540W", "Growatt 2kW"], [5, 10, "Tata Power Solar 540W", "Sungrow 5kW"]]
-    pays     = [["received", 185_000], ["received", 128_000], ["pending", nil]]
+    addresses = ["Vijay Nagar, Indore", "Palasia, Indore", "Bhawarkua, Indore", "Rau, Indore", "Saket Nagar, Indore", "Sudama Nagar, Indore"]
+    installs  = ["3 kW Home", "2 kW Home", "5 kW Home Plus"]
+    pays     = [:two_receipts, :partial, :none]   # advance + balance, part payment, nothing paid yet
 
     customers.each do |name, phone, email, message, final_status, days_ago|
       created   = now - days_ago.days - rng.rand(0..8).hours
@@ -92,6 +115,7 @@ if !Rails.env.production? && ENV["SEED_DEMO"] != "false"
 
       req = ServiceRequest.create!(
         name: name, phone: phone, email: email, message: message,
+        address: addresses.sample(random: rng),
         ip_address: "49.36.#{rng.rand(1..254)}.#{rng.rand(1..254)}",
         status: final, team_member: member, progress: (final == "cancelled" ? 10 : 0),
         created_at: created, updated_at: last_time
@@ -105,18 +129,37 @@ if !Rails.env.production? && ENV["SEED_DEMO"] != "false"
         )
       end
 
+      # quotes for every request that reached the quote stage (Priya got a discount)
+      if %w[quote_sent installation completed].include?(final)
+        quoted = { "Amit Sharma" => "3 kW Home", "Priya Verma" => "2 kW Home", "Rajesh Patel" => "5 kW Home Plus",
+                   "Sneha Joshi" => "3 kW Home", "Vikram Singh" => "20 kW Commercial", "Meena Gupta" => "2 kW Home",
+                   "Rohit Malviya" => "5 kW Home Plus" }
+        req.quotes.create!(
+          solar_package: SolarPackage.find_by!(name: quoted.fetch(name, "3 kW Home")),
+          discount: (name == "Priya Verma" ? 5_000 : 0), valid_until: times[3].to_date + 15,
+          status: (final == "quote_sent" ? "sent" : "accepted"),
+          team_member: TeamMember.where(department: "site_visitor").order(:id).first,
+          created_at: times[3], updated_at: times[3]
+        )
+      end
+
       if final == "completed"
-        kw, panels, brand, inverter = installs.shift
         inst = Installation.create!(
-          service_request: req, installed_on: last_time.to_date, capacity_kw: kw, panel_count: panels,
-          panel_brand: brand, inverter_model: inverter, site_address: "Indore, Madhya Pradesh"
+          service_request: req, installed_on: last_time.to_date,
+          solar_package: SolarPackage.find_by!(name: installs.shift), site_address: req.address
         )
         inst.schedule_maintenance!
-        status, amount = pays.shift
-        Payment.create!(
-          service_request: req, team_member: TeamMember.where(department: "cashier").order(:id).offset(rng.rand(0..1)).first,
-          status: status, amount: amount, received_on: (last_time.to_date if status == "received")
-        )
+        plan    = pays.shift
+        cashier = TeamMember.where(department: "cashier").order(:id).offset(rng.rand(0..1)).first
+        pay     = Payment.create!(service_request: req, team_member: cashier, amount_due: req.agreed_amount_for(inst))
+        day     = [last_time.to_date + 1, Date.current].min
+        case plan
+        when :two_receipts
+          pay.collect!(amount: (pay.amount_due * 0.5).round, mode: "cash", reference: "Advance", by: cashier, received_on: day)
+          pay.collect!(amount: pay.balance, mode: "upi", reference: "UPI-#{rng.rand(100_000..999_999)}", by: cashier, received_on: [day + 2, Date.current].min)
+        when :partial
+          pay.collect!(amount: (pay.amount_due * 0.4).round, mode: "bank_transfer", reference: "NEFT-#{rng.rand(100_000..999_999)}", by: cashier, received_on: day)
+        end
       end
     end
 
@@ -124,7 +167,7 @@ if !Rails.env.production? && ENV["SEED_DEMO"] != "false"
     MaintenanceVisit.assign_due!
     MaintenanceVisit.where(status: "assigned").order(:due_on).first&.finish!("Panels cleaned, inverter readings normal.")
     puts "Demo: #{ServiceRequest.count} requests, #{Installation.count} installations, " \
-         "#{MaintenanceVisit.count} maintenance visits, #{Payment.count} payments"
+         "#{MaintenanceVisit.count} maintenance visits, #{Quote.count} quotes, #{Payment.count} payments, #{Receipt.count} receipts"
   end
 
   # ----- Website visitors -----

@@ -4,7 +4,8 @@ module Admin
       MaintenanceVisit.assign_due!
       @unassigned = ServiceRequest.where(status: RequestWorkflow::ACTIVE_STATUSES, team_member_id: nil).count
       @maintenance_due = MaintenanceVisit.where(status: %w[scheduled assigned]).where("due_on <= ?", Date.current + 7).count
-      @payments_pending = Payment.where(status: "pending").count
+      @payments_pending = Payment.where.not(status: "received").count
+      @outstanding = Payment.where.not(status: "received").includes(:receipts).sum { |p| p.balance || 0 }
       @visits_total  = Visit.count
       @visits_today  = Visit.where(visited_at: Time.current.all_day).count
       @unique_visitors = Visit.distinct.count(:ip_address)

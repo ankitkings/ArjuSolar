@@ -1,0 +1,5 @@
+<p class="no-print">
+  <%= link_to "← Back to payment", admin_payment_path(@receipt.payment) %> ·
+  <%= button_tag "Print receipt", type: "button", class: "btn go", onclick: "window.print()" %>
+</p>
+<%= render "shared/receipt", receipt: @receipt %>

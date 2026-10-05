@@ -1,0 +1,16 @@
+<h1>Systems <%= link_to "+ Add system", new_admin_solar_package_path, class: "btn" %></h1>
+<p class="muted">The installation team picks one of these when they finish an installation. Capacity, panels, brand and inverter are filled in from here.</p>
+<div class="table-wrap"><table>
+  <tr><th>Name</th><th>Capacity</th><th>Price</th><th>Panels</th><th>Panel brand / model</th><th>Inverter</th><th>Installed</th><th>Active</th><th></th></tr>
+  <% @packages.each do |p| %>
+    <tr>
+      <td><%= p.name %></td><td><%= format("%g", p.capacity_kw.to_f) %> kW</td><td><%= inr(p.price) %></td><td><%= p.panel_count %></td>
+      <td><%= p.panel_brand %></td><td><%= p.inverter_model %></td>
+      <td><%= @usage[p.id].to_i %></td><td><%= p.active ? "Yes" : "No" %></td>
+      <td><%= link_to "Edit", edit_admin_solar_package_path(p) %>
+          <%= button_to "Delete", admin_solar_package_path(p), method: :delete, class: "linklike",
+                        form: { style: "display:inline", onsubmit: "return confirm('Remove this system from the list?')" } %></td>
+    </tr>
+  <% end %>
+  <% if @packages.empty? %><tr><td colspan="9" class="muted">No systems yet. Add the capacities you install.</td></tr><% end %>
+</table></div>

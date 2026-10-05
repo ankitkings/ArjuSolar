@@ -1,23 +1,35 @@
 module Staff
+  # Cashier: collect an amount against a payment and get a numbered receipt
   class PaymentsController < BaseController
     before_action :set_payment
 
     def show; end
 
     def update
-      if @payment.status == "received"
-        return redirect_to(staff_root_path, alert: "This payment is already marked as received.")
+      if @payment.fully_paid?
+        return redirect_to(staff_payment_path(@payment), alert: "This payment is already fully received.")
       end
-      @payment.receive!(amount: params[:amount], note: params[:note])
-      redirect_to staff_root_path, notice: "Payment recorded"
-    rescue ActiveRecord::RecordInvalid
+
+      receipt = nil
+      Payment.transaction do
+        if @payment.amount_due.nil?   # older payments without a price: the cashier enters the total once
+          @payment.update!(amount_due: params[:amount_due].presence)
+          raise ActiveRecord::RecordInvalid, @payment if @payment.amount_due.nil?
+        end
+        receipt = @payment.collect!(amount: params[:amount], mode: params[:mode], reference: params[:reference],
+                                    note: params[:note], by: current_staff)
+      end
+      redirect_to staff_receipt_path(receipt), notice: "Payment recorded. Receipt #{receipt.number} created."
+    rescue ActiveRecord::RecordInvalid => e
+      @error = e.record.errors.full_messages.to_sentence.presence || "Enter the total amount due."
+      @payment.reload
       render :show, status: :unprocessable_entity
     end
 
     private
 
     def set_payment
-      @payment = current_staff.payments.find(params[:id])
+      @payment = current_staff.payments.includes(:receipts).find(params[:id])
     end
   end
 end

@@ -6,6 +6,7 @@
     <h3>Customer</h3>
     <p><strong>Phone:</strong> <%= link_to sr.phone, "tel:#{sr.phone.gsub(/[^\d+]/, '')}" %></p>
     <p><strong>Email:</strong> <%= sr.email.presence || "—" %></p>
+    <p><strong>Address:</strong> <%= sr.address.presence || "—" %></p>
     <p><strong>IP:</strong> <%= sr.ip_address || "—" %></p>
     <p><strong>Received:</strong> <%= l sr.created_at, format: :long %></p>
     <p><strong>Message:</strong><br><%= simple_format(h(sr.message)) %></p>
@@ -24,7 +25,7 @@
         <p><b>Completed</b></p>
       <% else %>
         <%= f.label :status, "Move to stage (admin override)" %>
-        <%= f.select :status, (ServiceRequest::STATUSES).map { |s| [s.humanize, s] } %>
+        <%= f.select :status, (ServiceRequest::STATUSES - ["completed"]).map { |s| [s.humanize, s] } %>
       <% end %>
       <%= f.label :team_member_id, "Assigned to" %>
       <%= f.collection_select :team_member_id, TeamMember.where(active: true).order(:department, :name), :id, ->(m) { "#{m.name} (#{m.department_label})" }, include_blank: "Unassigned" %>
@@ -50,8 +51,10 @@
       <% pay = sr.payment %>
       <p><strong>Payment:</strong>
         <% if pay.nil? %>—
-        <% elsif pay.status == "received" %><span class="badge received">Received</span> ₹<%= number_with_delimiter(pay.amount.to_i) %> (<%= pay.team_member&.name %>)
-        <% else %><span class="badge pending">Pending</span> with <%= pay.team_member&.name || "no cashier" %>
+        <% else %>
+          <span class="badge <%= pay.status %>"><%= pay.status.humanize %></span>
+          due <%= inr(pay.amount_due) %> · paid <%= inr(pay.amount_paid) %> · balance <%= inr(pay.balance) %>
+          · <%= link_to "Open payment", admin_payment_path(pay) %>
         <% end %>
       </p>
       <p><strong>Maintenance:</strong></p>
@@ -67,6 +70,21 @@
       <%= link_to "Manage maintenance dates", admin_maintenance_visits_path(filter: "all") %>
     </div>
   </div>
+<% end %>
+
+<% if sr.quotes.any? %>
+  <h2>Quotes</h2>
+  <div class="table-wrap"><table>
+    <tr><th>Quote no.</th><th>System</th><th>Price</th><th>Discount</th><th>Total</th><th>Valid until</th><th>Status</th><th>By</th><th></th></tr>
+    <% sr.quotes.includes(:team_member).each do |q| %>
+      <tr><td><%= q.number %></td><td><%= q.system_name %></td><td><%= inr(q.list_price) %></td>
+          <td><%= q.discount.positive? ? inr(q.discount) : "—" %></td><td><b><%= inr(q.total) %></b></td>
+          <td><%= l q.valid_until, format: :short %></td>
+          <td><span class="badge <%= q.status %>"><%= q.status.humanize %></span></td>
+          <td><%= q.team_member&.name || "—" %></td>
+          <td><%= link_to "View / print", admin_quote_path(q) %></td></tr>
+    <% end %>
+  </table></div>
 <% end %>
 
 <h2>Timeline</h2>

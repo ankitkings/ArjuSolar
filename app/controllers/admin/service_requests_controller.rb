@@ -13,7 +13,7 @@ module Admin
     end
 
     def show
-      @installation = Installation.new(installed_on: Date.current)
+      @installation = Installation.new(installed_on: Date.current, site_address: @service_request.address, solar_package_id: @service_request.accepted_quote&.solar_package_id)
     end
 
     # Admin override: change stage (auto-assigns the next department) and/or reassign by hand
@@ -46,7 +46,7 @@ module Admin
       end
       redirect_to admin_service_request_path(@service_request), notice: "Request updated"
     rescue ActiveRecord::RecordInvalid
-      @installation = Installation.new(installed_on: Date.current)
+      @installation = Installation.new(installed_on: Date.current, site_address: @service_request.address, solar_package_id: @service_request.accepted_quote&.solar_package_id)
       render :show, status: :unprocessable_entity
     end
 
@@ -74,7 +74,7 @@ module Admin
     end
 
     def installation_params
-      params.require(:installation).permit(:installed_on, :capacity_kw, :panel_count, :panel_brand, :inverter_model, :site_address, :notes)
+      params.require(:installation).permit(:installed_on, :solar_package_id, :site_address, :notes)
     end
   end
 end

@@ -1,0 +1,19 @@
+# Catalog of the systems we install (capacity, panels, panel brand, inverter).
+# The installation team picks one when finishing an installation.
+class SolarPackage < ApplicationRecord
+  has_many :installations, dependent: :nullify
+
+  validates :name, presence: true, uniqueness: true
+  validates :capacity_kw, numericality: { greater_than: 0, less_than: 1000 }
+  validates :panel_count, numericality: { only_integer: true, greater_than: 0 }
+  validates :panel_brand, :inverter_model, presence: true
+  validates :price, numericality: { greater_than: 0 }
+
+  scope :available, -> { where(active: true).order(:capacity_kw, :name) }
+
+  def label = "#{name} — #{format('%g', capacity_kw.to_f)} kW — #{Rupees.display(price)}"
+
+  def details
+    "Capacity #{format('%g', capacity_kw.to_f)} kW · #{panel_count} panels · #{panel_brand} · Inverter #{inverter_model} · Price #{Rupees.display(price)}"
+  end
+end

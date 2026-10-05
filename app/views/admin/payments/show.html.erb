@@ -1,0 +1,40 @@
+<p><%= link_to "← Payments", admin_payments_path %></p>
+<% req = @payment.service_request %>
+<h1>Payment — <%= req.name %> <span class="badge <%= @payment.status %>"><%= @payment.status.humanize %></span></h1>
+<div class="stats">
+  <div class="stat"><b><%= inr(@payment.amount_due) %></b><span>Total due</span></div>
+  <div class="stat"><b><%= inr(@payment.amount_paid) %></b><span>Collected</span></div>
+  <div class="stat"><b><%= inr(@payment.balance) %></b><span>Balance</span></div>
+</div>
+<div class="two-col">
+  <div class="panel">
+    <h3>Client</h3>
+    <p><strong>Name:</strong> <%= req.name %></p>
+    <p><strong>Phone:</strong> <%= req.phone %></p>
+    <p><strong>Address:</strong> <%= req.address.presence || "—" %></p>
+    <p><strong>Request:</strong> <%= link_to "##{req.id}", admin_service_request_path(req) %></p>
+    <p><strong>Cashier:</strong> <%= @payment.team_member&.name || "—" %></p>
+  </div>
+  <div class="panel"><% if req.installation %><%= render "shared/installation_summary", installation: req.installation %><% end %></div>
+</div>
+
+<div class="panel" style="margin-top:16px">
+  <h3>Adjust total amount due</h3>
+  <p class="muted small">Use this for a discount or subsidy adjustment. The change is logged on the request timeline.</p>
+  <%= form_with url: admin_payment_path(@payment), method: :patch, class: "filters" do %>
+    <%= number_field_tag :amount_due, @payment.amount_due, step: 0.01, min: 1, required: true %>
+    <%= text_field_tag :reason, nil, placeholder: "Reason (optional)" %>
+    <%= submit_tag "Update", class: "btn" %>
+  <% end %>
+</div>
+
+<h2>Receipts</h2>
+<div class="table-wrap"><table>
+  <tr><th>Receipt no.</th><th>Date</th><th>Amount</th><th>Mode</th><th>Reference</th><th>Received by</th><th></th></tr>
+  <% @payment.receipts.each do |r| %>
+    <tr><td><%= r.number %></td><td><%= l r.received_on, format: :short %></td><td><%= inr(r.amount) %></td>
+        <td><%= r.mode_label %></td><td><%= r.reference.presence || "—" %></td><td><%= r.team_member&.name || "—" %></td>
+        <td><%= link_to "View / print", admin_receipt_path(r) %></td></tr>
+  <% end %>
+  <% if @payment.receipts.empty? %><tr><td colspan="7" class="muted">Nothing collected yet.</td></tr><% end %>
+</table></div>
