@@ -1,6 +1,10 @@
-# Catalog of the systems we install (capacity, panels, panel brand, inverter).
-# The installation team picks one when finishing an installation.
+# Catalog of the systems we install (capacity, panels, panel brand, inverter, price, picture).
+# The installation team picks one when finishing an installation; the admin's picture
+# is shown on the public Systems page.
 class SolarPackage < ApplicationRecord
+  include ImageAttachment
+
+  has_one_attached :image
   has_many :installations, dependent: :nullify
 
   validates :name, presence: true, uniqueness: true
@@ -8,6 +12,7 @@ class SolarPackage < ApplicationRecord
   validates :panel_count, numericality: { only_integer: true, greater_than: 0 }
   validates :panel_brand, :inverter_model, presence: true
   validates :price, numericality: { greater_than: 0 }
+  validates_image :image
 
   scope :available, -> { where(active: true).order(:capacity_kw, :name) }
 

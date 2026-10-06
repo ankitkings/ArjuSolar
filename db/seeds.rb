@@ -65,43 +65,48 @@ if !Rails.env.production? && ENV["SEED_DEMO"] != "false"
 
   if ServiceRequest.none?
     steps = [
-      ["pending",      0,   "Request received from website."],
-      ["contacted",    10,  "Called the client; client is thinking it over."],
-      ["site_visit",   30,  "Client agreed. Sent to the site visitor."],
-      ["quote_sent",   50,  "Site visit done, quotation shared on WhatsApp."],
-      ["installation", 75,  "Quote accepted. Installation in progress."],
-      ["completed",    100, "Installation completed and handed over."]
+      ["pending",       0,   "Request received from website."],
+      ["contacted",     10,  "Called the client; client is thinking it over."],
+      ["site_visit",    30,  "Client agreed. Sent to the site visitor."],
+      ["quote_sent",    50,  "Site visit done, quotation shared on WhatsApp."],
+      ["installation",  75,  "Quote accepted. Installation in progress."],
+      ["payment",       85,  "Installation done. Payment to be collected by the cashier."],
+      ["commissioning", 95,  "Payment received in full. Panels to be started and final touch given."],
+      ["completed",     100, "Panels started, final touch done. Project completed."]
     ]
 
     customers = [
       # name, phone, email, message, final status, days ago
-      ["Amit Sharma",    "+91 98270 45612", "amit.sharma@example.com", "Need a 3kW rooftop system for my house in Vijay Nagar.",       "completed",    40],
-      ["Priya Verma",    "+91 94250 22871", "priya.verma@example.com", "Interested in solar for my shop. Please share subsidy details.", "completed",    36],
-      ["Rajesh Patel",   "+91 99810 33490", nil,                       "Want a 5kW system for our small factory.",                        "completed",    33],
-      ["Sneha Joshi",    "+91 97540 66128", "sneha.j@example.com",     "Looking for rooftop solar with subsidy assistance.",              "installation", 28],
-      ["Vikram Singh",   "+91 98930 77215", nil,                       "Commercial installation for our warehouse, around 20kW.",         "installation", 24],
-      ["Meena Gupta",    "+91 93000 51984", "meena.gupta@example.com", "Please send a quotation for a 2kW home system.",                  "quote_sent",   20],
-      ["Rohit Malviya",  "+91 98260 90433", nil,                       "Need quotation for 4kW. House has a flat terrace.",               "quote_sent",   16],
-      ["Kavita Rathore", "+91 96440 12876", "kavita.r@example.com",    "Can you visit our school building for a site survey?",            "site_visit",   12],
-      ["Sandeep Tiwari", "+91 98270 88301", nil,                       "Call me about solar water pump + panels for my farm.",            "contacted",    8],
-      ["Anjali Dubey",   "+91 99770 14562", "anjali.dubey@example.com","I am interested in solar installation. Please contact me.",      "pending",      5],
-      ["Harish Chouhan", "+91 94251 70998", nil,                       "What is the cost for a 3kW on-grid system?",                      "pending",      3],
-      ["Farhan Ali",     "+91 98931 20456", "farhan.ali@example.com",  "Wanted solar but postponing due to renovation.",                  "cancelled",    22],
-      ["Amit Sharma",    "+91 98270 45612", "amit.sharma@example.com", "Need yearly maintenance (AMC) for my installed system.",           "contacted",    2]
+      ["Amit Sharma",    "+91 98270 45612", "amit.sharma@example.com", "Need a 3kW rooftop system for my house in Vijay Nagar.",       "completed",     40],
+      ["Priya Verma",    "+91 94250 22871", "priya.verma@example.com", "Interested in solar for my shop. Please share subsidy details.", "commissioning", 36],
+      ["Rajesh Patel",   "+91 99810 33490", nil,                       "Want a 5kW system for our small factory.",                        "payment",       33],
+      ["Sneha Joshi",    "+91 97540 66128", "sneha.j@example.com",     "Looking for rooftop solar with subsidy assistance.",              "installation",  28],
+      ["Vikram Singh",   "+91 98930 77215", nil,                       "Commercial installation for our warehouse, around 20kW.",         "installation",  24],
+      ["Meena Gupta",    "+91 93000 51984", "meena.gupta@example.com", "Please send a quotation for a 2kW home system.",                  "quote_sent",    20],
+      ["Rohit Malviya",  "+91 98260 90433", nil,                       "Need quotation for 4kW. House has a flat terrace.",               "quote_sent",    16],
+      ["Kavita Rathore", "+91 96440 12876", "kavita.r@example.com",    "Can you visit our school building for a site survey?",            "site_visit",    12],
+      ["Sandeep Tiwari", "+91 98270 88301", nil,                       "Call me about solar water pump + panels for my farm.",            "contacted",     8],
+      ["Anjali Dubey",   "+91 99770 14562", "anjali.dubey@example.com","I am interested in solar installation. Please contact me.",      "pending",       5],
+      ["Harish Chouhan", "+91 94251 70998", nil,                       "What is the cost for a 3kW on-grid system?",                      "pending",       3],
+      ["Farhan Ali",     "+91 98931 20456", "farhan.ali@example.com",  "Wanted solar but postponing due to renovation.",                  "cancelled",     22],
+      ["Amit Sharma",    "+91 98270 45612", "amit.sharma@example.com", "Need yearly maintenance (AMC) for my installed system.",           "contacted",     2]
     ]
 
-    # installed system data + payment for the three completed requests (in order)
-    addresses = ["Vijay Nagar, Indore", "Palasia, Indore", "Bhawarkua, Indore", "Rau, Indore", "Saket Nagar, Indore", "Sudama Nagar, Indore"]
-    installs  = ["3 kW Home", "2 kW Home", "5 kW Home Plus"]
-    pays     = [:two_receipts, :partial, :none]   # advance + balance, part payment, nothing paid yet
+    addresses = ["12 Shreeji Apartments, Vijay Nagar, Indore 452010", "45 Palasia Main Road, Palasia, Indore", "7 Bhawarkua Square, Bhawarkua, Indore",
+                 "Plot 9, Rau Industrial Area, Rau, Indore", "B-21 Saket Nagar, Saket, Indore", "33 Sudama Nagar, Sudama Nagar, Indore"]
+    quoted = { "Amit Sharma" => "3 kW Home", "Priya Verma" => "2 kW Home", "Rajesh Patel" => "5 kW Home Plus",
+               "Sneha Joshi" => "3 kW Home", "Vikram Singh" => "20 kW Commercial", "Meena Gupta" => "2 kW Home",
+               "Rohit Malviya" => "5 kW Home Plus" }
+    # payment plan for the three requests that already reached the payment stage
+    pay_plan = { "Amit Sharma" => :two_receipts, "Priya Verma" => :two_receipts, "Rajesh Patel" => :partial }
 
     customers.each do |name, phone, email, message, final_status, days_ago|
       created   = now - days_ago.days - rng.rand(0..8).hours
       final_idx = steps.index { |s| s[0] == final_status } || 1
-      path = final_status == "cancelled" ? steps[0..1] + [["cancelled", 10, "Client not agreed. Request cancelled."]] : steps[0..final_idx]
+      path = final_status == "cancelled" ? steps[0..1] + [["cancelled", 0, "Client not agreed. Deal cancelled."]] : steps[0..final_idx]
 
       final  = path.last[0]
-      dept   = RequestWorkflow::DEPARTMENT[final] || (final == "completed" ? "installation" : "contact_person")
+      dept   = RequestWorkflow::DEPARTMENT[final] || (final == "completed" ? "daily_servicing" : "contact_person")
       # pending requests are left unassigned on purpose: the model auto-assigns a contact person
       member = final == "pending" ? nil : TeamMember.where(department: dept).order(:id).offset(rng.rand(0..1)).first
 
@@ -117,9 +122,10 @@ if !Rails.env.production? && ENV["SEED_DEMO"] != "false"
         name: name, phone: phone, email: email, message: message,
         address: addresses.sample(random: rng),
         ip_address: "49.36.#{rng.rand(1..254)}.#{rng.rand(1..254)}",
-        status: final, team_member: member, progress: (final == "cancelled" ? 10 : 0),
+        status: final, team_member: member,
         created_at: created, updated_at: last_time
       )
+      req.update_columns(final_touch_due_on: Date.current) if final == "commissioning"
 
       path.each_with_index do |(st, prog, note), k|
         req.updates.create!(
@@ -130,10 +136,7 @@ if !Rails.env.production? && ENV["SEED_DEMO"] != "false"
       end
 
       # quotes for every request that reached the quote stage (Priya got a discount)
-      if %w[quote_sent installation completed].include?(final)
-        quoted = { "Amit Sharma" => "3 kW Home", "Priya Verma" => "2 kW Home", "Rajesh Patel" => "5 kW Home Plus",
-                   "Sneha Joshi" => "3 kW Home", "Vikram Singh" => "20 kW Commercial", "Meena Gupta" => "2 kW Home",
-                   "Rohit Malviya" => "5 kW Home Plus" }
+      if %w[quote_sent installation payment commissioning completed].include?(final)
         req.quotes.create!(
           solar_package: SolarPackage.find_by!(name: quoted.fetch(name, "3 kW Home")),
           discount: (name == "Priya Verma" ? 5_000 : 0), valid_until: times[3].to_date + 15,
@@ -143,17 +146,18 @@ if !Rails.env.production? && ENV["SEED_DEMO"] != "false"
         )
       end
 
-      if final == "completed"
+      # installed system + payment (demo installations have no photos, so they are not on the website)
+      if %w[payment commissioning completed].include?(final)
         inst = Installation.create!(
           service_request: req, installed_on: last_time.to_date,
-          solar_package: SolarPackage.find_by!(name: installs.shift), site_address: req.address
+          solar_package: SolarPackage.find_by!(name: quoted.fetch(name)), site_address: req.address,
+          public_location: Installation.guess_location(req.address), skip_photo_validation: true
         )
         inst.schedule_maintenance!
-        plan    = pays.shift
-        cashier = TeamMember.where(department: "cashier").order(:id).offset(rng.rand(0..1)).first
+        cashier = (req.team_member if final == "payment") || TeamMember.where(department: "cashier").order(:id).offset(rng.rand(0..1)).first
         pay     = Payment.create!(service_request: req, team_member: cashier, amount_due: req.agreed_amount_for(inst))
         day     = [last_time.to_date + 1, Date.current].min
-        case plan
+        case pay_plan.fetch(name)
         when :two_receipts
           pay.collect!(amount: (pay.amount_due * 0.5).round, mode: "cash", reference: "Advance", by: cashier, received_on: day)
           pay.collect!(amount: pay.balance, mode: "upi", reference: "UPI-#{rng.rand(100_000..999_999)}", by: cashier, received_on: [day + 2, Date.current].min)
@@ -166,8 +170,8 @@ if !Rails.env.production? && ENV["SEED_DEMO"] != "false"
     # visits whose date has already arrived are handed to the servicing team
     MaintenanceVisit.assign_due!
     MaintenanceVisit.where(status: "assigned").order(:due_on).first&.finish!("Panels cleaned, inverter readings normal.")
-    puts "Demo: #{ServiceRequest.count} requests, #{Installation.count} installations, " \
-         "#{MaintenanceVisit.count} maintenance visits, #{Quote.count} quotes, #{Payment.count} payments, #{Receipt.count} receipts"
+    puts "Demo: #{ServiceRequest.count} requests, #{Installation.count} installations, #{MaintenanceVisit.count} maintenance visits, " \
+         "#{Quote.count} quotes, #{Payment.count} payments, #{Receipt.count} receipts"
   end
 
   # ----- Website visitors -----

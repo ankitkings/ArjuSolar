@@ -6,6 +6,14 @@
   <%= f.label :panel_count, "Number of panels" %><%= f.number_field :panel_count, min: 1, required: true %>
   <%= f.label :panel_brand, "Panel brand / model" %><%= f.text_field :panel_brand, required: true %>
   <%= f.label :inverter_model, "Inverter model" %><%= f.text_field :inverter_model, required: true %>
-  <label><%= f.check_box :active %> Available for selection</label>
+  <%= f.label :image, "Picture of the system (shown on the website)" %>
+  <% if package.persisted? && package.image.attached? %>
+    <%= image_tag url_for(package.image), alt: package.name, style: "max-width:260px;border-radius:8px" %>
+    <label><%= check_box_tag :remove_image, "1" %> Remove this picture</label>
+  <% end %>
+  <%= f.file_field :image, accept: "image/jpeg,image/png,image/webp", data: { resize: true } %>
+  <p class="muted small">JPG, PNG or WebP. Shown on the Systems page and the home page.</p>
+  <label><%= f.check_box :active %> Available for selection (and shown on the website)</label>
   <%= f.submit class: "btn" %>
 <% end %>
+<%= render "shared/image_resize" %>

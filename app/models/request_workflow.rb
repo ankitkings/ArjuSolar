@@ -1,7 +1,7 @@
 # The stages of a request, which department owns each stage,
 # and which buttons the stage owner sees.
 class RequestWorkflow
-  ACTIVE_STATUSES   = %w[pending contacted site_visit quote_sent installation].freeze
+  ACTIVE_STATUSES   = %w[pending contacted site_visit quote_sent installation payment commissioning].freeze
   FINISHED_STATUSES = %w[completed cancelled].freeze
 
   # status => department that does the work while the request is in this status
@@ -10,7 +10,9 @@ class RequestWorkflow
     "contacted"    => "contact_person",
     "site_visit"   => "site_visitor",
     "quote_sent"   => "site_visitor",
-    "installation" => "installation"
+    "installation" => "installation",
+    "payment"      => "cashier",          # installation done: the cashier collects the payment
+    "commissioning" => "daily_servicing"  # payment received: start the panels + final touch
   }.freeze
 
   AGREED   = { to: "site_visit", label: "Client agreed → send to site visit", style: "go" }.freeze
@@ -29,6 +31,10 @@ class RequestWorkflow
     "quote_sent" => [
       { to: "installation", label: "Client accepted quote → start installation", style: "go" },
       { to: "cancelled",    label: "Client declined quote → cancel",             style: "stop" }
+    ],
+    # "payment" has no buttons: it moves on by itself when the cashier has received the full amount.
+    "commissioning" => [
+      { to: "completed", label: "Panels started, final touch done → complete", style: "go" }
     ]
   }.freeze
 

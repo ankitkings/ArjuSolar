@@ -1,6 +1,6 @@
 Rails.application.routes.draw do
   root "pages#home"
-  %w[about services projects team contact].each { |p| get p, to: "pages##{p}" }
+  %w[about services projects systems team contact].each { |p| get p, to: "pages##{p}" }
   resources :service_requests, only: :create
 
   get    "admin/login",  to: "sessions#new",     as: :admin_login
@@ -37,6 +37,7 @@ Rails.application.routes.draw do
     resources :payments, only: %i[index show update]
     resources :receipts, only: :show
     resources :quotes, only: :show
+    resources :installations, only: :update
     resources :solar_packages, except: :show
     resources :team_members
   end

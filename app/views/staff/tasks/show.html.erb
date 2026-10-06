@@ -10,21 +10,26 @@
     <p><strong>Received:</strong> <%= l @task.created_at, format: :long %></p>
     <p><strong>Message:</strong><br><%= simple_format(h(@task.message)) %></p>
   </div>
-  <div class="panel">
+  <div class="panel <%= 'cancelled' if @task.status == 'cancelled' %>">
     <h3>Current stage</h3>
-    <div class="bar big"><i style="width:<%= @task.progress %>%"></i></div>
-    <p><span class="badge <%= @task.status %>"><%= @task.status_label %></span> <%= @task.progress %>% complete</p>
+    <%= progress_bar(@task, big: true) %>
+    <p class="<%= 'cancel-text' if @task.status == 'cancelled' %>"><span class="badge <%= @task.status %>"><%= @task.status_label %></span> <%= @task.progress %>%<%= @task.status == "cancelled" ? " – deal cancelled" : " complete" %></p>
     <% if actions.any? %>
       <% if @task.status == "site_visit" %>
         <p class="muted small">After the site visit, create the quote below. Use this button only if the client drops out.</p>
+      <% elsif @task.status == "commissioning" %>
+        <p class="muted small">Payment is received. Start the panels and give the final touch<%= " – due #{l @task.final_touch_due_on, format: :long} (same day or next day)" if @task.final_touch_due_on %>. Then mark it complete – the request reaches 100%.</p>
       <% else %>
         <p class="muted small">After you speak to the client, choose the result. The request is handed to the next team automatically.</p>
       <% end %>
       <%= render "shared/stage_actions", actions: actions, url: advance_staff_task_path(@task) %>
     <% elsif @task.status == "installation" %>
-      <p class="muted">When the installation is finished, fill in the system details below. The request is completed and the payment and maintenance tasks are created automatically.</p>
+      <p class="muted">When the installation is finished, fill in the system details and add photos of the site below. The request then goes to the cashier for payment, and the maintenance checks are scheduled automatically.</p>
+    <% elsif @task.status == "payment" %>
+      <p class="muted">Installation is done. Collect the payment – when it is received in full, the request moves to Daily Servicing (95%).</p>
+      <% if @task.payment %><p><%= link_to "Open payment & collect", staff_payment_path(@task.payment), class: "btn go" %></p><% end %>
     <% elsif @task.status == "cancelled" %>
-      <p class="muted">This request was cancelled.</p>
+      <p class="muted cancel-text">This deal was cancelled (0%).</p>
     <% else %>
       <p class="muted">This request is completed.</p>
     <% end %>

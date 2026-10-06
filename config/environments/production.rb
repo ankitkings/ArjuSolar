@@ -11,6 +11,7 @@ Rails.application.configure do
   config.log_tags = [:request_id]
   config.logger = ActiveSupport::TaggedLogging.logger($stdout)
   config.cache_store = :memory_store
+  config.active_storage.service = :local   # uploads live in storage/ - keep that folder on a persistent disk
   config.i18n.fallbacks = true
   config.active_support.report_deprecations = false
   config.active_record.dump_schema_after_migration = false

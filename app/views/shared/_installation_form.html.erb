@@ -1,5 +1,7 @@
 <% packages = SolarPackage.available %>
-<% if installation.errors.any? %><div class="flash alert"><%= installation.errors.full_messages.to_sentence %></div><% end %>
+<% if installation.errors.any? %>
+  <div class="flash alert"><%= installation.errors.full_messages.to_sentence %>. Please choose the photos again.</div>
+<% end %>
 <% if packages.empty? %>
   <p class="muted">No systems have been set up yet. Ask the admin to add them under Admin → Systems.</p>
 <% else %>
@@ -12,10 +14,18 @@
           { include_blank: "Select the installed system…" }, { required: true, id: "installation_solar_package_id" } %>
     <p id="package-details" class="muted small"></p>
 
+    <%= f.label :photos, "Photos of the finished site (required)" %>
+    <%= f.file_field :photos, multiple: true, required: true, accept: "image/jpeg,image/png,image/webp", data: { resize: true } %>
+    <p class="muted small">Take clear pictures of the installed panels on site. They are shown on the website's Projects page.</p>
+
     <%= f.label :site_address, "Site address (entered by the client – change only if needed)" %>
     <%= f.text_area :site_address, rows: 2, required: true %>
+    <%= f.label :public_location, "Location shown on the website (area + city only)" %>
+    <%= f.text_field :public_location, value: (installation.public_location.presence || Installation.guess_location(installation.site_address)) %>
+    <label><%= f.check_box :show_on_website %> Show this project and its photos on the website</label>
+
     <%= f.label :notes, "Notes" %><%= f.text_area :notes, rows: 2 %>
-    <%= f.submit "Installation done → complete request", class: "btn go" %>
+    <%= f.submit "Installation done → send to payment", class: "btn go" %>
   <% end %>
   <script>
     (function () {
@@ -29,4 +39,5 @@
       show();
     })();
   </script>
+  <%= render "shared/image_resize" %>
 <% end %>

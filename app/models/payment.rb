@@ -32,6 +32,10 @@ class Payment < ApplicationRecord
       text = "Receipt #{receipt.number}: #{Rupees.display(receipt.amount)} received (#{receipt.mode_label})"
       text += ". Balance #{Rupees.display(balance)}" if balance
       req.updates.create!(status: req.status, progress: req.progress, team_member: receipt.team_member, note: text)
+      # Paid in full -> Daily Servicing starts the panels and gives the final touch (95%)
+      if fully_paid? && req.status == "payment"
+        req.advance!(to: "commissioning", by: receipt.team_member, note: "Payment received in full")
+      end
       receipt
     end
   end

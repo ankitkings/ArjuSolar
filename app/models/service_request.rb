@@ -1,10 +1,12 @@
 class ServiceRequest < ApplicationRecord
-  STATUSES = %w[pending contacted site_visit quote_sent installation completed cancelled].freeze
+  STATUSES = %w[pending contacted site_visit quote_sent installation payment commissioning completed cancelled].freeze
 
-  # Progress follows the status. "cancelled" keeps the progress it had.
+  # Progress follows the status. A cancelled deal goes back to 0.
+  # payment = installation done, waiting for the money; commissioning = paid, panels get started + final touch.
   STATUS_PROGRESS = {
-    "pending" => 0, "contacted" => 10, "site_visit" => 30,
-    "quote_sent" => 50, "installation" => 75, "completed" => 100
+    "pending" => 0, "contacted" => 10, "site_visit" => 30, "quote_sent" => 50,
+    "installation" => 75, "payment" => 85, "commissioning" => 95, "completed" => 100,
+    "cancelled" => 0
   }.freeze
 
   belongs_to :team_member, optional: true
@@ -38,10 +40,12 @@ class ServiceRequest < ApplicationRecord
   def advance!(to:, by: nil, admin: nil, note: nil)
     from = status
     self.status = to
+    self.final_touch_due_on = Date.current + 1 if to == "commissioning"   # same day or the next day
     handover = assign_for_status
     transaction do
       save!
       quote_followup(from, to)
+      open_payment_task(agreed_amount_for(installation)) if to == "payment" && installation && payment.nil?
       updates.create!(status: status, progress: progress, team_member: by, admin_user: admin,
                       note: [note.presence, handover].compact.join(" — ").presence)
     end
@@ -53,6 +57,7 @@ class ServiceRequest < ApplicationRecord
     transaction do
       save!
       who = member ? "Assigned to #{member.name} (#{member.department_label}) by admin" : "Unassigned by admin"
+      sync_payment_owner
       updates.create!(status: status, progress: progress, admin_user: admin,
                       note: [note.presence, who].compact.join(" — "))
     end
@@ -85,17 +90,19 @@ class ServiceRequest < ApplicationRecord
     q && q.solar_package_id == inst.solar_package_id ? q.total : inst.package_price
   end
 
-  # Saves the installed system, completes the request and creates the follow-ups:
-  # maintenance visits (servicing team, on their due dates) and a payment task (cashier).
+  # The installer finishes: saves the installed system (with site photos), schedules the
+  # maintenance checks and hands the request to a cashier (payment stage, 85%).
+  # When the cashier has received the full amount, Payment#collect! moves it on to Daily Servicing (95%).
   def complete_installation!(inst, by: nil, admin: nil)
     transaction do
       inst.save!
       visits = inst.schedule_maintenance!
-      pay = open_payment_task(agreed_amount_for(inst))
-      notes = ["Installation completed (#{inst.summary})"]
+      amount = agreed_amount_for(inst)
+      notes = ["Installation done (#{inst.summary})"]
+      notes << "payment of #{Rupees.display(amount)} to be collected" if amount
       notes << "maintenance checks scheduled: #{visits.map { |v| v.due_on.strftime('%d %b %Y') }.join(', ')}" if visits.any?
-      notes << (pay.team_member ? "payment of #{Rupees.display(pay.amount_due)} assigned to #{pay.team_member.name} (Cashier)" : "payment of #{Rupees.display(pay.amount_due)} created, no active cashier – assign manually")
-      advance!(to: "completed", by: by, admin: admin, note: notes.join(" — "))
+      advance!(to: "payment", by: by, admin: admin, note: notes.join(" — "))
+      open_payment_task(amount)
     end
   end
 
@@ -105,6 +112,7 @@ class ServiceRequest < ApplicationRecord
     return unless handover
     transaction do
       save!
+      sync_payment_owner
       updates.create!(status: status, progress: progress, note: handover)
     end
   end
@@ -130,7 +138,7 @@ class ServiceRequest < ApplicationRecord
     return nil unless dept                                            # completed / cancelled keep the last person
     return nil if team_member&.active? && team_member.department == dept   # already the right department
 
-    member = TeamMember.least_busy(dept, :service_requests, "service_requests.status IN (#{RequestWorkflow.active_sql})")
+    member = TeamMember.least_busy(dept)
     self.team_member = member
     if member
       "Auto-assigned to #{member.name} (#{member.department_label})"
@@ -141,8 +149,15 @@ class ServiceRequest < ApplicationRecord
 
   def open_payment_task(price = nil)
     return payment if payment
-    cashier = TeamMember.least_busy("cashier", :payments, "payments.status IN ('pending','partial')")
+    cashier = team_member if team_member&.department == "cashier"   # the cashier who owns the payment stage
+    cashier ||= TeamMember.least_busy("cashier")
     create_payment!(team_member: cashier, amount_due: price)
+  end
+
+  # The payment always belongs to the cashier who owns the request at the payment stage
+  def sync_payment_owner
+    return unless status == "payment" && payment && team_member&.department == "cashier"
+    payment.update!(team_member: team_member) unless payment.team_member_id == team_member_id
   end
 
   def sync_progress_with_status

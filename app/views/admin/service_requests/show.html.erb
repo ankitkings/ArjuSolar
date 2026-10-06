@@ -11,11 +11,11 @@
     <p><strong>Received:</strong> <%= l sr.created_at, format: :long %></p>
     <p><strong>Message:</strong><br><%= simple_format(h(sr.message)) %></p>
   </div>
-  <div class="panel">
+  <div class="panel <%= 'cancelled' if sr.status == 'cancelled' %>">
     <h3>Stage &amp; assignment</h3>
     <% if sr.errors.any? %><div class="flash alert"><%= sr.errors.full_messages.to_sentence %></div><% end %>
-    <div class="bar big"><i style="width:<%= sr.progress %>%"></i></div>
-    <p><span class="badge <%= sr.status %>"><%= sr.status_label %></span> <%= sr.progress %>% complete</p>
+    <%= progress_bar(sr, big: true) %>
+    <p class="<%= 'cancel-text' if sr.status == 'cancelled' %>"><span class="badge <%= sr.status %>"><%= sr.status_label %></span> <%= sr.progress %>%<%= sr.status == "cancelled" ? " – deal cancelled" : " complete" %></p>
     <p class="muted small">
       Stage owner: <b><%= sr.stage_department_label || "—" %></b>.
       Moving a request to a new stage automatically assigns the least busy active member of that department.
@@ -25,10 +25,11 @@
         <p><b>Completed</b></p>
       <% else %>
         <%= f.label :status, "Move to stage (admin override)" %>
-        <%= f.select :status, (ServiceRequest::STATUSES - ["completed"]).map { |s| [s.humanize, s] } %>
+        <%= f.select :status, (ServiceRequest::STATUSES - (sr.status == "commissioning" ? [] : ["completed"])).map { |s| [s.humanize, s] } %>
       <% end %>
       <%= f.label :team_member_id, "Assigned to" %>
-      <%= f.collection_select :team_member_id, TeamMember.where(active: true).order(:department, :name), :id, ->(m) { "#{m.name} (#{m.department_label})" }, include_blank: "Unassigned" %>
+      <%= f.select :team_member_id, team_member_options(sr), include_blank: "Unassigned" %>
+      <p class="muted small">Sorted by workload – the person with the fewest active tasks is first in each department.</p>
       <%= label_tag :note, "Note" %>
       <%= text_area_tag :note, nil, rows: 2 %>
       <%= f.submit "Save", class: "btn" %>
@@ -38,14 +39,23 @@
 
 <% if sr.status == "installation" %>
   <div class="panel" style="margin-top:16px">
-    <h3>Installation done? Enter the system details (completes the request)</h3>
+    <h3>Installation done? Enter the system details and add site photos (sends the request to payment)</h3>
     <%= render "shared/installation_form", installation: @installation, url: complete_admin_service_request_path(sr) %>
   </div>
 <% end %>
 
 <% if sr.installation %>
   <div class="two-col" style="margin-top:16px">
-    <div class="panel"><%= render "shared/installation_summary", installation: sr.installation %></div>
+    <div class="panel">
+      <%= render "shared/installation_summary", installation: sr.installation %>
+      <hr>
+      <h3>Website</h3>
+      <%= form_with model: sr.installation, url: admin_installation_path(sr.installation), method: :patch, class: "form" do |f| %>
+        <%= f.label :public_location, "Location shown on the website" %><%= f.text_field :public_location %>
+        <label><%= f.check_box :show_on_website %> Show this project and its photos on the website</label>
+        <%= f.submit "Save", class: "btn hold" %>
+      <% end %>
+    </div>
     <div class="panel">
       <h3>Follow-ups</h3>
       <% pay = sr.payment %>
