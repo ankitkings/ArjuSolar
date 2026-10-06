@@ -1,0 +1,11 @@
+<div class="card">
+  <%= image_tag package_image_src(package), alt: "#{package.name} solar system", loading: "lazy" %>
+  <h4><%= package.name %> <span class="muted">· <%= format("%g", package.capacity_kw.to_f) %> kW</span></h4>
+  <ul class="specs">
+    <li><%= package.panel_count %> solar panels</li>
+    <li><%= package.panel_brand %></li>
+    <li>Inverter: <%= package.inverter_model %></li>
+  </ul>
+  <p class="price"><span class="muted small">Package price</span><br><b><%= inr(package.price) %></b></p>
+  <%= link_to "Get a quote", contact_path, class: "btn" %>
+</div>

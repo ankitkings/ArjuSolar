@@ -7,3 +7,10 @@
 <p><strong>Inverter:</strong> <%= installation.inverter_model.presence || "—" %></p>
 <p><strong>Site address:</strong> <%= installation.site_address.presence || "—" %></p>
 <% if installation.notes.present? %><p><strong>Notes:</strong> <%= installation.notes %></p><% end %>
+<% if installation.photos.attached? %>
+  <div class="thumbs-row">
+    <% installation.photos.each do |photo| %>
+      <%= link_to image_tag(url_for(photo), alt: "Site photo", loading: "lazy"), url_for(photo), target: "_blank", rel: "noopener" %>
+    <% end %>
+  </div>
+<% end %>

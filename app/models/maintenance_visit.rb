@@ -20,7 +20,7 @@ class MaintenanceVisit < ApplicationRecord
   def self.assign_due!
     count = 0
     where(status: "scheduled").where("due_on <= ?", Date.current).find_each do |visit|
-      member = TeamMember.least_busy("daily_servicing", :maintenance_visits, "maintenance_visits.status = 'assigned'")
+      member = TeamMember.least_busy("daily_servicing")
       next unless member
       visit.assign_to!(member)
       count += 1

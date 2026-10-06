@@ -11,6 +11,7 @@
     <%= link_to "Arju Solars", root_path, class: "brand" %>
     <nav>
       <%= link_to "Home", root_path %><%= link_to "About", about_path %><%= link_to "Services", services_path %>
+      <%= link_to "Systems", systems_path %>
       <%= link_to "Projects", projects_path %><%= link_to "Our Team", team_path %><%= link_to "Contact", contact_path %>
     </nav>
   </div></header>
@@ -25,6 +26,7 @@
     <p><%= link_to "WhatsApp", "https://wa.me/917049465926", target: "_blank", rel: "noopener noreferrer" %> ·
        <%= current_admin ? link_to("Admin Panel", admin_root_path) : link_to("Admin", admin_login_path) %> ·
        <%= link_to "Staff", (current_staff ? staff_root_path : staff_login_path) %></p>
+    <p class="small">Stock photos from <a href="https://www.pexels.com" target="_blank" rel="noopener noreferrer">Pexels</a>. Project photos are taken by our installation team.</p>
     <p class="small">We record anonymous visit data (IP address, browser, pages viewed) to improve our service.</p>
   </div></footer>
 </body>

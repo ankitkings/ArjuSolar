@@ -7,6 +7,7 @@ module Admin
     def index
       @members = TeamMember.order(:department, :name)
       @open_counts = ServiceRequest.where(status: RequestWorkflow::ACTIVE_STATUSES).where.not(team_member_id: nil).group(:team_member_id).count
+      @active_counts = TeamMember.active_task_counts
       @visit_counts = MaintenanceVisit.where(status: "assigned").group(:team_member_id).count
       @payment_counts = Payment.where(status: %w[pending partial]).group(:team_member_id).count
       # money still to be collected, per cashier

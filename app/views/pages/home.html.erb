@@ -14,9 +14,34 @@
 </section>
 
 <section class="wrap">
+  <h2>How it works</h2>
+  <div class="steps">
+    <div class="step"><b>1</b><h4>Free consultation</h4><p>Tell us about your home or business. Our contact person calls you.</p></div>
+    <div class="step"><b>2</b><h4>Site visit &amp; quote</h4><p>We inspect your roof and give you a clear quotation.</p></div>
+    <div class="step"><b>3</b><h4>Installation</h4><p>Our installation team fits your system safely and on time.</p></div>
+    <div class="step"><b>4</b><h4>Start-up</h4><p>After payment, our servicing team starts your panels and gives the final touch.</p></div>
+    <div class="step"><b>5</b><h4>Care</h4><p>Maintenance checks after 15 days and 2 months, and servicing whenever you need it.</p></div>
+  </div>
+</section>
+
+<% if @packages.any? %>
+  <section class="wrap">
+    <h2>Our Systems <%= link_to "See all systems", systems_path, class: "small-link" %></h2>
+    <div class="grid"><% @packages.each do |package| %><%= render "pages/system_card", package: package %><% end %></div>
+  </section>
+<% end %>
+
+<section class="wrap">
   <h2>Our Services <%= link_to "See all services", services_path, class: "small-link" %></h2>
   <%= render "pages/service_cards" %>
 </section>
+
+<% if @projects.any? %>
+  <section class="wrap">
+    <h2>Recent Projects <%= link_to "See all projects", projects_path, class: "small-link" %></h2>
+    <div class="grid"><% @projects.each do |project| %><%= render "pages/project_card", project: project %><% end %></div>
+  </section>
+<% end %>
 
 <section class="cta"><div class="wrap">
   <h2>Ready to go solar?</h2>

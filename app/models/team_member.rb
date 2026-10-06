@@ -25,14 +25,21 @@ class TeamMember < ApplicationRecord
 
   scope :public_listed, -> { where(active: true, show_on_website: true).order(:name) }
 
-  # Active member of a department with the fewest open tasks (ties -> lowest id).
-  # open_condition is a fixed SQL snippet (never user input).
-  def self.least_busy(department, association, open_condition)
-    where(department: department, active: true)
-      .left_joins(association)
-      .group("team_members.id")
-      .order(Arel.sql("COUNT(CASE WHEN #{open_condition} THEN 1 END)"), :id)
-      .take
+  # Active member of a department with the fewest active tasks (ties -> longest-serving member)
+  def self.least_busy(department)
+    members = where(department: department, active: true).order(:id).to_a
+    return nil if members.empty?
+    counts = active_task_counts
+    members.min_by { |m| [counts[m.id], m.id] }
+  end
+
+  # id => number of active tasks (requests in progress + assigned maintenance visits)
+  def self.active_task_counts
+    counts = Hash.new(0)
+    ServiceRequest.where(status: RequestWorkflow::ACTIVE_STATUSES).where.not(team_member_id: nil)
+                  .group(:team_member_id).count.each { |id, n| counts[id] += n }
+    MaintenanceVisit.where(status: "assigned").group(:team_member_id).count.each { |id, n| counts[id] += n }
+    counts
   end
 
   def department_label = DEPARTMENTS[department]

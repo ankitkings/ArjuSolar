@@ -22,8 +22,9 @@ module Admin
       note = params[:note].to_s.strip.presence
       new_status = attrs[:status].presence
 
-      if new_status == "completed" && @service_request.status != "completed"
-        return redirect_to(admin_service_request_path(@service_request), alert: "To complete a request, fill in the installation details form.")
+      if new_status == "completed" && !%w[completed commissioning].include?(@service_request.status)
+        return redirect_to(admin_service_request_path(@service_request),
+                           alert: "A request can be completed only after payment and the final touch (Daily Servicing). Fill in the installation form first.")
       end
 
       old_member_id = @service_request.team_member_id
@@ -59,7 +60,7 @@ module Admin
       @installation.service_request = @service_request
       if @installation.valid?
         @service_request.complete_installation!(@installation, admin: current_admin)
-        redirect_to admin_service_request_path(@service_request), notice: "Installation saved. Maintenance and payment tasks were created."
+        redirect_to admin_service_request_path(@service_request), notice: "Installation saved. The request moved to Payment (85%) and was assigned to a cashier. Maintenance checks are scheduled."
       else
         render :show, status: :unprocessable_entity
       end
@@ -74,7 +75,9 @@ module Admin
     end
 
     def installation_params
-      params.require(:installation).permit(:installed_on, :solar_package_id, :site_address, :notes)
+      params.require(:installation)
+            .permit(:installed_on, :solar_package_id, :site_address, :public_location, :show_on_website, :notes, photos: [])
+            .tap { |attrs| attrs[:photos] = Array(attrs[:photos]).reject(&:blank?) }
     end
   end
 end

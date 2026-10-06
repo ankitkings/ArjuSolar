@@ -19,7 +19,12 @@ module Staff
         receipt = @payment.collect!(amount: params[:amount], mode: params[:mode], reference: params[:reference],
                                     note: params[:note], by: current_staff)
       end
-      redirect_to staff_receipt_path(receipt), notice: "Payment recorded. Receipt #{receipt.number} created."
+      msg = "Payment recorded. Receipt #{receipt.number} created."
+      req = @payment.service_request
+      if req.status == "commissioning"
+        msg += " Paid in full – the request moved to 95% and was assigned to #{req.team_member&.name || 'Daily Servicing (nobody available – admin must assign)'}."
+      end
+      redirect_to staff_receipt_path(receipt), notice: msg
     rescue ActiveRecord::RecordInvalid => e
       @error = e.record.errors.full_messages.to_sentence.presence || "Enter the total amount due."
       @payment.reload

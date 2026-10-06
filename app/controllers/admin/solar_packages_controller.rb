@@ -4,7 +4,7 @@ module Admin
     before_action :set_package, only: %i[edit update destroy]
 
     def index
-      @packages = SolarPackage.order(:capacity_kw, :name)
+      @packages = SolarPackage.with_attached_image.order(:capacity_kw, :name)
       @usage = Installation.group(:solar_package_id).count
     end
 
@@ -20,7 +20,13 @@ module Admin
     def edit; end
 
     def update
-      @package.update(package_params) ? redirect_to(admin_solar_packages_path, notice: "System updated") : render(:edit, status: :unprocessable_entity)
+      @package.assign_attributes(package_params)
+      if @package.save
+        @package.image.purge if params[:remove_image] == "1" && package_params[:image].blank?
+        redirect_to admin_solar_packages_path, notice: "System updated"
+      else
+        render :edit, status: :unprocessable_entity
+      end
     end
 
     def destroy
@@ -35,7 +41,7 @@ module Admin
     end
 
     def package_params
-      params.require(:solar_package).permit(:name, :capacity_kw, :price, :panel_count, :panel_brand, :inverter_model, :active)
+      params.require(:solar_package).permit(:name, :capacity_kw, :price, :panel_count, :panel_brand, :inverter_model, :active, :image)
     end
   end
 end

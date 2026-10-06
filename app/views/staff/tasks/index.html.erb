@@ -13,8 +13,8 @@
     <tr>
       <td><%= t.id %></td><td><%= t.name %></td>
       <td><%= link_to t.phone, "tel:#{t.phone.gsub(/[^\d+]/, '')}" %></td>
-      <td><span class="badge <%= t.status %>"><%= t.status_label %></span></td>
-      <td><div class="bar"><i style="width:<%= t.progress %>%"></i></div> <%= t.progress %>%</td>
+      <td><span class="badge <%= t.status %>"><%= t.status_label %></span><%= " · due #{l t.final_touch_due_on, format: :short}" if t.status == "commissioning" && t.final_touch_due_on %></td>
+      <td><%= progress_bar(t) %></td>
       <td><%= l t.created_at, format: :short %></td>
       <td><%= link_to "Open", staff_task_path(t) %></td>
     </tr>

@@ -62,7 +62,7 @@ module Staff
       @installation.service_request = @task
       if @installation.valid?
         @task.complete_installation!(@installation, by: current_staff)
-        redirect_to staff_root_path, notice: "Installation saved and request completed. Maintenance and payment tasks were created."
+        redirect_to staff_root_path, notice: "Installation saved. The request moved to Payment (85%) and was assigned to a cashier. Maintenance checks are scheduled."
       else
         render :show, status: :unprocessable_entity
       end
@@ -77,7 +77,9 @@ module Staff
     end
 
     def installation_params
-      params.require(:installation).permit(:installed_on, :solar_package_id, :site_address, :notes)
+      params.require(:installation)
+            .permit(:installed_on, :solar_package_id, :site_address, :public_location, :show_on_website, :notes, photos: [])
+            .tap { |attrs| attrs[:photos] = Array(attrs[:photos]).reject(&:blank?) }
     end
   end
 end
