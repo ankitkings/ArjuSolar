@@ -1,4 +1,5 @@
 <% req = quote.service_request %>
+<% items = quote.quote_items.to_a %>
 <div class="receipt quote">
   <div class="receipt-head">
     <div>
@@ -17,18 +18,39 @@
   <p><strong>Prepared for:</strong> <%= req.name %> · <%= req.phone %></p>
   <% if req.address.present? %><p><strong>Site address:</strong> <%= req.address %></p><% end %>
 
-  <div class="table-wrap"><table>
-    <tr><th>System</th><th class="right">Amount</th></tr>
-    <tr>
-      <td><b><%= quote.system_name %></b> — <%= format("%g", quote.capacity_kw.to_f) %> kW solar system<br>
-          <span class="muted small"><%= quote.panel_count %> panels · <%= quote.panel_brand %> · Inverter <%= quote.inverter_model %></span></td>
-      <td class="right"><%= inr(quote.list_price) %></td>
-    </tr>
-    <% if quote.discount.positive? %>
-      <tr><td>Discount</td><td class="right">− <%= inr(quote.discount) %></td></tr>
-    <% end %>
-    <tr><td><b>Total</b></td><td class="right"><b><%= inr(quote.total) %></b></td></tr>
-  </table></div>
+  <% if items.any? %>
+    <p><strong>System:</strong> <%= quote.system_name %> — <%= format("%g", quote.capacity_kw.to_f) %> kW
+      · <%= quote.panel_count %> panels · Inverter <%= quote.inverter_model %></p>
+    <div class="table-wrap"><table>
+      <tr><th>Part</th><th class="right">Quantity</th><th class="right">Unit price</th><th class="right">Amount</th></tr>
+      <% items.each do |i| %>
+        <tr>
+          <td><%= i.description %></td>
+          <td class="right"><%= format("%g", i.quantity) %> <%= i.unit %></td>
+          <td class="right"><%= inr(i.unit_price) %></td>
+          <td class="right"><%= inr(i.line_total) %></td>
+        </tr>
+      <% end %>
+      <tr><td colspan="3" class="right">Subtotal</td><td class="right"><%= inr(quote.list_price) %></td></tr>
+      <% if quote.discount.positive? %>
+        <tr><td colspan="3" class="right">Discount</td><td class="right">− <%= inr(quote.discount) %></td></tr>
+      <% end %>
+      <tr><td colspan="3" class="right"><b>Total</b></td><td class="right"><b><%= inr(quote.total) %></b></td></tr>
+    </table></div>
+  <% else %>
+    <div class="table-wrap"><table>
+      <tr><th>System</th><th class="right">Amount</th></tr>
+      <tr>
+        <td><b><%= quote.system_name %></b> — <%= format("%g", quote.capacity_kw.to_f) %> kW solar system<br>
+            <span class="muted small"><%= quote.panel_count %> panels · <%= quote.panel_brand %> · Inverter <%= quote.inverter_model %></span></td>
+        <td class="right"><%= inr(quote.list_price) %></td>
+      </tr>
+      <% if quote.discount.positive? %>
+        <tr><td>Discount</td><td class="right">− <%= inr(quote.discount) %></td></tr>
+      <% end %>
+      <tr><td><b>Total</b></td><td class="right"><b><%= inr(quote.total) %></b></td></tr>
+    </table></div>
+  <% end %>
 
   <% if quote.notes.present? %><p><strong>Notes:</strong> <%= quote.notes %></p><% end %>
   <p><strong>Prepared by:</strong> <%= quote.team_member&.name || "Arju Solars" %><%= " (Site Visitor)" if quote.team_member %></p>

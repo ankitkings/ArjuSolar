@@ -55,6 +55,39 @@ end
 end
 
 # ---------------------------------------------------------------
+# Parts price list: every part has its own price (used for custom quotes)
+# Prices are examples - change them in Admin > Parts.
+# ---------------------------------------------------------------
+[
+  # category, name, unit, price per unit, capacity per unit (kW)
+  ["panel",      "Waaree 540W Mono PERC panel",             "piece", 9_800,   0.54],
+  ["panel",      "Adani Solar 540W Mono panel",             "piece", 9_500,   0.54],
+  ["panel",      "Tata Power Solar 540W panel",             "piece", 10_200,  0.54],
+  ["panel",      "Vikram Solar 400W panel",                 "piece", 7_600,   0.40],
+  ["inverter",   "Luminous 1kW inverter",                   "piece", 18_000,  1],
+  ["inverter",   "Growatt 2kW inverter",                    "piece", 32_000,  2],
+  ["inverter",   "Luminous 3kW inverter",                   "piece", 45_000,  3],
+  ["inverter",   "Sungrow 5kW inverter",                    "piece", 72_000,  5],
+  ["inverter",   "Sungrow 10kW inverter",                   "piece", 135_000, 10],
+  ["inverter",   "Sungrow 20kW inverter",                   "piece", 240_000, 20],
+  ["mounting",   "GI mounting structure (per kW)",          "kW",    6_000,   nil],
+  ["mounting",   "Elevated structure for terrace (per kW)", "kW",    9_000,   nil],
+  ["cables",     "DC + AC cables and connectors (per kW)",  "kW",    3_500,   nil],
+  ["protection", "ACDB / DCDB protection boxes",            "set",   6_500,   nil],
+  ["protection", "Earthing and lightning arrestor kit",     "set",   5_500,   nil],
+  ["monitoring", "Wi-Fi monitoring device",                 "piece", 3_500,   nil],
+  ["labour",     "Installation and commissioning (per kW)", "kW",    5_000,   nil],
+  ["labour",     "Net-metering and documentation",          "job",   8_000,   nil],
+  ["labour",     "Transport and handling",                  "job",   4_000,   nil]
+].each do |category, name, unit, price, capacity|
+  CatalogItem.find_or_create_by!(category: category, name: name) do |c|
+    c.unit = unit
+    c.unit_price = price
+    c.capacity_kw = capacity
+  end
+end
+
+# ---------------------------------------------------------------
 # DEMO DATA (requests, installations, maintenance, payments, visitors)
 # Skipped in production or with SEED_DEMO=false. Runs only if tables are empty.
 # ---------------------------------------------------------------
@@ -137,6 +170,19 @@ if !Rails.env.production? && ENV["SEED_DEMO"] != "false"
 
       # quotes for every request that reached the quote stage (Priya got a discount)
       if %w[quote_sent installation payment commissioning completed].include?(final)
+        if name == "Rohit Malviya"
+          custom = req.quotes.build(
+            system_name: "Custom 4.32 kW system", discount: 0, valid_until: times[3].to_date + 15, status: "sent",
+            team_member: TeamMember.where(department: "site_visitor").order(:id).first, created_at: times[3], updated_at: times[3]
+          )
+          [["Waaree 540W Mono PERC panel", 8], ["Sungrow 5kW inverter", 1], ["GI mounting structure (per kW)", 4.32],
+           ["DC + AC cables and connectors (per kW)", 4.32], ["ACDB / DCDB protection boxes", 1],
+           ["Earthing and lightning arrestor kit", 1], ["Installation and commissioning (per kW)", 4.32],
+           ["Net-metering and documentation", 1]].each_with_index do |(part, qty), i|
+            custom.quote_items.build(catalog_item: CatalogItem.find_by!(name: part), quantity: qty, position: i)
+          end
+          custom.save!
+        else
         req.quotes.create!(
           solar_package: SolarPackage.find_by!(name: quoted.fetch(name, "3 kW Home")),
           discount: (name == "Priya Verma" ? 5_000 : 0), valid_until: times[3].to_date + 15,
@@ -144,6 +190,7 @@ if !Rails.env.production? && ENV["SEED_DEMO"] != "false"
           team_member: TeamMember.where(department: "site_visitor").order(:id).first,
           created_at: times[3], updated_at: times[3]
         )
+        end
       end
 
       # installed system + payment (demo installations have no photos, so they are not on the website)
@@ -171,7 +218,7 @@ if !Rails.env.production? && ENV["SEED_DEMO"] != "false"
     MaintenanceVisit.assign_due!
     MaintenanceVisit.where(status: "assigned").order(:due_on).first&.finish!("Panels cleaned, inverter readings normal.")
     puts "Demo: #{ServiceRequest.count} requests, #{Installation.count} installations, #{MaintenanceVisit.count} maintenance visits, " \
-         "#{Quote.count} quotes, #{Payment.count} payments, #{Receipt.count} receipts"
+         "#{Quote.count} quotes, #{CatalogItem.count} parts, #{Payment.count} payments, #{Receipt.count} receipts"
   end
 
   # ----- Website visitors -----

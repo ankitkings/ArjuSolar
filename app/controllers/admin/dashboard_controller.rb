@@ -12,6 +12,7 @@ module Admin
       @requests_total = ServiceRequest.count
       @by_status = ServiceRequest.group(:status).count
       @recent = ServiceRequest.order(created_at: :desc).limit(5)
+      @new_requests = ServiceRequest.where(status: "pending").includes(:team_member).order(:created_at).to_a   # not addressed yet, oldest first
     end
   end
 end

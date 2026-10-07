@@ -3,4 +3,9 @@
   <span class="badge <%= @quote.status %>"><%= @quote.status.humanize %></span><%= " (expired)" if @quote.expired? %> ·
   <%= button_tag "Print quote", type: "button", class: "btn go", onclick: "window.print()" %>
 </p>
+<p class="no-print muted">
+  <%= link_to "Download PDF", pdf_admin_quote_path(@quote) %> ·
+  WhatsApp: <%= @quote.whatsapp_sent_at ? "sent on #{l(@quote.whatsapp_sent_at, format: :short)}" : "not sent yet" %> ·
+  Client link: <input type="text" readonly value="<%= public_quote_link(@quote) %>" onclick="this.select()" style="width:60%">
+</p>
 <%= render "shared/quote", quote: @quote %>

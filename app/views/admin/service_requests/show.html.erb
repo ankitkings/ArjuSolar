@@ -44,7 +44,7 @@
   </div>
 <% end %>
 
-<% if sr.installation %>
+<% if sr.installation&.persisted? %>
   <div class="two-col" style="margin-top:16px">
     <div class="panel">
       <%= render "shared/installation_summary", installation: sr.installation %>

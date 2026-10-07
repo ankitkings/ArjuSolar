@@ -1,18 +1,26 @@
 <% packages = SolarPackage.available %>
+<% custom = installation.quote&.custom? %>
 <% if installation.errors.any? %>
   <div class="flash alert"><%= installation.errors.full_messages.to_sentence %>. Please choose the photos again.</div>
 <% end %>
-<% if packages.empty? %>
+<% if packages.empty? && !custom %>
   <p class="muted">No systems have been set up yet. Ask the admin to add them under Admin → Systems.</p>
 <% else %>
   <%= form_with model: installation, url: url, method: :post, class: "form" do |f| %>
     <%= f.label :installed_on, "Installation date" %><%= f.date_field :installed_on, required: true, max: Date.current %>
 
-    <%= f.label :solar_package_id, "System installed" %>
-    <%= f.select :solar_package_id,
-          options_for_select(packages.map { |p| [p.label, p.id, { "data-details" => p.details }] }, installation.solar_package_id),
-          { include_blank: "Select the installed system…" }, { required: true, id: "installation_solar_package_id" } %>
-    <p id="package-details" class="muted small"></p>
+    <% if custom %>
+      <%= f.hidden_field :quote_id %>
+      <p><strong>System installed:</strong> as per the accepted quote <%= installation.quote.number %> —
+        <%= installation.quote.system_name %>, <%= format("%g", installation.quote.capacity_kw.to_f) %> kW
+        (<%= installation.quote.panel_count %> panels, inverter <%= installation.quote.inverter_model %>)</p>
+    <% else %>
+      <%= f.label :solar_package_id, "System installed" %>
+      <%= f.select :solar_package_id,
+            options_for_select(packages.map { |p| [p.label, p.id, { "data-details" => p.details }] }, installation.solar_package_id),
+            { include_blank: "Select the installed system…" }, { required: true, id: "installation_solar_package_id" } %>
+      <p id="package-details" class="muted small"></p>
+    <% end %>
 
     <%= f.label :photos, "Photos of the finished site (required)" %>
     <%= f.file_field :photos, multiple: true, required: true, accept: "image/jpeg,image/png,image/webp", data: { resize: true } %>
@@ -27,6 +35,7 @@
     <%= f.label :notes, "Notes" %><%= f.text_area :notes, rows: 2 %>
     <%= f.submit "Installation done → send to payment", class: "btn go" %>
   <% end %>
+  <% unless custom %>
   <script>
     (function () {
       var sel = document.getElementById("installation_solar_package_id");
@@ -39,5 +48,6 @@
       show();
     })();
   </script>
+  <% end %>
   <%= render "shared/image_resize" %>
 <% end %>

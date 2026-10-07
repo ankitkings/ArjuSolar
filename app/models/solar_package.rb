@@ -6,6 +6,7 @@ class SolarPackage < ApplicationRecord
 
   has_one_attached :image
   has_many :installations, dependent: :nullify
+  has_many :quotes, dependent: :nullify
 
   validates :name, presence: true, uniqueness: true
   validates :capacity_kw, numericality: { greater_than: 0, less_than: 1000 }

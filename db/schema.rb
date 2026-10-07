@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_01_08_000000) do
+ActiveRecord::Schema[7.1].define(version: 2026_01_10_000000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -47,6 +47,18 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_08_000000) do
     t.index ["email"], name: "index_admin_users_on_email", unique: true
   end
 
+  create_table "catalog_items", force: :cascade do |t|
+    t.string "category", null: false
+    t.string "name", null: false
+    t.string "unit", default: "piece", null: false
+    t.decimal "unit_price", precision: 10, scale: 2, null: false
+    t.decimal "capacity_kw", precision: 6, scale: 3
+    t.boolean "active", default: true, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["category", "name"], name: "index_catalog_items_on_category_and_name"
+  end
+
   create_table "installations", force: :cascade do |t|
     t.integer "service_request_id", null: false
     t.date "installed_on", null: false
@@ -62,6 +74,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_08_000000) do
     t.decimal "package_price", precision: 10, scale: 2
     t.string "public_location"
     t.boolean "show_on_website", default: true, null: false
+    t.integer "quote_id"
+    t.index ["quote_id"], name: "index_installations_on_quote_id"
     t.index ["service_request_id"], name: "index_installations_on_service_request_id", unique: true
     t.index ["solar_package_id"], name: "index_installations_on_solar_package_id"
   end
@@ -98,6 +112,23 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_08_000000) do
     t.index ["team_member_id"], name: "index_payments_on_team_member_id"
   end
 
+  create_table "quote_items", force: :cascade do |t|
+    t.integer "quote_id", null: false
+    t.integer "catalog_item_id"
+    t.string "category"
+    t.string "description", null: false
+    t.string "unit"
+    t.decimal "quantity", precision: 8, scale: 2, default: "1.0", null: false
+    t.decimal "unit_price", precision: 10, scale: 2, null: false
+    t.decimal "capacity_kw", precision: 6, scale: 3
+    t.decimal "line_total", precision: 12, scale: 2, null: false
+    t.integer "position", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["catalog_item_id"], name: "index_quote_items_on_catalog_item_id"
+    t.index ["quote_id"], name: "index_quote_items_on_quote_id"
+  end
+
   create_table "quotes", force: :cascade do |t|
     t.integer "service_request_id", null: false
     t.integer "solar_package_id"
@@ -116,7 +147,10 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_08_000000) do
     t.text "notes"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "public_token"
+    t.datetime "whatsapp_sent_at"
     t.index ["number"], name: "index_quotes_on_number", unique: true
+    t.index ["public_token"], name: "index_quotes_on_public_token", unique: true
     t.index ["service_request_id"], name: "index_quotes_on_service_request_id"
     t.index ["solar_package_id"], name: "index_quotes_on_solar_package_id"
     t.index ["team_member_id"], name: "index_quotes_on_team_member_id"
@@ -210,6 +244,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_08_000000) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "installations", "quotes", on_delete: :nullify
   add_foreign_key "installations", "service_requests"
   add_foreign_key "installations", "solar_packages"
   add_foreign_key "maintenance_visits", "installations"
@@ -217,6 +252,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_08_000000) do
   add_foreign_key "maintenance_visits", "team_members"
   add_foreign_key "payments", "service_requests"
   add_foreign_key "payments", "team_members"
+  add_foreign_key "quote_items", "catalog_items"
+  add_foreign_key "quote_items", "quotes"
   add_foreign_key "quotes", "service_requests"
   add_foreign_key "quotes", "solar_packages"
   add_foreign_key "quotes", "team_members"

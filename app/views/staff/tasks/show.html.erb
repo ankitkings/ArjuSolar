@@ -40,7 +40,8 @@
 <% if @task.status == "site_visit" || (@task.status == "quote_sent" && quotes.empty?) %>
   <div class="panel" style="margin-top:16px">
     <h3>Site visit done? Create the quote</h3>
-    <p class="muted small">Pick the system from the price list – the price is filled in automatically. Creating the quote moves the request to "Quote sent".</p>
+    <p class="muted small">Pick a ready-made system – the price is filled in automatically. Creating the quote moves the request to "Quote sent".</p>
+    <p><%= link_to "Client wants a different combination? Arrange the parts yourself →", new_staff_task_quote_path(@task), class: "btn hold" %></p>
     <%= render "shared/quote_form", quote: (@quote || Quote.new), url: staff_task_quotes_path(@task) %>
   </div>
 <% end %>
@@ -52,12 +53,17 @@
       <tr><td><%= q.number %></td><td><%= q.system_name %></td><td><b><%= inr(q.total) %></b></td>
           <td><%= l q.valid_until, format: :short %></td>
           <td><span class="badge <%= q.status %>"><%= q.status.humanize %></span></td>
-          <td><%= link_to "View / print", staff_quote_path(q) %></td></tr>
+          <td><%= link_to "View / print", staff_quote_path(q) %>
+            <% if q.status == "sent" && !q.expired? %>
+              <%= button_to "WhatsApp", whatsapp_staff_quote_path(q), method: :post, class: "btn go", form: { target: "_blank", style: "display:inline" } %>
+            <% end %>
+            <%= "✅ sent" if q.whatsapp_sent_at %></td></tr>
     <% end %>
   </table></div>
   <% if @task.status == "quote_sent" %>
     <details style="margin-top:12px">
       <summary><b>Revise the quote</b> (creates a new quote that replaces the old one)</summary>
+      <p style="margin-top:8px"><%= link_to "Or arrange the parts yourself (custom quote) →", new_staff_task_quote_path(@task), class: "btn hold" %></p>
       <div class="panel" style="margin-top:8px"><%= render "shared/quote_form", quote: (@quote || Quote.new), url: staff_task_quotes_path(@task) %></div>
     </details>
   <% end %>
@@ -70,7 +76,7 @@
   </div>
 <% end %>
 
-<% if @task.installation %>
+<% if @task.installation&.persisted? %>
   <div class="panel" style="margin-top:16px"><%= render "shared/installation_summary", installation: @task.installation %></div>
 <% end %>
 

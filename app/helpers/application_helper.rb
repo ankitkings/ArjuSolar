@@ -34,4 +34,22 @@ module ApplicationHelper
     end
     grouped_options_for_select(groups, service_request.team_member_id)
   end
+
+  # Requests nobody has addressed yet (still "pending"); shown as a badge for the admin
+  def new_request_count
+    @_new_request_count ||= ServiceRequest.where(status: "pending").count
+  end
+
+  # Link the client opens to see the quotation. Set PUBLIC_BASE_URL (e.g. https://www.arjusolars.com)
+  # in production; otherwise the address of the current request is used.
+  def public_quote_link(quote)
+    base = ENV["PUBLIC_BASE_URL"].to_s.chomp("/").presence || request.base_url
+    "#{base}#{public_quote_path(quote.ensure_public_token!)}"
+  end
+
+  # Direct link to the quotation PDF (opens on the client's phone)
+  def public_quote_pdf_link(quote)
+    base = ENV["PUBLIC_BASE_URL"].to_s.chomp("/").presence || request.base_url
+    "#{base}#{public_quote_pdf_path(quote.ensure_public_token!)}"
+  end
 end

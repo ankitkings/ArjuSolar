@@ -8,6 +8,7 @@ class Installation < ApplicationRecord
 
   belongs_to :service_request
   belongs_to :solar_package, optional: true
+  belongs_to :quote, optional: true   # set when the client accepted a custom (parts-based) quote
   has_many :maintenance_visits, dependent: :destroy
   has_many_attached :photos   # taken by the installer on site; shown on the website's Projects page
 
@@ -15,7 +16,7 @@ class Installation < ApplicationRecord
 
   before_validation :copy_from_package
 
-  validates :solar_package, presence: { message: "must be selected" }, on: :create
+  validates :solar_package, presence: { message: "must be selected" }, on: :create, unless: -> { quote&.custom? }
   validates :site_address, presence: true, on: :create
   validates :photos, presence: { message: "are required – take pictures of the finished site" }, on: :create, unless: :skip_photo_validation
   validates :installed_on, presence: true
@@ -23,6 +24,7 @@ class Installation < ApplicationRecord
   validates :panel_count, numericality: { only_integer: true, greater_than: 0 }, allow_nil: true
   validates :service_request_id, uniqueness: true
   validate :installed_on_not_in_future
+  validate :quote_belongs_to_request
   validate :not_too_many_photos
   validates_image :photos
 
@@ -56,13 +58,25 @@ class Installation < ApplicationRecord
 
   private
 
+  # System details come from the accepted custom quote, or from the chosen catalog package
   def copy_from_package
-    return unless solar_package && (new_record? || solar_package_id_changed?)
-    self.capacity_kw    = solar_package.capacity_kw
-    self.panel_count    = solar_package.panel_count
-    self.panel_brand    = solar_package.panel_brand
-    self.inverter_model = solar_package.inverter_model
-    self.package_price  = solar_package.price
+    if quote&.custom? && (new_record? || quote_id_changed?)
+      self.capacity_kw    = quote.capacity_kw
+      self.panel_count    = quote.panel_count
+      self.panel_brand    = quote.panel_brand
+      self.inverter_model = quote.inverter_model
+      self.package_price  = quote.total
+    elsif solar_package && (new_record? || solar_package_id_changed?)
+      self.capacity_kw    = solar_package.capacity_kw
+      self.panel_count    = solar_package.panel_count
+      self.panel_brand    = solar_package.panel_brand
+      self.inverter_model = solar_package.inverter_model
+      self.package_price  = solar_package.price
+    end
+  end
+
+  def quote_belongs_to_request
+    errors.add(:quote, "does not belong to this request") if quote && quote.service_request_id != service_request_id
   end
 
   def installed_on_not_in_future
