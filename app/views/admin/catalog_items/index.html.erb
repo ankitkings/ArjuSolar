@@ -1,0 +1,42 @@
+<h1>Parts price list <%= link_to "+ Add part", new_admin_catalog_item_path(category: @category), class: "btn" %></h1>
+<p class="muted">Every part has its own price. The site visitor picks parts from this list to build a custom quote, and the total is worked out from these prices.</p>
+
+<div class="filters">
+  <label for="category"><b>Show:</b></label>
+  <%= select_tag :category,
+        options_for_select(
+          [["All parts (#{@counts.values.sum})", admin_catalog_items_path]] +
+          CatalogItem::CATEGORIES.map { |key, label| ["#{label} (#{@counts[key].to_i})", admin_catalog_items_path(category: key)] },
+          (@category ? admin_catalog_items_path(category: @category) : admin_catalog_items_path)),
+        onchange: "window.location = this.value" %>
+  <button type="button" class="btn hold" id="expand-all">Expand all</button>
+  <button type="button" class="btn hold" id="collapse-all">Collapse all</button>
+</div>
+
+<% if @items.empty? %><p class="muted">No parts yet. Add your panels, inverters and the rest.</p><% end %>
+<% CatalogItem::CATEGORIES.each do |key, label| %>
+  <% list = @items[key] %>
+  <% next if list.blank? %>
+  <% low, high = list.map(&:unit_price).minmax %>
+  <details class="part-group" <%= "open" if @category == key %>>
+    <summary><b><%= label %></b>
+      <span class="muted">(<%= pluralize(list.size, "part") %> · <%= low == high ? inr(low) : "#{inr(low)} – #{inr(high)}" %>)</span></summary>
+    <div class="table-wrap"><table>
+      <tr><th>Part</th><th>Unit</th><th class="right">Price per unit</th><th>Capacity per unit</th><th>Active</th><th></th></tr>
+      <% list.each do |i| %>
+        <tr>
+          <td><%= i.name %></td><td><%= i.unit %></td><td class="right"><b><%= inr(i.unit_price) %></b></td>
+          <td><%= i.capacity_kw ? "#{format('%g', i.capacity_kw.to_f)} kW" : "—" %></td>
+          <td><%= i.active ? "Yes" : "No" %></td>
+          <td><%= link_to "Edit", edit_admin_catalog_item_path(i) %>
+              <%= button_to "Delete", admin_catalog_item_path(i), method: :delete, class: "linklike",
+                            form: { style: "display:inline", onsubmit: "return confirm('Remove this part from the price list?')" } %></td>
+        </tr>
+      <% end %>
+    </table></div>
+  </details>
+<% end %>
+<script>
+  document.getElementById("expand-all").onclick = function () { document.querySelectorAll("details.part-group").forEach(function (d) { d.open = true; }); };
+  document.getElementById("collapse-all").onclick = function () { document.querySelectorAll("details.part-group").forEach(function (d) { d.open = false; }); };
+</script>

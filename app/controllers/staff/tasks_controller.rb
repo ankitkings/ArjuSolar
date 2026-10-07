@@ -23,7 +23,7 @@ module Staff
     end
 
     def show
-      @installation = Installation.new(installed_on: Date.current, site_address: @task.address, solar_package_id: @task.accepted_quote&.solar_package_id)
+      @installation = @task.new_installation
     end
 
     # Add a note without changing the stage
@@ -78,7 +78,7 @@ module Staff
 
     def installation_params
       params.require(:installation)
-            .permit(:installed_on, :solar_package_id, :site_address, :public_location, :show_on_website, :notes, photos: [])
+            .permit(:installed_on, :solar_package_id, :quote_id, :site_address, :public_location, :show_on_website, :notes, photos: [])
             .tap { |attrs| attrs[:photos] = Array(attrs[:photos]).reject(&:blank?) }
     end
   end

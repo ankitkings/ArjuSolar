@@ -68,12 +68,17 @@ class ServiceRequest < ApplicationRecord
 
   # Site visitor: make a quote from the price list. On the first quote the request
   # moves to "Quote sent"; a later quote replaces the earlier one.
-  def create_quote!(package:, discount: nil, valid_until: nil, notes: nil, by: nil)
+  # `package:` = a ready-made system; `items:` = [[catalog_item, quantity], ...] for a custom quote
+  def create_quote!(package: nil, items: [], system_name: nil, discount: nil, valid_until: nil, notes: nil, by: nil)
     transaction do
       quotes.where(status: "sent").update_all(status: "superseded")
-      quote = quotes.create!(solar_package: package, discount: discount.presence, valid_until: valid_until.presence,
-                             notes: notes.to_s.strip.presence, team_member: by)
+      quote = quotes.build(solar_package: package, system_name: system_name.to_s.strip.presence,
+                           discount: discount.presence, valid_until: valid_until.presence,
+                           notes: notes.to_s.strip.presence, team_member: by)
+      items.each_with_index { |(catalog_item, qty), i| quote.quote_items.build(catalog_item: catalog_item, quantity: qty, position: i) }
+      quote.save!
       text = "Quote #{quote.number} created: #{quote.system_name}, #{Rupees.display(quote.total)}"
+      text += " (custom, #{quote.quote_items.size} parts)" if quote.custom?
       text += " (after a discount of #{Rupees.display(quote.discount)})" if quote.discount.positive?
       if status == "site_visit"
         advance!(to: "quote_sent", by: by, note: text)
@@ -87,7 +92,15 @@ class ServiceRequest < ApplicationRecord
   # What the client has to pay: the accepted quote, if it is for the system that was installed
   def agreed_amount_for(inst)
     q = accepted_quote
-    q && q.solar_package_id == inst.solar_package_id ? q.total : inst.package_price
+    same = q && (inst.quote_id == q.id || (q.solar_package_id && q.solar_package_id == inst.solar_package_id))
+    same ? q.total : inst.package_price
+  end
+
+  # A blank installation form, pre-filled from the client's address and the accepted quote
+  def new_installation
+    q = accepted_quote
+    Installation.new(installed_on: Date.current, site_address: address,
+                     solar_package_id: q&.solar_package_id, quote_id: (q.id if q&.custom?))
   end
 
   # The installer finishes: saves the installed system (with site photos), schedules the

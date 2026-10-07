@@ -1,0 +1,139 @@
+<% catalog = CatalogItem.available.to_a %>
+<% data = catalog.to_h { |c| [c.id, { name: c.name, cat: c.category, price: c.unit_price.to_f, unit: c.unit, cap: c.capacity_kw&.to_f }] } %>
+<% messages = (@quote.errors.full_messages + @quote.quote_items.flat_map { |i| i.errors.full_messages } + [@error]).compact.uniq %>
+<p><%= link_to "← Back to request", staff_task_path(@task) %></p>
+<h1>Custom quote — <%= @task.name %></h1>
+<p class="muted">Add the parts the client wants and how many of each. Every part has its own price from the parts price list, and the total is worked out for you.</p>
+<% if messages.any? %><div class="flash alert"><%= messages.to_sentence %></div><% end %>
+
+<% if catalog.empty? %>
+  <p class="muted">The parts price list is empty. Ask the admin to add parts under Admin → Parts.</p>
+<% else %>
+  <%= form_with url: staff_task_quotes_path(@task), method: :post, class: "form" do %>
+    <%= label_tag :system_name, "System name" %>
+    <%= text_field_tag :system_name, params[:system_name].presence || "Custom solar system" %>
+
+    <div class="actions">
+      <% CatalogItem::CATEGORIES.each do |key, label| %>
+        <% next unless catalog.any? { |c| c.category == key } %>
+        <button type="button" class="btn hold add-part" data-cat="<%= key %>">+ <%= label %></button>
+      <% end %>
+    </div>
+
+    <div class="table-wrap"><table>
+      <thead><tr><th>Part</th><th>Quantity</th><th>Unit</th><th class="right">Unit price</th><th class="right">Amount</th><th></th></tr></thead>
+      <tbody id="parts-body"></tbody>
+      <tfoot>
+        <tr><td colspan="4" class="right">Subtotal</td><td class="right" id="subtotal">₹0</td><td></td></tr>
+        <tr><td colspan="4" class="right"><b>Total (after discount)</b></td><td class="right"><b id="grand-total">₹0</b></td><td></td></tr>
+      </tfoot>
+    </table></div>
+    <p class="muted small" id="capacity-summary"></p>
+
+    <%= label_tag :discount, "Discount (₹, optional)" %>
+    <%= number_field_tag :discount, params[:discount], step: 0.01, min: 0 %>
+    <%= label_tag :valid_until, "Quote valid until" %>
+    <%= date_field_tag :valid_until, (params[:valid_until].presence || Date.current + Quote::DEFAULT_VALIDITY_DAYS), min: Date.current, required: true %>
+    <%= label_tag :notes, "Notes for the client (optional)" %>
+    <%= text_area_tag :notes, params[:notes], rows: 2 %>
+    <%= submit_tag "Create quote", class: "btn go" %>
+  <% end %>
+
+  <template id="row-template">
+    <tr>
+      <td><select name="items[][catalog_item_id]" class="part-select" required></select></td>
+      <td><input type="number" name="items[][quantity]" class="qty" value="1" min="0.01" step="0.01" style="width:90px" required></td>
+      <td class="unit">—</td>
+      <td class="right unit-price">—</td>
+      <td class="right line-total">₹0</td>
+      <td><button type="button" class="linklike remove">Remove</button></td>
+    </tr>
+  </template>
+
+  <script>
+    (function () {
+      var CATALOG = <%= raw json_escape(data.to_json) %>;
+      var CATEGORIES = <%= raw json_escape(CatalogItem::CATEGORIES.to_json) %>;
+      var INITIAL = <%= raw json_escape((@initial || []).to_json) %>;
+      var body = document.getElementById("parts-body");
+      var tpl = document.getElementById("row-template");
+      var discount = document.getElementById("discount");
+
+      function inr(n) { return "₹" + Number(n).toLocaleString("en-IN", { maximumFractionDigits: 2 }); }
+
+      // fill a row's dropdown with the parts of one category (or all of them)
+      function fill(select, cat) {
+        select.innerHTML = "";
+        var blank = document.createElement("option");
+        blank.value = ""; blank.textContent = "Select a part…";
+        select.appendChild(blank);
+        Object.keys(CATEGORIES).forEach(function (c) {
+          if (cat && c !== cat) return;
+          var ids = Object.keys(CATALOG).filter(function (id) { return CATALOG[id].cat === c; });
+          if (!ids.length) return;
+          var group = document.createElement("optgroup");
+          group.label = CATEGORIES[c];
+          ids.forEach(function (id) {
+            var o = document.createElement("option");
+            o.value = id;
+            o.textContent = CATALOG[id].name + " — " + inr(CATALOG[id].price) + " / " + CATALOG[id].unit;
+            group.appendChild(o);
+          });
+          select.appendChild(group);
+        });
+      }
+
+      function recalc() {
+        var subtotal = 0, panelKw = 0, inverterKw = 0;
+        body.querySelectorAll("tr").forEach(function (tr) {
+          var item = CATALOG[tr.querySelector(".part-select").value];
+          var qty = parseFloat(tr.querySelector(".qty").value) || 0;
+          if (!item) {
+            tr.querySelector(".unit").textContent = "—";
+            tr.querySelector(".unit-price").textContent = "—";
+            tr.querySelector(".line-total").textContent = "₹0";
+            return;
+          }
+          var line = item.price * qty;
+          subtotal += line;
+          tr.querySelector(".unit").textContent = item.unit;
+          tr.querySelector(".unit-price").textContent = inr(item.price);
+          tr.querySelector(".line-total").textContent = inr(line);
+          if (item.cat === "panel") panelKw += qty * (item.cap || 0);
+          if (item.cat === "inverter") inverterKw += qty * (item.cap || 0);
+        });
+        var d = parseFloat(discount.value) || 0;
+        document.getElementById("subtotal").textContent = inr(subtotal);
+        document.getElementById("grand-total").textContent = inr(Math.max(subtotal - d, 0));
+        document.getElementById("capacity-summary").textContent =
+          "Solar panels: " + panelKw.toFixed(2) + " kW  ·  Inverter: " + inverterKw.toFixed(2) + " kW";
+      }
+
+      function addRow(cat, id, qty) {
+        var tr = tpl.content.firstElementChild.cloneNode(true);
+        var sel = tr.querySelector(".part-select");
+        fill(sel, cat);
+        if (id) sel.value = String(id);
+        if (qty) tr.querySelector(".qty").value = qty;
+        sel.addEventListener("change", recalc);
+        tr.querySelector(".qty").addEventListener("input", recalc);
+        tr.querySelector(".remove").addEventListener("click", function () { tr.remove(); recalc(); });
+        body.appendChild(tr);
+        recalc();
+      }
+
+      document.querySelectorAll(".add-part").forEach(function (b) {
+        b.addEventListener("click", function () { addRow(b.dataset.cat); });
+      });
+      discount.addEventListener("input", recalc);
+
+      if (INITIAL.length) {
+        INITIAL.forEach(function (r) { var it = CATALOG[r.id]; addRow(it ? it.cat : null, r.id, r.qty); });
+      } else {
+        ["panel", "inverter"].forEach(function (c) {
+          if (Object.keys(CATALOG).some(function (id) { return CATALOG[id].cat === c; })) addRow(c);
+        });
+      }
+    })();
+  </script>
+<% end %>

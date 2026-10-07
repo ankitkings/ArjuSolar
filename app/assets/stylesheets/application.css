@@ -39,7 +39,7 @@ button.btn{border:0;font:inherit;font-weight:600;cursor:pointer;padding:10px 16p
 .receipt th,.receipt td{white-space:normal}
 .right{text-align:right}.badge.partial{background:#fef3c7}
 @media print{
-  body.admin aside,.no-print,.flash{display:none !important}
+  body.admin aside,.no-print,.flash,.site-header,.site-footer{display:none !important}
   body.admin{display:block}.admin-main{padding:0}
   .receipt{border:0;max-width:none;padding:0}
 }
@@ -73,3 +73,20 @@ button.btn{border:0;font:inherit;font-weight:600;cursor:pointer;padding:10px 16p
 
 /* new stages */
 .badge.payment{background:#fef3c7}.badge.commissioning{background:#ede9fe}
+
+/* quote builder */
+#parts-body select{max-width:420px}#parts-body td{white-space:normal}
+
+/* new-request indicators */
+.alert-new{background:#fef2f2;border:2px solid #dc2626;border-radius:12px;padding:14px 18px;margin-bottom:16px}
+.alert-new h3{margin:0 0 4px;color:#b91c1c}
+.all-clear{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:10px 16px;margin-bottom:16px;color:#166534}
+.stat.alert{border:2px solid #dc2626;background:#fef2f2}.stat.alert b{color:#b91c1c}
+.nav-badge{background:#dc2626;color:#fff;border-radius:99px;padding:0 8px;font-size:.75rem;font-weight:700;margin-left:6px}
+tr.new-request td{background:#fff7ed}
+.badge.new{background:#dc2626;color:#fff;font-weight:700}
+td.overdue{color:#b91c1c;font-weight:700}
+/* parts list groups */
+details.part-group{background:#fff;border:1px solid var(--line);border-radius:12px;margin-bottom:10px;padding:10px 14px}
+details.part-group summary{cursor:pointer;font-size:1.05rem}
+details.part-group[open] summary{margin-bottom:10px}

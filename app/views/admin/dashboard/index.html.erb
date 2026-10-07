@@ -1,4 +1,25 @@
 <h1>Dashboard</h1>
+<% if @new_requests.any? %>
+  <div class="alert-new">
+    <h3>🔔 <%= pluralize(@new_requests.size, "new request") %> not addressed yet</h3>
+    <p class="small">Nobody has contacted these clients yet. The oldest has been waiting <b><%= time_ago_in_words(@new_requests.first.created_at) %></b>.</p>
+    <div class="table-wrap"><table>
+      <tr><th>Client</th><th>Phone</th><th>Waiting</th><th>Assigned to</th><th></th></tr>
+      <% @new_requests.first(8).each do |r| %>
+        <tr>
+          <td><b><%= r.name %></b></td><td><%= r.phone %></td>
+          <td class="<%= 'overdue' if r.created_at < 24.hours.ago %>"><%= time_ago_in_words(r.created_at) %><%= " – overdue" if r.created_at < 24.hours.ago %></td>
+          <td><%= r.team_member&.name || "Nobody yet" %></td>
+          <td><%= link_to "Open", admin_service_request_path(r) %></td>
+        </tr>
+      <% end %>
+    </table></div>
+    <p><%= link_to "See all #{@new_requests.size} new requests →", admin_service_requests_path(status: "pending") %>
+      <%= " (showing the 8 oldest)" if @new_requests.size > 8 %></p>
+  </div>
+<% else %>
+  <div class="all-clear">✅ All new requests have been addressed.</div>
+<% end %>
 <div class="stats">
   <div class="stat"><b><%= @visits_total %></b><span>Total visits</span></div>
   <div class="stat"><b><%= @visits_today %></b><span>Visits today</span></div>
@@ -6,6 +27,7 @@
   <div class="stat"><b><%= @requests_total %></b><span>Requests</span></div>
 </div>
 <div class="stats">
+  <%= link_to admin_service_requests_path(status: "pending"), class: "stat #{'alert' if @new_requests.any?}" do %><b><%= @new_requests.size %></b><span>New requests (not addressed)</span><% end %>
   <%= link_to admin_service_requests_path(unassigned: 1), class: "stat" do %><b><%= @unassigned %></b><span>Unassigned requests</span><% end %>
   <%= link_to admin_maintenance_visits_path, class: "stat" do %><b><%= @maintenance_due %></b><span>Maintenance due (7 days)</span><% end %>
   <%= link_to admin_payments_path, class: "stat" do %><b><%= @payments_pending %></b><span>Payments pending (<%= inr(@outstanding) %> outstanding)</span><% end %>
