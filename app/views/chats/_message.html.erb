@@ -1,0 +1,10 @@
+<% mine = message.sender_type == me.class.name && message.sender_id == me.id %>
+<div class="msg <%= 'mine' if mine %>" data-id="<%= message.id %>">
+  <div class="bubble">
+    <% unless mine %>
+      <div class="who"><%= person_name(message.sender) %> <span class="muted"><%= person_subtitle(message.sender) %></span></div>
+    <% end %>
+    <div class="text"><%= simple_format(h(message.body)) %></div>
+    <div class="time"><%= l message.created_at, format: "%d %b, %I:%M %p" %></div>
+  </div>
+</div>

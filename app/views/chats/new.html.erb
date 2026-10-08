@@ -1,0 +1,15 @@
+<h1>New group chat</h1>
+<p><%= link_to "← Back to chat", chats_path_for %></p>
+<% if @error %><div class="flash alert"><%= @error %></div><% end %>
+<%= form_with url: chats_path_for, method: :post, class: "form" do %>
+  <%= label_tag :name, "Group name (e.g. Installation team)" %>
+  <%= text_field_tag :name, params[:name], required: true, maxlength: 60 %>
+  <p><b>Choose the people in this group</b> <span class="muted small">(you are added automatically)</span></p>
+  <% @people.group_by { |p| person_subtitle(p) }.each do |group, list| %>
+    <h4><%= group %></h4>
+    <% list.each do |p| %>
+      <label><%= check_box_tag "member_keys[]", person_key(p), Array(params[:member_keys]).include?(person_key(p)), id: "member_#{person_key(p).tr(':', '_')}" %> <%= person_name(p) %></label>
+    <% end %>
+  <% end %>
+  <%= submit_tag "Create group", class: "btn go" %>
+<% end %>

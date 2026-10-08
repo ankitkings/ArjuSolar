@@ -13,6 +13,7 @@ class TeamMember < ApplicationRecord
   has_many :request_updates, dependent: :nullify
   has_many :maintenance_visits, dependent: :nullify
   has_many :payments, dependent: :nullify
+  has_many :chat_memberships, as: :member, dependent: :destroy
 
   before_validation { self.email = email.to_s.strip.downcase.presence }
 

@@ -33,6 +33,16 @@ end
 end
 
 # ---------------------------------------------------------------
+# Team chat: the shared "Everyone" group with a welcome message
+# ---------------------------------------------------------------
+everyone = Chat.everyone
+everyone.add_member(AdminUser.first)
+TeamMember.where(active: true).where.not(password_digest: nil).find_each { |m| everyone.add_member(m) }
+if everyone.messages.none?
+  everyone.messages.create!(sender: AdminUser.first, body: "Welcome to the team chat! Use this group for everyone, or start a personal or group chat from the list on the left.")
+end
+
+# ---------------------------------------------------------------
 # System catalog (the installation team picks from this list)
 # Prices are examples - change them in Admin > Systems.
 # ---------------------------------------------------------------

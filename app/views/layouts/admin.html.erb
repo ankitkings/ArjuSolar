@@ -19,6 +19,7 @@
     <%= link_to "Systems", admin_solar_packages_path %>
     <%= link_to "Parts", admin_catalog_items_path %>
     <%= link_to "Team", admin_team_members_path %>
+    <%= link_to admin_chats_path do %>Chat<span class="nav-badge" id="chat-badge" style="<%= 'display:none' unless chat_unread_count(current_admin).positive? %>"><%= chat_unread_count(current_admin) %></span><% end %>
     <%= link_to "View site", root_path %>
     <%= button_to "Log out", admin_logout_path, method: :delete, class: "linklike" %>
   </aside>
@@ -26,5 +27,6 @@
     <% flash.each do |type, msg| %><div class="flash <%= type %>"><%= msg %></div><% end %>
     <%= yield %>
   </main>
+  <%= render "shared/chat_notifier", url: notifications_admin_chats_path, user_key: "admin:#{current_admin.id}" %>
 </body>
 </html>

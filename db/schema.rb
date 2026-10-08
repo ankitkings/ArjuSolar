@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_01_10_000000) do
+ActiveRecord::Schema[7.1].define(version: 2026_01_11_000000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -57,6 +57,40 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_10_000000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["category", "name"], name: "index_catalog_items_on_category_and_name"
+  end
+
+  create_table "chat_memberships", force: :cascade do |t|
+    t.integer "chat_id", null: false
+    t.string "member_type", null: false
+    t.bigint "member_id", null: false
+    t.bigint "last_read_message_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["chat_id", "member_type", "member_id"], name: "index_chat_memberships_uniqueness", unique: true
+    t.index ["chat_id"], name: "index_chat_memberships_on_chat_id"
+    t.index ["member_type", "member_id"], name: "index_chat_memberships_on_member_type_and_member_id"
+  end
+
+  create_table "chat_messages", force: :cascade do |t|
+    t.integer "chat_id", null: false
+    t.string "sender_type", null: false
+    t.bigint "sender_id", null: false
+    t.text "body", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["chat_id", "id"], name: "index_chat_messages_on_chat_id_and_id"
+    t.index ["chat_id"], name: "index_chat_messages_on_chat_id"
+  end
+
+  create_table "chats", force: :cascade do |t|
+    t.string "kind", null: false
+    t.string "name"
+    t.string "direct_key"
+    t.string "system_key"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["direct_key"], name: "index_chats_on_direct_key", unique: true
+    t.index ["system_key"], name: "index_chats_on_system_key", unique: true
   end
 
   create_table "installations", force: :cascade do |t|
@@ -244,6 +278,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_10_000000) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "chat_memberships", "chats"
+  add_foreign_key "chat_messages", "chats"
   add_foreign_key "installations", "quotes", on_delete: :nullify
   add_foreign_key "installations", "service_requests"
   add_foreign_key "installations", "solar_packages"
