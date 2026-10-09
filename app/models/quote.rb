@@ -16,6 +16,7 @@ class Quote < ApplicationRecord
   before_validation :copy_from_package, on: :create
   before_validation :compute_from_items
   before_validation :calculate_total
+  before_validation :compute_subsidy
 
   validates :solar_package, presence: { message: "must be selected" }, on: :create, unless: -> { quote_items.any? }
   validates :list_price, numericality: { greater_than: 0 }
@@ -46,12 +47,13 @@ class Quote < ApplicationRecord
              "",
              "System: #{system_name} (#{format('%g', capacity_kw.to_f)} kW)",
              "Total: #{Rupees.display(total)}#{" (after a discount of #{Rupees.display(discount)})" if discount.positive?}",
+             (subsidy_amount.positive? ? "After the PM Surya Ghar government subsidy of #{Rupees.display(subsidy_amount)}, your effective cost is #{Rupees.display(net_cost)}" : nil),
              "Valid until: #{valid_until.strftime('%d %b %Y')}",
              "",
              (pdf_link ? "Your quotation (PDF): #{pdf_link}\nView online: #{link}" : "View / download your quotation: #{link}"),
              "",
              "Please reply here if you have any questions. Thank you!"]
-    lines.join("\n")
+    lines.compact.join("\n")
   end
 
   # opens WhatsApp to the client's number with the message ready to send
@@ -62,6 +64,9 @@ class Quote < ApplicationRecord
   # built from individual parts (not from a ready-made package)
   def custom? = quote_items.any?
   def expired? = status == "sent" && valid_until < Date.current
+
+  # what the client effectively pays once the government subsidy reaches their bank account
+  def net_cost = total - subsidy_amount
 
   def details
     "#{format('%g', capacity_kw.to_f)} kW · #{panel_count} panels · #{panel_brand} · Inverter #{inverter_model}"
@@ -97,6 +102,15 @@ class Quote < ApplicationRecord
     self.panel_brand    = panels.map(&:description).uniq.join(" + ").presence
     self.inverter_model = inverters.map(&:description).uniq.join(" + ").presence
     self.system_name    = system_name.presence || "Custom solar system"
+  end
+
+  # Home systems: central subsidy for this capacity (never more than the price)
+  def compute_subsidy
+    self.subsidy_amount = if subsidy_applies && total && capacity_kw
+                            [SubsidyScheme.current.amount_for(capacity_kw), total].min
+                          else
+                            0
+                          end
   end
 
   def calculate_total

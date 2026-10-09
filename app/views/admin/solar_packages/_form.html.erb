@@ -13,6 +13,7 @@
   <% end %>
   <%= f.file_field :image, accept: "image/jpeg,image/png,image/webp", data: { resize: true } %>
   <p class="muted small">JPG, PNG or WebP. Shown on the Systems page and the home page.</p>
+  <label><%= f.check_box :subsidy_eligible %> Home (residential) system – eligible for the PM Surya Ghar subsidy</label>
   <label><%= f.check_box :active %> Available for selection (and shown on the website)</label>
   <%= f.submit class: "btn" %>
 <% end %>

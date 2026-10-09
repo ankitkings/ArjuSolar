@@ -42,7 +42,7 @@
     <h3>Site visit done? Create the quote</h3>
     <p class="muted small">Pick a ready-made system – the price is filled in automatically. Creating the quote moves the request to "Quote sent".</p>
     <p><%= link_to "Client wants a different combination? Arrange the parts yourself →", new_staff_task_quote_path(@task), class: "btn hold" %></p>
-    <%= render "shared/quote_form", quote: (@quote || Quote.new), url: staff_task_quotes_path(@task) %>
+    <%= render "shared/quote_form", quote: (@quote || Quote.new(subsidy_applies: true)), url: staff_task_quotes_path(@task) %>
   </div>
 <% end %>
 <% if quotes.any? %>
@@ -64,7 +64,7 @@
     <details style="margin-top:12px">
       <summary><b>Revise the quote</b> (creates a new quote that replaces the old one)</summary>
       <p style="margin-top:8px"><%= link_to "Or arrange the parts yourself (custom quote) →", new_staff_task_quote_path(@task), class: "btn hold" %></p>
-      <div class="panel" style="margin-top:8px"><%= render "shared/quote_form", quote: (@quote || Quote.new), url: staff_task_quotes_path(@task) %></div>
+      <div class="panel" style="margin-top:8px"><%= render "shared/quote_form", quote: (@quote || Quote.new(subsidy_applies: true)), url: staff_task_quotes_path(@task) %></div>
     </details>
   <% end %>
 <% end %>

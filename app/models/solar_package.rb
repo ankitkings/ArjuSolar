@@ -17,6 +17,14 @@ class SolarPackage < ApplicationRecord
 
   scope :available, -> { where(active: true).order(:capacity_kw, :name) }
 
+  # Central subsidy for a home system of this size, and what the client effectively pays
+  def subsidy_amount
+    return 0 unless subsidy_eligible
+    [SubsidyScheme.current.amount_for(capacity_kw), price.to_d].min
+  end
+
+  def effective_cost = price.to_d - subsidy_amount
+
   def label = "#{name} — #{format('%g', capacity_kw.to_f)} kW — #{Rupees.display(price)}"
 
   def details

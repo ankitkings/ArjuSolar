@@ -25,10 +25,10 @@ end
   TeamMember.find_or_create_by!(name: name, department: dept) do |m|
     m.phone = phone
     m.bio = bio
-    unless Rails.env.production?
+    # unless Rails.env.production?
       m.email = "#{name.parameterize}@arjusolars.com"
-      m.password = "Team@12345"
-    end
+      m.password = "Team@12"
+    # end
   end
 end
 

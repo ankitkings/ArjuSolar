@@ -1,0 +1,23 @@
+<% scheme = SubsidyScheme.current %>
+<% if scheme.active %>
+  <section class="subsidy-box">
+    <h2>Government subsidy for your home – PM Surya Ghar: Muft Bijli Yojana</h2>
+    <p>Households can get a central government subsidy when they install rooftop solar. The amount depends on the size of the system:</p>
+    <div class="table-wrap"><table>
+      <tr><th>System size</th><th class="right">Central subsidy</th></tr>
+      <tr><td>1 kW</td><td class="right"><b><%= inr(scheme.amount_for(1)) %></b></td></tr>
+      <tr><td>2 kW</td><td class="right"><b><%= inr(scheme.amount_for(2)) %></b></td></tr>
+      <tr><td><%= format("%g", scheme.cap_kw.to_f) %> kW and above</td><td class="right"><b><%= inr(scheme.maximum) %></b></td></tr>
+    </table></div>
+    <h3>How you get the subsidy</h3>
+    <ol>
+      <li>Register on the national portal <b>pmsuryaghar.gov.in</b> with your electricity consumer number and apply for rooftop solar.</li>
+      <li>Your electricity company (DISCOM) checks that your roof and connection are suitable and sends its approval.</li>
+      <li>After approval, a registered installer such as Arju Solars installs the system.</li>
+      <li>The installation details are submitted and a net meter is requested.</li>
+      <li>The DISCOM inspects the system, fits the net meter, and a commissioning certificate is issued on the portal.</li>
+      <li>You enter your bank details on the portal. The subsidy is credited to your bank account, usually within about 30 days.</li>
+    </ol>
+    <p class="muted small">You pay the system price first; the subsidy reaches your own bank account afterwards. Eligibility rules apply (a home with a valid electricity connection and no earlier solar subsidy). We guide you through the paperwork – <%= link_to "ask us", contact_path %>.</p>
+  </section>
+<% end %>

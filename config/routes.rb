@@ -72,6 +72,7 @@ Rails.application.routes.draw do
     resources :installations, only: :update
     resources :solar_packages, except: :show
     resources :catalog_items, path: "parts", except: :show
+    resource :subsidy, only: %i[show update], controller: "subsidy_schemes"
     resources :team_members
   end
 

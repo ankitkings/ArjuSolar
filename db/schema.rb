@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_01_11_000000) do
+ActiveRecord::Schema[7.1].define(version: 2026_01_12_000000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -183,6 +183,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_11_000000) do
     t.datetime "updated_at", null: false
     t.string "public_token"
     t.datetime "whatsapp_sent_at"
+    t.boolean "subsidy_applies", default: false, null: false
+    t.decimal "subsidy_amount", precision: 10, scale: 2, default: "0.0", null: false
     t.index ["number"], name: "index_quotes_on_number", unique: true
     t.index ["public_token"], name: "index_quotes_on_public_token", unique: true
     t.index ["service_request_id"], name: "index_quotes_on_service_request_id"
@@ -247,6 +249,18 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_11_000000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.decimal "price", precision: 10, scale: 2
+    t.boolean "subsidy_eligible", default: true, null: false
+  end
+
+  create_table "subsidy_schemes", force: :cascade do |t|
+    t.string "name", default: "PM Surya Ghar: Muft Bijli Yojana", null: false
+    t.decimal "first_slab_kw", precision: 5, scale: 2, default: "2.0", null: false
+    t.decimal "first_rate", precision: 10, scale: 2, default: "30000.0", null: false
+    t.decimal "cap_kw", precision: 5, scale: 2, default: "3.0", null: false
+    t.decimal "second_rate", precision: 10, scale: 2, default: "18000.0", null: false
+    t.boolean "active", default: true, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "team_members", force: :cascade do |t|

@@ -52,6 +52,17 @@
     </table></div>
   <% end %>
 
+  <% if quote.subsidy_amount.positive? %>
+    <div class="table-wrap"><table>
+      <tr><td>Total payable to Arju Solars</td><td class="right"><%= inr(quote.total) %></td></tr>
+      <tr>
+        <td>Less: central subsidy – PM Surya Ghar: Muft Bijli Yojana<br>
+            <span class="muted small">Paid by the government directly into your bank account after the system is commissioned. We help you with the application.</span></td>
+        <td class="right">− <%= inr(quote.subsidy_amount) %></td>
+      </tr>
+      <tr><td><b>Your effective cost after subsidy</b></td><td class="right"><b><%= inr(quote.net_cost) %></b></td></tr>
+    </table></div>
+  <% end %>
   <% if quote.notes.present? %><p><strong>Notes:</strong> <%= quote.notes %></p><% end %>
   <p><strong>Prepared by:</strong> <%= quote.team_member&.name || "Arju Solars" %><%= " (Site Visitor)" if quote.team_member %></p>
   <p class="muted small">This quotation is valid until the date shown above. This is a computer-generated document.</p>

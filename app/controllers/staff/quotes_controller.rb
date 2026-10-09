@@ -22,11 +22,13 @@ module Staff
           return render(:new, status: :unprocessable_entity)
         end
         quote = @task.create_quote!(items: items, system_name: params[:system_name], discount: params[:discount],
-                                    valid_until: params[:valid_until], notes: params[:notes], by: current_staff)
+                                    valid_until: params[:valid_until], notes: params[:notes],
+                                    subsidy_applies: params[:subsidy_applies] == "1", by: current_staff)
       else
         attrs = quote_params
         quote = @task.create_quote!(package: SolarPackage.find_by(id: attrs[:solar_package_id]), discount: attrs[:discount],
-                                    valid_until: attrs[:valid_until], notes: attrs[:notes], by: current_staff)
+                                    valid_until: attrs[:valid_until], notes: attrs[:notes],
+                                    subsidy_applies: attrs[:subsidy_applies], by: current_staff)
       end
       msg = "Quote #{quote.number} created."
       msg += " The request moved to Quote sent." if first_quote
@@ -100,7 +102,7 @@ module Staff
     end
 
     def quote_params
-      params.require(:quote).permit(:solar_package_id, :discount, :valid_until, :notes)
+      params.require(:quote).permit(:solar_package_id, :discount, :valid_until, :notes, :subsidy_applies)
     end
 
     # [[catalog_item, quantity], ...] - prices are always taken from the price list, never from the browser
