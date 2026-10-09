@@ -84,6 +84,21 @@ class QuotePdf
       row(last_row).font_style = :bold
       columns(1..last_col).align = :right
     end
+
+    if @q.subsidy_amount.positive?
+      pdf.move_down 10
+      subsidy_rows = [["Total payable to Arju Solars", rs(@q.total)],
+                      ["Less: central subsidy - PM Surya Ghar: Muft Bijli Yojana\n(paid by the government to your bank account after commissioning)", "- #{rs(@q.subsidy_amount)}"],
+                      ["Your effective cost after subsidy", rs(@q.net_cost)]]
+      pdf.table(subsidy_rows, column_widths: [415, 100]) do
+        cells.size = 9
+        cells.padding = [6, 6]
+        cells.borders = [:bottom]
+        cells.border_color = "CCCCCC"
+        row(2).font_style = :bold
+        columns(1).align = :right
+      end
+    end
     pdf.move_down 14
   end
 

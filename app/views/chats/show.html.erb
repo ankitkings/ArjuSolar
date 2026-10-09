@@ -1,0 +1,82 @@
+<h1>Chat</h1>
+<div id="chat-open" data-chat-id="<%= @chat.id %>" hidden></div>
+<div class="chat-wrap">
+  <%= render "chats/sidebar" %>
+  <section class="chat-main">
+    <div class="chat-head">
+      <h2><%= @chat.group? ? "👥" : "👤" %> <%= chat_title(@chat, chat_user) %></h2>
+      <p class="muted small">
+        <% if @chat.group? %>
+          Members: <%= @chat.members.map { |m| person_name(m) }.join(", ") %>
+        <% else %>
+          <%= person_subtitle(@chat.other_member(chat_user)) %> · personal chat
+        <% end %>
+      </p>
+    </div>
+
+    <div id="messages" class="chat-messages">
+      <%= render partial: "chats/message", collection: @messages, as: :message, locals: { me: chat_user } %>
+      <% if @messages.empty? %><p class="muted" id="empty-note">No messages yet – say hello!</p><% end %>
+    </div>
+
+    <%= form_with url: send_path_for(@chat), method: :post, id: "chat-form", class: "chat-form" do %>
+      <%= text_area_tag :body, nil, rows: 2, maxlength: 2000, required: true, id: "chat-body",
+            placeholder: "Type a message… (Enter to send, Shift+Enter for a new line)" %>
+      <%= submit_tag "Send", class: "btn go" %>
+    <% end %>
+  </section>
+</div>
+
+<script>
+  (function () {
+    var list = document.getElementById("messages");
+    var form = document.getElementById("chat-form");
+    var body = document.getElementById("chat-body");
+    var csrf = document.querySelector('meta[name="csrf-token"]');
+    var lastId = <%= @messages.last&.id.to_i %>;
+    var pollUrl = "<%= poll_path_for(@chat) %>";
+
+    function toBottom() { list.scrollTop = list.scrollHeight; }
+    function add(m) {                        // add a message once (own sends and polling can overlap)
+      if (m.id <= lastId) return;
+      var note = document.getElementById("empty-note");
+      if (note) note.remove();
+      list.insertAdjacentHTML("beforeend", m.html);
+      lastId = m.id;
+    }
+    toBottom();
+
+    // new messages from other people appear every few seconds
+    setInterval(function () {
+      if (document.hidden) return;
+      fetch(pollUrl + "?after=" + lastId, { headers: { "Accept": "application/json" }, credentials: "same-origin" })
+        .then(function (r) { return r.ok ? r.json() : { messages: [] }; })
+        .then(function (data) {
+          if (!data.messages.length) return;
+          var nearBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 120;
+          data.messages.forEach(add);
+          if (nearBottom) toBottom();
+        })
+        .catch(function () {});
+    }, 3000);
+
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      if (!body.value.trim()) return;
+      fetch(form.action, {
+        method: "POST", body: new FormData(form), credentials: "same-origin",
+        headers: { "Accept": "application/json", "X-CSRF-Token": csrf ? csrf.content : "" }
+      })
+        .then(function (r) { return r.ok ? r.json() : Promise.reject(r); })
+        .then(function (m) { add(m); toBottom(); body.value = ""; body.focus(); })
+        .catch(function () { alert("The message could not be sent. Please try again."); });
+    });
+
+    body.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        if (form.requestSubmit) form.requestSubmit(); else form.dispatchEvent(new Event("submit", { cancelable: true }));
+      }
+    });
+  })();
+</script>

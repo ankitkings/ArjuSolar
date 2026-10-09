@@ -32,6 +32,7 @@
 
     <%= label_tag :discount, "Discount (₹, optional)" %>
     <%= number_field_tag :discount, params[:discount], step: 0.01, min: 0 %>
+    <label><%= check_box_tag :subsidy_applies, "1", (params.key?(:subsidy_applies) ? params[:subsidy_applies] == "1" : true) %> Home (residential) – government subsidy (PM Surya Ghar) applies</label>
     <%= label_tag :valid_until, "Quote valid until" %>
     <%= date_field_tag :valid_until, (params[:valid_until].presence || Date.current + Quote::DEFAULT_VALIDITY_DAYS), min: Date.current, required: true %>
     <%= label_tag :notes, "Notes for the client (optional)" %>

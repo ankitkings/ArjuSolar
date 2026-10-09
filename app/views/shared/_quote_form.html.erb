@@ -12,6 +12,7 @@
 
     <%= f.label :discount, "Discount (₹, optional)" %>
     <%= f.number_field :discount, step: 0.01, min: 0, value: (quote.discount.to_f.positive? ? quote.discount : nil), id: "quote_discount" %>
+    <label><%= f.check_box :subsidy_applies %> Home (residential) – government subsidy (PM Surya Ghar) applies</label>
     <%= f.label :valid_until, "Quote valid until" %>
     <%= f.date_field :valid_until, value: (quote.valid_until || Date.current + Quote::DEFAULT_VALIDITY_DAYS), min: Date.current, required: true %>
     <%= f.label :notes, "Notes for the client (optional)" %><%= f.text_area :notes, rows: 2 %>

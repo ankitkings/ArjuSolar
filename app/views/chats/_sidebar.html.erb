@@ -1,0 +1,32 @@
+<aside class="chat-side">
+  <p><%= link_to "+ New group chat", new_chat_path_for, class: "btn go" %></p>
+  <h4>Chats</h4>
+  <ul class="chat-list">
+    <% (@chats || []).each do |c| %>
+      <% n = (@unread || {})[c.id].to_i %>
+      <li class="<%= 'active' if @chat && @chat.id == c.id %>">
+        <%= link_to chat_path_for(c) do %>
+          <%= c.group? ? "👥" : "👤" %> <%= chat_title(c, chat_user) %>
+          <% if n.positive? %><span class="nav-badge"><%= n %></span><% end %>
+        <% end %>
+      </li>
+    <% end %>
+  </ul>
+  <div class="chat-alerts">
+    <button type="button" id="enable-alerts" class="btn hold" style="display:none">🔔 Turn on desktop alerts</button>
+    <label class="small"><input type="checkbox" id="chat-sound"> Sound for new messages</label>
+  </div>
+  <details>
+    <summary><b>Start a personal chat</b></summary>
+    <ul class="chat-list">
+      <% @people.each do |p| %>
+        <li>
+          <%= button_to direct_path_for, params: { who: person_key(p) }, class: "chat-person" do %>
+            <%= person_name(p) %> <span class="muted small"><%= person_subtitle(p) %></span>
+          <% end %>
+        </li>
+      <% end %>
+      <% if @people.empty? %><li class="muted small">Nobody else can chat yet.</li><% end %>
+    </ul>
+  </details>
+</aside>

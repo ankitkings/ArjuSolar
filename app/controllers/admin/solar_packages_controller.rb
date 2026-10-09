@@ -41,7 +41,7 @@ module Admin
     end
 
     def package_params
-      params.require(:solar_package).permit(:name, :capacity_kw, :price, :panel_count, :panel_brand, :inverter_model, :active, :image)
+      params.require(:solar_package).permit(:name, :capacity_kw, :price, :panel_count, :panel_brand, :inverter_model, :active, :subsidy_eligible, :image)
     end
   end
 end

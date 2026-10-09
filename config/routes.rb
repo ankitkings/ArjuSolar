@@ -15,6 +15,17 @@ Rails.application.routes.draw do
 
   namespace :staff do
     root "tasks#index"
+    resources :chats, only: %i[index show new create] do
+      member do
+        get :poll
+        post :send_message
+      end
+      collection do
+        post :direct
+        get :unread
+        get :notifications
+      end
+    end
     resources :tasks, only: %i[index show update] do
       member do
         post :advance
@@ -36,6 +47,17 @@ Rails.application.routes.draw do
 
   namespace :admin do
     root "dashboard#index"
+    resources :chats, only: %i[index show new create] do
+      member do
+        get :poll
+        post :send_message
+      end
+      collection do
+        post :direct
+        get :unread
+        get :notifications
+      end
+    end
     resources :visits, only: :index
     resources :users, only: :index
     resources :service_requests, only: %i[index show update] do
@@ -50,6 +72,7 @@ Rails.application.routes.draw do
     resources :installations, only: :update
     resources :solar_packages, except: :show
     resources :catalog_items, path: "parts", except: :show
+    resource :subsidy, only: %i[show update], controller: "subsidy_schemes"
     resources :team_members
   end
 

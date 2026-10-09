@@ -7,5 +7,9 @@
     <li>Inverter: <%= package.inverter_model %></li>
   </ul>
   <p class="price"><span class="muted small">Package price</span><br><b><%= inr(package.price) %></b></p>
+  <% if package.subsidy_amount.positive? %>
+    <p class="subsidy">With the PM Surya Ghar subsidy of <b><%= inr(package.subsidy_amount) %></b>:<br>
+      <b class="net"><%= inr(package.effective_cost) %></b> <span class="muted small">effective cost</span></p>
+  <% end %>
   <%= link_to "Get a quote", contact_path, class: "btn" %>
 </div>

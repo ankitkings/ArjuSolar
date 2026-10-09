@@ -1,0 +1,27 @@
+<h1>Government subsidy</h1>
+<p class="muted">PM Surya Ghar: Muft Bijli Yojana – central subsidy for rooftop solar on homes. These rates are used to show the "effective cost after subsidy" on quotes, PDFs, WhatsApp messages and the website. If the government changes the scheme, update them here (official details: pmsuryaghar.gov.in).</p>
+
+<div class="two-col">
+  <div class="panel">
+    <h3>Subsidy by system size</h3>
+    <table>
+      <tr><th>System</th><th class="right">Central subsidy</th></tr>
+      <% [1, 2, 3].each do |kw| %>
+        <tr><td><%= kw == 3 ? "3 kW and above" : "#{kw} kW" %></td><td class="right"><b><%= inr(@scheme.amount_for(kw)) %></b></td></tr>
+      <% end %>
+    </table>
+    <p class="muted small">Homes only. Commercial systems get no subsidy – untick "Subsidy" on those systems under Admin → Systems.</p>
+  </div>
+  <div class="panel">
+    <h3>Rates</h3>
+    <% if @scheme.errors.any? %><div class="flash alert"><%= @scheme.errors.full_messages.to_sentence %></div><% end %>
+    <%= form_with model: @scheme, url: admin_subsidy_path, method: :patch, class: "form" do |f| %>
+      <%= f.label :first_slab_kw, "First slab (kW)" %><%= f.number_field :first_slab_kw, step: 0.01, min: 0 %>
+      <%= f.label :first_rate, "Subsidy per kW in the first slab (₹)" %><%= f.number_field :first_rate, step: 1, min: 0 %>
+      <%= f.label :cap_kw, "Subsidy stops growing at (kW)" %><%= f.number_field :cap_kw, step: 0.01, min: 0 %>
+      <%= f.label :second_rate, "Subsidy per kW between the first slab and the cap (₹)" %><%= f.number_field :second_rate, step: 1, min: 0 %>
+      <label><%= f.check_box :active %> Show subsidy on quotes and the website</label>
+      <%= f.submit "Save", class: "btn" %>
+    <% end %>
+  </div>
+</div>

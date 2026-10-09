@@ -25,11 +25,21 @@ end
   TeamMember.find_or_create_by!(name: name, department: dept) do |m|
     m.phone = phone
     m.bio = bio
-    unless Rails.env.production?
+    # unless Rails.env.production?
       m.email = "#{name.parameterize}@arjusolars.com"
-      m.password = "Team@12345"
-    end
+      m.password = "Team@12"
+    # end
   end
+end
+
+# ---------------------------------------------------------------
+# Team chat: the shared "Everyone" group with a welcome message
+# ---------------------------------------------------------------
+everyone = Chat.everyone
+everyone.add_member(AdminUser.first)
+TeamMember.where(active: true).where.not(password_digest: nil).find_each { |m| everyone.add_member(m) }
+if everyone.messages.none?
+  everyone.messages.create!(sender: AdminUser.first, body: "Welcome to the team chat! Use this group for everyone, or start a personal or group chat from the list on the left.")
 end
 
 # ---------------------------------------------------------------

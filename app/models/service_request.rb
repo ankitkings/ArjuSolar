@@ -69,12 +69,12 @@ class ServiceRequest < ApplicationRecord
   # Site visitor: make a quote from the price list. On the first quote the request
   # moves to "Quote sent"; a later quote replaces the earlier one.
   # `package:` = a ready-made system; `items:` = [[catalog_item, quantity], ...] for a custom quote
-  def create_quote!(package: nil, items: [], system_name: nil, discount: nil, valid_until: nil, notes: nil, by: nil)
+  def create_quote!(package: nil, items: [], system_name: nil, discount: nil, valid_until: nil, notes: nil, subsidy_applies: false, by: nil)
     transaction do
       quotes.where(status: "sent").update_all(status: "superseded")
       quote = quotes.build(solar_package: package, system_name: system_name.to_s.strip.presence,
                            discount: discount.presence, valid_until: valid_until.presence,
-                           notes: notes.to_s.strip.presence, team_member: by)
+                           notes: notes.to_s.strip.presence, subsidy_applies: subsidy_applies, team_member: by)
       items.each_with_index { |(catalog_item, qty), i| quote.quote_items.build(catalog_item: catalog_item, quantity: qty, position: i) }
       quote.save!
       text = "Quote #{quote.number} created: #{quote.system_name}, #{Rupees.display(quote.total)}"
