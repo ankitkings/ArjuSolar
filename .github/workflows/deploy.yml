@@ -17,9 +17,12 @@ jobs:
           script: |
             set -e
             
-            # Load rbenv properly
+            # Load rbenv
             export PATH="$HOME/.rbenv/bin:$HOME/.rbenv/shims:$PATH"
             eval "$(rbenv init - bash)"
+            
+            # Load SECRET_KEY_BASE
+            export SECRET_KEY_BASE=$(grep SECRET_KEY_BASE ~/.bashrc | cut -d '=' -f2)
             
             cd /home/ubuntu/ArjuSolar
             
@@ -33,7 +36,7 @@ jobs:
             echo ">>> Running migrations..."
             RAILS_ENV=production bundle exec rake db:migrate
             
-            # Uncomment only when you need to run seed
+            # Uncomment only when needed
             # RAILS_ENV=production bundle exec rake db:seed
             
             echo ">>> Precompiling assets..."
