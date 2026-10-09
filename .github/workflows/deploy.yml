@@ -17,6 +17,10 @@ jobs:
           script: |
             set -e
             
+            # Load rbenv properly
+            export PATH="$HOME/.rbenv/bin:$HOME/.rbenv/shims:$PATH"
+            eval "$(rbenv init - bash)"
+            
             cd /home/ubuntu/ArjuSolar
             
             echo ">>> Pulling latest code..."
@@ -29,18 +33,16 @@ jobs:
             echo ">>> Running migrations..."
             RAILS_ENV=production bundle exec rake db:migrate
             
-            # Uncomment the next line ONLY when you have new seed data
+            # Uncomment only when you need to run seed
             # RAILS_ENV=production bundle exec rake db:seed
             
             echo ">>> Precompiling assets..."
             RAILS_ENV=production bundle exec rails assets:precompile
             
             echo ">>> Restarting Rails server..."
-            # Kill old rails server if running
             pkill -f "rails server" || true
             sleep 2
             
-            # Start new server in background
             nohup RAILS_ENV=production bundle exec rails server -b 0.0.0.0 -p 3000 > log/production.log 2>&1 &
             
             echo ">>> Deployment completed successfully!"
