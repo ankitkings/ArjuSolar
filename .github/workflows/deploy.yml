@@ -43,9 +43,12 @@ jobs:
             RAILS_ENV=production bundle exec rails assets:precompile
             
             echo ">>> Restarting Rails server..."
+            # Kill old process
             pkill -f "rails server" || true
             sleep 2
             
-            nohup RAILS_ENV=production bundle exec rails server -b 0.0.0.0 -p 3000 > log/production.log 2>&1 &
+            # Start server properly in background (more reliable)
+            setsid nohup RAILS_ENV=production bundle exec rails server -b 0.0.0.0 -p 3000 > log/production.log 2>&1 < /dev/null &
             
+            sleep 3
             echo ">>> Deployment completed successfully!"
