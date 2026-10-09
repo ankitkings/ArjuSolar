@@ -17,8 +17,12 @@ jobs:
           script: |
             set -e
             
+            # Load rbenv
             export PATH="$HOME/.rbenv/bin:$HOME/.rbenv/shims:$PATH"
             eval "$(rbenv init - bash)"
+            
+            # Load SECRET_KEY_BASE (this is the critical part)
+            source /home/ubuntu/.rails_env
             
             cd /home/ubuntu/ArjuSolar
             
@@ -42,102 +46,3 @@ jobs:
             sudo systemctl restart arju-solar
             
             echo ">>> Deployment completed successfully!"
-                        set -e
-                        
-                        # Load rbenv
-                        export PATH="$HOME/.rbenv/bin:$HOME/.rbenv/shims:$PATH"
-                        eval "$(rbenv init - bash)"
-                        
-                        # Load SECRET_KEY_BASE (reliable way)
-                        source ~/.rails_env
-                        
-                        cd /home/ubuntu/ArjuSolar
-                        
-                        echo ">>> Pulling latest code..."
-                        git fetch origin
-                        git reset --hard origin/arju-solar-first-phase
-                        
-                        echo ">>> Installing gems..."
-                        bundle install --without development test --deployment
-                        
-                        echo ">>> Running migrations..."
-                        RAILS_ENV=production bundle exec rake db:migrate
-                        
-                        # Uncomment only when needed
-                        # RAILS_ENV=production bundle exec rake db:seed
-                        
-                        echo ">>> Precompiling assets..."
-                        RAILS_ENV=production bundle exec rails assets:precompile
-                        
-                        echo ">>> Restarting Rails server..."
-                        pkill -f "rails server" || true
-                        sleep 2
-                        
-                        setsid nohup RAILS_ENV=production bundle exec rails server -b 0.0.0.0 -p 3000 > log/production.log 2>&1 < /dev/null &
-                        
-                        sleep 3
-                        echo ">>> Deployment completed successfully!"
-                                    set -e
-                                    
-                                    export PATH="$HOME/.rbenv/bin:$HOME/.rbenv/shims:$PATH"
-                                    eval "$(rbenv init - bash)"
-                                    
-                                    cd /home/ubuntu/ArjuSolar
-                                    
-                                    echo ">>> Pulling latest code..."
-                                    git fetch origin
-                                    git reset --hard origin/arju-solar-first-phase
-                                    
-                                    echo ">>> Installing gems..."
-                                    bundle install --without development test --deployment
-                                    
-                                    echo ">>> Running migrations..."
-                                    RAILS_ENV=production bundle exec rake db:migrate
-                                    
-                                    # Uncomment only when needed
-                                    # RAILS_ENV=production bundle exec rake db:seed
-                                    
-                                    echo ">>> Precompiling assets..."
-                                    RAILS_ENV=production bundle exec rails assets:precompile
-                                    
-                                    echo ">>> Restarting application..."
-                                    sudo systemctl restart arju-solar
-                                    
-                                    echo ">>> Deployment completed successfully!"
-                                        set -e
-                                        
-                                        # Load rbenv
-                                        export PATH="$HOME/.rbenv/bin:$HOME/.rbenv/shims:$PATH"
-                                        eval "$(rbenv init - bash)"
-                                        
-                                        # Load SECRET_KEY_BASE
-                                        export SECRET_KEY_BASE=$(grep SECRET_KEY_BASE ~/.bashrc | cut -d '=' -f2)
-                                        
-                                        cd /home/ubuntu/ArjuSolar
-                                        
-                                        echo ">>> Pulling latest code..."
-                                        git fetch origin
-                                        git reset --hard origin/arju-solar-first-phase
-                                        
-                                        echo ">>> Installing gems..."
-                                        bundle install --without development test --deployment
-                                        
-                                        echo ">>> Running migrations..."
-                                        RAILS_ENV=production bundle exec rake db:migrate
-                                        
-                                        # Uncomment only when needed
-                                        # RAILS_ENV=production bundle exec rake db:seed
-                                        
-                                        echo ">>> Precompiling assets..."
-                                        RAILS_ENV=production bundle exec rails assets:precompile
-                                        
-                                        echo ">>> Restarting Rails server..."
-                                        # Kill old process
-                                        pkill -f "rails server" || true
-                                        sleep 2
-                                        
-                                        # Start server properly in background (more reliable)
-                                        setsid nohup RAILS_ENV=production bundle exec rails server -b 0.0.0.0 -p 3000 > log/production.log 2>&1 < /dev/null &
-                                        
-                                        sleep 3
-                                        echo ">>> Deployment completed successfully!"
