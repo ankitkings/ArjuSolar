@@ -9,7 +9,7 @@ Rails.application.configure do
   config.assume_ssl = config.force_ssl
   config.log_level = ENV.fetch("RAILS_LOG_LEVEL", "info").to_sym
   config.log_tags = [:request_id]
-  config.logger = ActiveSupport::TaggedLogging.logger($stdout)
+  config.logger = ActiveSupport::TaggedLogging.new(ActiveSupport::Logger.new($stdout))
   config.cache_store = :memory_store
   config.active_storage.service = :local   # uploads live in storage/ - keep that folder on a persistent disk
   config.i18n.fallbacks = true
