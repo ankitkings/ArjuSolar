@@ -25,10 +25,10 @@ end
   TeamMember.find_or_create_by!(name: name, department: dept) do |m|
     m.phone = phone
     m.bio = bio
-    # unless Rails.env.production?
+    unless Rails.env.production?
       m.email = "#{name.parameterize}@arjusolars.com"
-      m.password = "Team@12"
-    # end
+      m.password = "Team@12345"
+    end
   end
 end
 
@@ -60,6 +60,7 @@ end
     p.panel_brand = brand
     p.inverter_model = inverter
     p.price = price
+    p.subsidy_eligible = !name.include?("Commercial")
   end
   pkg.update!(price: price) if pkg.price.nil?
 end
@@ -182,7 +183,7 @@ if !Rails.env.production? && ENV["SEED_DEMO"] != "false"
       if %w[quote_sent installation payment commissioning completed].include?(final)
         if name == "Rohit Malviya"
           custom = req.quotes.build(
-            system_name: "Custom 4.32 kW system", discount: 0, valid_until: times[3].to_date + 15, status: "sent",
+            system_name: "Custom 4.32 kW system", discount: 0, subsidy_applies: true, valid_until: times[3].to_date + 15, status: "sent",
             team_member: TeamMember.where(department: "site_visitor").order(:id).first, created_at: times[3], updated_at: times[3]
           )
           [["Waaree 540W Mono PERC panel", 8], ["Sungrow 5kW inverter", 1], ["GI mounting structure (per kW)", 4.32],
@@ -196,6 +197,7 @@ if !Rails.env.production? && ENV["SEED_DEMO"] != "false"
         req.quotes.create!(
           solar_package: SolarPackage.find_by!(name: quoted.fetch(name, "3 kW Home")),
           discount: (name == "Priya Verma" ? 5_000 : 0), valid_until: times[3].to_date + 15,
+          subsidy_applies: !quoted.fetch(name, "3 kW Home").include?("Commercial"),
           status: (final == "quote_sent" ? "sent" : "accepted"),
           team_member: TeamMember.where(department: "site_visitor").order(:id).first,
           created_at: times[3], updated_at: times[3]
@@ -222,6 +224,16 @@ if !Rails.env.production? && ENV["SEED_DEMO"] != "false"
           pay.collect!(amount: (pay.amount_due * 0.4).round, mode: "bank_transfer", reference: "NEFT-#{rng.rand(100_000..999_999)}", by: cashier, received_on: day)
         end
       end
+    end
+
+    # PM Surya Ghar subsidy applications at different stages
+    { "Amit Sharma" => "subsidy_received", "Priya Verma" => "bank_submitted", "Rajesh Patel" => "rejected", "Sneha Joshi" => "feasibility_approved" }.each do |name, status|
+      request = ServiceRequest.where(name: name).order(:created_at).first
+      application = SubsidyApplication.start_for!(request)
+      details = { status: status, portal_application_no: "PMSG-#{rng.rand(100_000..999_999)}",
+                  consumer_number: "N#{rng.rand(1_000_000_000..9_999_999_999)}" }
+      details[:rejection_reason] = "Commercial electricity connection - the home scheme does not cover it" if status == "rejected"
+      application.update!(details)
     end
 
     # visits whose date has already arrived are handed to the servicing team

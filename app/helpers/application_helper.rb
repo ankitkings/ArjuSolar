@@ -52,4 +52,31 @@ module ApplicationHelper
     base = ENV["PUBLIC_BASE_URL"].to_s.chomp("/").presence || request.base_url
     "#{base}#{public_quote_pdf_path(quote.ensure_public_token!)}"
   end
+
+  # Text of the "are you sure?" box when a request is deleted: lists what goes with it
+  def delete_request_warning(req)
+    parts = ["its timeline (#{req.updates.count} entries)"]
+    parts << pluralize(req.quotes.count, "quote") if req.quotes.any?
+    parts << "the installation record and its photos" if req.installation
+    if req.payment
+      paid = req.payment.amount_paid
+      parts << (paid.positive? ? "the payment record with #{inr(paid)} received (#{pluralize(req.payment.receipts.count, 'receipt')})" : "the payment record")
+    end
+    parts << pluralize(req.maintenance_visits.count, "maintenance visit") if req.maintenance_visits.any?
+    parts << "the subsidy application" if req.subsidy_application
+    "Delete request ##{req.id} (#{req.name})?\n\nThis also permanently deletes: #{parts.to_sentence}.\n\nThis cannot be undone."
+  end
+
+  def delete_client_warning(name, phone, requests_count)
+    "Delete the client #{name} (#{phone}) and all #{pluralize(requests_count, 'request')}?\n\n" \
+    "Everything linked to those requests goes too: quotes, installation records and photos, payments and receipts, maintenance visits and subsidy applications.\n\nThis cannot be undone."
+  end
+
+  def delete_member_warning(member)
+    @_task_counts ||= TeamMember.active_task_counts
+    open_tasks = @_task_counts[member.id]
+    "Remove #{member.name}?\n\n" \
+    "#{open_tasks.positive? ? "Their #{pluralize(open_tasks, 'open task')} will become unassigned. " : ''}" \
+    "Their login stops working and their chat messages stay as 'Former teammate'. This cannot be undone."
+  end
 end

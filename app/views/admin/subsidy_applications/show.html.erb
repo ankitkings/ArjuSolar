@@ -1,0 +1,65 @@
+<% a = @application %>
+<% req = a.service_request %>
+<p><%= link_to "← All subsidy applications", admin_subsidy_applications_path %></p>
+<h1>Subsidy application — <%= req.name %> <span class="badge <%= a.status %>"><%= a.status_label %></span></h1>
+
+<div class="stepper">
+  <% SubsidyApplication::FLOW.each_with_index do |st, i| %>
+    <span class="step <%= 'done' if a.step_index && i < a.step_index %> <%= 'current' if i == a.step_index %>"><%= SubsidyApplication::LABELS[st] %></span>
+  <% end %>
+</div>
+<% if a.status == "rejected" %><div class="flash alert"><b>Rejected:</b> <%= a.rejection_reason %></div><% end %>
+<% if a.status == "subsidy_received" %><div class="flash">✅ Subsidy of <b><%= inr(a.received_amount) %></b> received on <%= l a.received_on, format: :long %>.</div><% end %>
+
+<div class="two-col">
+  <div>
+    <div class="panel">
+      <h3>Client and system</h3>
+      <p><strong>Client:</strong> <%= link_to req.name, admin_service_request_path(req) %></p>
+      <p><strong>Phone:</strong> <%= req.phone %></p>
+      <p><strong>Address:</strong> <%= req.address.presence || "—" %></p>
+      <p><strong>System:</strong> <%= a.system_capacity_kw ? "#{format('%g', a.system_capacity_kw.to_f)} kW" : "—" %>
+        <% if req.installation %>(<%= req.installation.panel_brand %>, inverter <%= req.installation.inverter_model %>)<% end %></p>
+      <p><strong>Expected subsidy:</strong> <%= inr(a.expected_amount) %></p>
+    </div>
+    <div class="panel" style="margin-top:16px">
+      <h3>Applying on the portal</h3>
+      <p class="muted small">The application is made on the official portal by the client, with their own login and OTP. We help them with it and record the result here. Do not enter Aadhaar or bank account numbers in this system.</p>
+      <p><%= link_to "Open the PM Surya Ghar portal →", "https://pmsuryaghar.gov.in/", target: "_blank", rel: "noopener noreferrer", class: "btn" %></p>
+      <p class="small"><b>Keep ready:</b> latest electricity bill (consumer number), the mobile number linked to it, an Aadhaar-linked bank account and a cancelled cheque. Wait for the DISCOM's approval before installing.</p>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Application details</h3>
+    <% if a.errors.any? %><div class="flash alert"><%= a.errors.full_messages.to_sentence %></div><% end %>
+    <%= form_with model: a, url: admin_subsidy_application_path(a), method: :patch, class: "form" do |f| %>
+      <%= f.label :status, "Status" %>
+      <%= f.select :status, SubsidyApplication::STATUSES.map { |s| [SubsidyApplication::LABELS[s], s] } %>
+      <%= f.label :portal_application_no, "Application number on the portal" %><%= f.text_field :portal_application_no %>
+      <%= f.label :consumer_number, "Electricity consumer number" %><%= f.text_field :consumer_number %>
+      <%= f.label :discom, "Electricity company (DISCOM)" %><%= f.text_field :discom, placeholder: "e.g. the DISCOM that sends the client's bill" %>
+      <%= f.label :system_capacity_kw, "System size (kW)" %><%= f.number_field :system_capacity_kw, step: 0.01, min: 0 %>
+      <%= f.label :expected_amount, "Expected subsidy (₹)" %><%= f.number_field :expected_amount, step: 1, min: 0 %>
+      <%= f.label :received_amount, "Subsidy received (₹)" %><%= f.number_field :received_amount, step: 1, min: 0 %>
+
+      <b>Dates</b> <span class="muted small">(filled in automatically when you change the status)</span>
+      <%= f.label :applied_on, "Applied on" %><%= f.date_field :applied_on %>
+      <%= f.label :feasibility_on, "DISCOM approval on" %><%= f.date_field :feasibility_on %>
+      <%= f.label :net_meter_on, "Net meter applied on" %><%= f.date_field :net_meter_on %>
+      <%= f.label :commissioned_on, "Commissioned on" %><%= f.date_field :commissioned_on %>
+      <%= f.label :bank_submitted_on, "Bank details submitted on" %><%= f.date_field :bank_submitted_on %>
+      <%= f.label :received_on, "Subsidy received on" %><%= f.date_field :received_on %>
+
+      <b>Documents</b>
+      <label><%= f.check_box :electricity_bill_received %> Electricity bill received</label>
+      <label><%= f.check_box :roof_ownership_confirmed %> Own house / roof confirmed</label>
+      <label><%= f.check_box :bank_account_confirmed %> Aadhaar-linked bank account confirmed</label>
+      <label><%= f.check_box :cancelled_cheque_received %> Cancelled cheque received</label>
+
+      <%= f.label :rejection_reason, "Reason, if rejected" %><%= f.text_area :rejection_reason, rows: 2 %>
+      <%= f.label :notes, "Notes" %><%= f.text_area :notes, rows: 3 %>
+      <%= f.submit "Save", class: "btn go" %>
+    <% end %>
+  </div>
+</div>

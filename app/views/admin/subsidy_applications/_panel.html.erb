@@ -1,0 +1,13 @@
+<% application = sr.subsidy_application %>
+<div class="panel" style="margin-top:16px">
+  <h3>PM Surya Ghar subsidy</h3>
+  <% if application %>
+    <p><span class="badge <%= application.status %>"><%= application.status_label %></span>
+      expected <%= inr(application.expected_amount) %>
+      <%= " · received #{inr(application.received_amount)} on #{l application.received_on, format: :short}" if application.status == "subsidy_received" %>
+      · <%= link_to "Open the application", admin_subsidy_application_path(application) %></p>
+  <% elsif sr.status != "cancelled" %>
+    <p class="muted small">Track this client's government subsidy application: documents, portal number, each step, and whether the subsidy was received.</p>
+    <%= button_to "Start subsidy application", admin_subsidy_applications_path, params: { service_request_id: sr.id }, class: "btn go" %>
+  <% end %>
+</div>

@@ -5,7 +5,8 @@ Rails.application.configure do
   config.eager_load = true
   config.consider_all_requests_local = false
   config.public_file_server.enabled = true
-  config.force_ssl = ENV.fetch("FORCE_SSL", "true") == "true"
+  # config.force_ssl = ENV.fetch("FORCE_SSL", "true") == "true"
+  config.force_ssl = false   # temporarily (if you're accessing via HTTP + IP)
   config.assume_ssl = config.force_ssl
   config.log_level = ENV.fetch("RAILS_LOG_LEVEL", "info").to_sym
   config.log_tags = [:request_id]

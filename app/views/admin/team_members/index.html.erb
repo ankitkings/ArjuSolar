@@ -21,7 +21,7 @@
       <td><%= m.show_on_website ? "Yes" : "No" %></td><td><%= m.active ? "Yes" : "No" %></td>
       <td><%= link_to "Tasks", admin_team_member_path(m) %> ·
           <%= link_to "Edit", edit_admin_team_member_path(m) %>
-          <%= button_to "Delete", admin_team_member_path(m), method: :delete, class: "linklike", form: { style: "display:inline", onsubmit: "return confirm('Remove this member?')" } %></td>
+          <%= button_to "Delete", admin_team_member_path(m), method: :delete, class: "linklike", form: { style: "display:inline", onsubmit: "return confirm(#{delete_member_warning(m).to_json})" } %></td>
     </tr>
   <% end %>
 </table></div>

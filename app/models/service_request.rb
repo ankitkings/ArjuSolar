@@ -15,6 +15,7 @@ class ServiceRequest < ApplicationRecord
   has_one :installation, dependent: :destroy
   has_many :maintenance_visits, -> { order(:due_on) }, dependent: :destroy
   has_one :payment, dependent: :destroy
+  has_one :subsidy_application, dependent: :destroy
 
   validates :name, presence: true, length: { maximum: 100 }
   validates :phone, presence: true, format: { with: /\A[+\d][\d\s-]{7,15}\z/, message: "is not a valid number" }

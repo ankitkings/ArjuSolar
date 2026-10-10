@@ -121,3 +121,11 @@ details.part-group[open] summary{margin-bottom:10px}
 .subsidy .net{color:#15803d;font-size:1.15rem}
 .subsidy-box{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:16px 20px;margin-top:24px}
 .subsidy-box h2{margin-top:0}
+
+/* subsidy application tracker */
+.stepper{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 16px}
+.step{padding:4px 12px;border-radius:99px;background:#e2e8f0;font-size:.8rem;color:#475569}
+.step.done{background:#bbf7d0;color:#166534}.step.current{background:#f59e0b;color:#111;font-weight:700}
+.badge.preparing{background:#e2e8f0}.badge.applied,.badge.feasibility_approved,.badge.net_meter_applied{background:#dbeafe}
+.badge.commissioned,.badge.bank_submitted{background:#ede9fe}.badge.subsidy_received{background:#bbf7d0;color:#166534;font-weight:700}
+.badge.rejected{background:#fee2e2;color:#b91c1c;font-weight:700}.badge.withdrawn{background:#e2e8f0;color:#64748b}

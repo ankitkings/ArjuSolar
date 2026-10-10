@@ -4,6 +4,7 @@
   <%= render "chats/sidebar" %>
   <section class="chat-main">
     <div class="chat-head">
+      <p class="chat-jump"><a href="#chat-side">☰ All chats &amp; people</a></p>
       <h2><%= @chat.group? ? "👥" : "👤" %> <%= chat_title(@chat, chat_user) %></h2>
       <p class="muted small">
         <% if @chat.group? %>

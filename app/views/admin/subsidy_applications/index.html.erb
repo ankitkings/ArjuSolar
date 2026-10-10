@@ -1,0 +1,48 @@
+<h1>PM Surya Ghar subsidy applications <%= link_to "Edit subsidy rates", admin_subsidy_path, class: "btn hold" %></h1>
+<p class="muted">The client files the application on pmsuryaghar.gov.in; here you record how each one is going and who received the subsidy.</p>
+
+<div class="stats">
+  <%= link_to admin_subsidy_applications_path(group: "received"), class: "stat" do %><b><%= @counts["received"] %></b><span>Received (<%= inr(@received_total) %>)</span><% end %>
+  <%= link_to admin_subsidy_applications_path(group: "in_progress"), class: "stat" do %><b><%= @counts["in_progress"] %></b><span>In progress (<%= inr(@waiting_total) %> expected)</span><% end %>
+  <%= link_to admin_subsidy_applications_path(group: "rejected"), class: "stat #{'alert' if @counts['rejected'].positive?}" do %><b><%= @counts["rejected"] %></b><span>Rejected</span><% end %>
+  <%= link_to admin_subsidy_applications_path(group: "not_applying"), class: "stat" do %><b><%= @counts["not_applying"] %></b><span>Not applying</span><% end %>
+  <div class="stat"><b><%= @not_started.size %></b><span>Not started yet</span></div>
+</div>
+
+<%= form_with url: admin_subsidy_applications_path, method: :get, class: "filters" do %>
+  <%= text_field_tag :q, params[:q], placeholder: "Search client name / phone / portal application no." %>
+  <%= select_tag :group, options_for_select([["All applications", ""], ["In progress", "in_progress"], ["Received", "received"], ["Rejected", "rejected"], ["Not applying", "not_applying"]], @group) %>
+  <%= submit_tag "Filter", class: "btn" %>
+<% end %>
+
+<div class="table-wrap"><table>
+  <tr><th>Client</th><th>Phone</th><th>System</th><th>Subsidy</th><th>Status</th><th>Portal application no.</th><th>Applied on</th><th>Received</th><th></th></tr>
+  <% @applications.each do |a| %>
+    <% req = a.service_request %>
+    <tr>
+      <td><%= req.name %></td><td><%= req.phone %></td>
+      <td><%= a.system_capacity_kw ? "#{format('%g', a.system_capacity_kw.to_f)} kW" : "—" %></td>
+      <td><%= inr(a.expected_amount) %></td>
+      <td><span class="badge <%= a.status %>"><%= a.status_label %></span></td>
+      <td><%= a.portal_application_no.presence || "—" %></td>
+      <td><%= a.applied_on ? l(a.applied_on, format: :short) : "—" %></td>
+      <td><%= a.status == "subsidy_received" ? "#{inr(a.received_amount)} · #{l a.received_on, format: :short}" : "—" %></td>
+      <td><%= link_to "Open", admin_subsidy_application_path(a) %></td>
+    </tr>
+  <% end %>
+  <% if @applications.empty? %><tr><td colspan="9" class="muted">No applications here yet.</td></tr><% end %>
+</table></div>
+
+<% if @not_started.any? && @group.nil? && params[:q].blank? %>
+  <h2>Subsidy included in the quote, application not started</h2>
+  <div class="table-wrap"><table>
+    <tr><th>Client</th><th>Phone</th><th>Request stage</th><th></th></tr>
+    <% @not_started.each do |r| %>
+      <tr>
+        <td><%= link_to r.name, admin_service_request_path(r) %></td><td><%= r.phone %></td>
+        <td><span class="badge <%= r.status %>"><%= r.status_label %></span></td>
+        <td><%= button_to "Start application", admin_subsidy_applications_path, params: { service_request_id: r.id }, class: "btn go" %></td>
+      </tr>
+    <% end %>
+  </table></div>
+<% end %>

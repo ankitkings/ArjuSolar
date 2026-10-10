@@ -8,6 +8,11 @@
   <%= stylesheet_link_tag "application" %>
 </head>
 <body class="admin">
+  <header class="app-bar">
+    <button type="button" class="menu-toggle" aria-label="Menu" aria-expanded="false">☰</button>
+    <span class="app-title">Arju Solars</span>
+  </header>
+  <div class="drawer-backdrop"></div>
   <aside>
     <h3>Arju Solars</h3>
     <p style="color:#e2e8f0;margin:0"><b><%= current_staff.name %></b></p>
@@ -22,5 +27,6 @@
     <%= yield %>
   </main>
   <%= render "shared/chat_notifier", url: notifications_staff_chats_path, user_key: "staff:#{current_staff.id}" %>
+  <%= render "shared/responsive" %>
 </body>
 </html>

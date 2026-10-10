@@ -59,9 +59,13 @@ Rails.application.routes.draw do
       end
     end
     resources :visits, only: :index
-    resources :users, only: :index
-    resources :service_requests, only: %i[index show update] do
-      member { post :complete }
+    resources :users, only: %i[index edit update destroy]
+    resources :service_requests, only: %i[index show update destroy] do
+      member do
+        post :complete
+        get :edit_details
+        patch :details
+      end
     end
     resources :maintenance_visits, only: %i[index create update destroy]
     resources :payments, only: %i[index show update]
@@ -73,6 +77,7 @@ Rails.application.routes.draw do
     resources :solar_packages, except: :show
     resources :catalog_items, path: "parts", except: :show
     resource :subsidy, only: %i[show update], controller: "subsidy_schemes"
+    resources :subsidy_applications, only: %i[index show create update]
     resources :team_members
   end
 
