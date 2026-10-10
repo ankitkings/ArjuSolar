@@ -1,6 +1,6 @@
 module Admin
   class ServiceRequestsController < BaseController
-    before_action :set_service_request, only: %i[show update complete]
+    before_action :set_service_request, only: %i[show update complete edit_details details destroy]
 
     def index
       @requests = ServiceRequest.includes(:team_member).order(created_at: :desc)
@@ -49,6 +49,28 @@ module Admin
     rescue ActiveRecord::RecordInvalid
       @installation = @service_request.new_installation
       render :show, status: :unprocessable_entity
+    end
+
+    # Correct the client's details
+    def edit_details; end
+
+    def details
+      if @service_request.update(params.require(:service_request).permit(:name, :phone, :email, :address, :message))
+        @service_request.updates.create!(status: @service_request.status, progress: @service_request.progress,
+                                         admin_user: current_admin, note: "Client details edited by admin")
+        redirect_to admin_service_request_path(@service_request), notice: "Details saved"
+      else
+        render :edit_details, status: :unprocessable_entity
+      end
+    end
+
+    # Deletes the request together with everything that belongs to it
+    def destroy
+      label = "##{@service_request.id} (#{@service_request.name})"
+      @service_request.destroy!
+      redirect_to admin_service_requests_path, notice: "Request #{label} and everything linked to it was deleted"
+    rescue ActiveRecord::RecordNotDestroyed, ActiveRecord::InvalidForeignKey => e
+      redirect_to admin_service_request_path(@service_request), alert: "The request could not be deleted: #{e.message.truncate(160)}"
     end
 
     def complete

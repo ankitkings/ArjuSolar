@@ -18,7 +18,7 @@
     <%= link_to "Maintenance", admin_maintenance_visits_path %>
     <%= link_to "Systems", admin_solar_packages_path %>
     <%= link_to "Parts", admin_catalog_items_path %>
-    <%= link_to "Subsidy", admin_subsidy_path %>
+    <%= link_to "Subsidy", admin_subsidy_applications_path %>
     <%= link_to "Team", admin_team_members_path %>
     <%= link_to admin_chats_path do %>Chat<span class="nav-badge" id="chat-badge" style="<%= 'display:none' unless chat_unread_count(current_admin).positive? %>"><%= chat_unread_count(current_admin) %></span><% end %>
     <%= link_to "View site", root_path %>

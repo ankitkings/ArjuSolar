@@ -1,0 +1,41 @@
+<%# Phone / tablet helpers: website menu button, panel side menu, and table labels (tables turn into cards on a phone) %>
+<script>
+  (function () {
+    // public website: menu button
+    var navBtn = document.querySelector(".nav-toggle");
+    var nav = document.getElementById("site-nav");
+    if (navBtn && nav) {
+      navBtn.addEventListener("click", function () {
+        var open = nav.classList.toggle("open");
+        navBtn.setAttribute("aria-expanded", open ? "true" : "false");
+      });
+    }
+
+    // admin / staff panels: side menu slides in on phones and tablets
+    var menuBtn = document.querySelector(".menu-toggle");
+    var backdrop = document.querySelector(".drawer-backdrop");
+    function setMenu(open) {
+      document.body.classList.toggle("menu-open", open);
+      if (menuBtn) menuBtn.setAttribute("aria-expanded", open ? "true" : "false");
+    }
+    if (menuBtn) menuBtn.addEventListener("click", function () { setMenu(!document.body.classList.contains("menu-open")); });
+    if (backdrop) backdrop.addEventListener("click", function () { setMenu(false); });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") setMenu(false); });
+
+    // tables: write each column's heading on its cells, so a phone can show every row as a small card
+    Array.prototype.forEach.call(document.querySelectorAll("table"), function (table) {
+      var rows = Array.prototype.slice.call(table.rows);
+      var headRow = rows.filter(function (r) {
+        return r.cells.length && Array.prototype.every.call(r.cells, function (c) { return c.tagName === "TH"; });
+      })[0];
+      if (!headRow) return;
+      var heads = Array.prototype.map.call(headRow.cells, function (c) { return c.textContent.trim(); });
+      headRow.classList.add("th-row");
+      rows.forEach(function (r) {
+        if (r === headRow || r.cells.length !== heads.length) return;
+        Array.prototype.forEach.call(r.cells, function (c, i) { if (c.tagName === "TD") c.setAttribute("data-label", heads[i]); });
+      });
+      table.classList.add("stack");
+    });
+  })();
+</script>

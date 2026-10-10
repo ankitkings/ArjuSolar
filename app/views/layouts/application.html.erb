@@ -9,7 +9,8 @@
 <body>
   <header class="site-header"><div class="wrap">
     <%= link_to "Arju Solars", root_path, class: "brand" %>
-    <nav>
+    <button type="button" class="nav-toggle" aria-label="Menu" aria-expanded="false">☰</button>
+    <nav id="site-nav">
       <%= link_to "Home", root_path %><%= link_to "About", about_path %><%= link_to "Services", services_path %>
       <%= link_to "Systems", systems_path %>
       <%= link_to "Projects", projects_path %><%= link_to "Our Team", team_path %><%= link_to "Contact", contact_path %>
@@ -29,5 +30,6 @@
     <p class="small">Stock photos from <a href="https://www.pexels.com" target="_blank" rel="noopener noreferrer">Pexels</a>. Project photos are taken by our installation team.</p>
     <p class="small">We record anonymous visit data (IP address, browser, pages viewed) to improve our service.</p>
   </div></footer>
+  <%= render "shared/responsive" %>
 </body>
 </html>

@@ -1,0 +1,11 @@
+<p><%= link_to "← Back to the request", admin_service_request_path(@service_request) %></p>
+<h1>Edit request #<%= @service_request.id %></h1>
+<% if @service_request.errors.any? %><div class="flash alert"><%= @service_request.errors.full_messages.to_sentence %></div><% end %>
+<%= form_with model: @service_request, url: details_admin_service_request_path(@service_request), method: :patch, class: "form" do |f| %>
+  <%= f.label :name, "Client name" %><%= f.text_field :name, required: true, maxlength: 100 %>
+  <%= f.label :phone, "Phone" %><%= f.telephone_field :phone, required: true %>
+  <%= f.label :email, "Email" %><%= f.email_field :email %>
+  <%= f.label :address, "Address" %><%= f.text_area :address, rows: 2, maxlength: 500 %>
+  <%= f.label :message, "Client's message" %><%= f.text_area :message, rows: 4, maxlength: 2000 %>
+  <%= f.submit "Save", class: "btn go" %>
+<% end %>

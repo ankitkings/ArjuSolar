@@ -1,6 +1,11 @@
 <% sr = @service_request %>
 <p><%= link_to "← All requests", admin_service_requests_path %></p>
 <h1>Request #<%= sr.id %> — <%= sr.name %></h1>
+<div class="actions no-print" style="margin-bottom:12px">
+  <%= link_to "Edit client details", edit_details_admin_service_request_path(sr), class: "btn hold" %>
+  <%= button_to "Delete this request", admin_service_request_path(sr), method: :delete, class: "btn stop",
+        form: { onsubmit: "return confirm(#{delete_request_warning(sr).to_json})" } %>
+</div>
 <div class="two-col">
   <div class="panel">
     <h3>Customer</h3>
@@ -81,6 +86,8 @@
     </div>
   </div>
 <% end %>
+
+<%= render "admin/subsidy_applications/panel", sr: sr %>
 
 <% if sr.quotes.any? %>
   <h2>Quotes</h2>

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_01_12_000000) do
+ActiveRecord::Schema[7.1].define(version: 2026_01_13_000000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -252,6 +252,33 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_12_000000) do
     t.boolean "subsidy_eligible", default: true, null: false
   end
 
+  create_table "subsidy_applications", force: :cascade do |t|
+    t.integer "service_request_id", null: false
+    t.string "status", default: "preparing", null: false
+    t.string "consumer_number"
+    t.string "discom"
+    t.string "portal_application_no"
+    t.decimal "system_capacity_kw", precision: 6, scale: 2
+    t.decimal "expected_amount", precision: 10, scale: 2, default: "0.0", null: false
+    t.decimal "received_amount", precision: 10, scale: 2
+    t.date "applied_on"
+    t.date "feasibility_on"
+    t.date "net_meter_on"
+    t.date "commissioned_on"
+    t.date "bank_submitted_on"
+    t.date "received_on"
+    t.text "rejection_reason"
+    t.text "notes"
+    t.boolean "electricity_bill_received", default: false, null: false
+    t.boolean "bank_account_confirmed", default: false, null: false
+    t.boolean "cancelled_cheque_received", default: false, null: false
+    t.boolean "roof_ownership_confirmed", default: false, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["service_request_id"], name: "index_subsidy_applications_on_service_request_id", unique: true
+    t.index ["status"], name: "index_subsidy_applications_on_status"
+  end
+
   create_table "subsidy_schemes", force: :cascade do |t|
     t.string "name", default: "PM Surya Ghar: Muft Bijli Yojana", null: false
     t.decimal "first_slab_kw", precision: 5, scale: 2, default: "2.0", null: false
@@ -313,4 +340,5 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_12_000000) do
   add_foreign_key "request_updates", "service_requests"
   add_foreign_key "request_updates", "team_members"
   add_foreign_key "service_requests", "team_members"
+  add_foreign_key "subsidy_applications", "service_requests"
 end
