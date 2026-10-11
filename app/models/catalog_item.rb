@@ -12,7 +12,11 @@ class CatalogItem < ApplicationRecord
   }.freeze
   UNITS = %w[piece set kW meter job].freeze
 
+  before_destroy { @package_ids_to_refresh = package_items.pluck(:solar_package_id) }
   has_many :quote_items, dependent: :nullify
+  has_many :package_items, dependent: :destroy
+  after_update :refresh_packages, if: :saved_change_to_unit_price?
+  after_destroy :refresh_packages
 
   validates :category, inclusion: { in: CATEGORIES.keys }
   validates :name, presence: true, uniqueness: { scope: :category }
@@ -25,4 +29,12 @@ class CatalogItem < ApplicationRecord
   scope :available, -> { where(active: true).order(:name) }
 
   def category_label = CATEGORIES[category]
+
+  private
+
+  # systems built from this part get their price recalculated
+  def refresh_packages
+    ids = @package_ids_to_refresh || package_items.pluck(:solar_package_id)
+    SolarPackage.where(id: ids).find_each(&:sync_from_parts!)
+  end
 end

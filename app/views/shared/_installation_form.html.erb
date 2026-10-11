@@ -11,6 +11,7 @@
 
     <% if custom %>
       <%= f.hidden_field :quote_id %>
+      <%= f.hidden_field :solar_package_id %>
       <p><strong>System installed:</strong> as per the accepted quote <%= installation.quote.number %> —
         <%= installation.quote.system_name %>, <%= format("%g", installation.quote.capacity_kw.to_f) %> kW
         (<%= installation.quote.panel_count %> panels, inverter <%= installation.quote.inverter_model %>)</p>

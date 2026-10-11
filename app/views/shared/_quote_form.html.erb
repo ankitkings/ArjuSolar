@@ -1,4 +1,4 @@
-<% packages = SolarPackage.available %>
+<% packages = SolarPackage.available.includes(package_items: :catalog_item) %>
 <% if quote.errors.any? %><div class="flash alert"><%= quote.errors.full_messages.to_sentence %></div><% end %>
 <% if packages.empty? %>
   <p class="muted">No systems are set up yet. Ask the admin to add them (with prices) under Admin → Systems.</p>
@@ -6,9 +6,13 @@
   <%= form_with model: quote, url: url, method: :post, class: "form" do |f| %>
     <%= f.label :solar_package_id, "System (from the price list)" %>
     <%= f.select :solar_package_id,
-          options_for_select(packages.map { |p| [p.label, p.id, { "data-price" => p.price.to_s, "data-details" => p.details }] }, quote.solar_package_id),
+          options_for_select(packages.map { |p|
+            parts = p.package_items.map { |pi| { name: pi.catalog_item.name, qty: pi.quantity.to_f, unit: pi.catalog_item.unit, price: pi.catalog_item.unit_price.to_f } }
+            [p.label, p.id, { "data-price" => p.price.to_s, "data-details" => p.details, "data-parts" => parts.to_json }]
+          }, quote.solar_package_id),
           { include_blank: "Select a system…" }, { required: true, id: "quote_solar_package_id" } %>
     <p id="quote-preview" class="muted small"></p>
+    <div class="table-wrap" id="quote-parts" style="display:none"></div>
 
     <%= f.label :discount, "Discount (₹, optional)" %>
     <%= f.number_field :discount, step: 0.01, min: 0, value: (quote.discount.to_f.positive? ? quote.discount : nil), id: "quote_discount" %>
@@ -30,9 +34,36 @@
         var price = parseFloat(o.dataset.price), d = parseFloat(disc.value) || 0;
         box.textContent = o.dataset.details + " — Price " + inr(price) + (d > 0 ? " − discount " + inr(d) + " = Total " + inr(price - d) : "");
       }
-      sel.addEventListener("change", update);
-      disc.addEventListener("input", update);
-      update();
+      // every part of the chosen system with its price, so the visitor (and the client) can see what the price is made of
+      var partsBox = document.getElementById("quote-parts");
+      function cell(row, text, right) { var td = document.createElement("td"); td.textContent = text; if (right) td.className = "right"; row.appendChild(td); return td; }
+      function showParts() {
+        var o = sel.options[sel.selectedIndex];
+        partsBox.innerHTML = "";
+        if (!o || !o.dataset.parts) { partsBox.style.display = "none"; return; }
+        var parts = JSON.parse(o.dataset.parts);
+        partsBox.style.display = "block";
+        var table = document.createElement("table");
+        var head = table.insertRow();
+        ["Part", "Quantity", "Unit price", "Amount"].forEach(function (h, i) { var th = document.createElement("th"); th.textContent = h; if (i) th.className = "right"; head.appendChild(th); });
+        var sum = 0;
+        parts.forEach(function (p) {
+          var r = table.insertRow(), line = p.qty * p.price; sum += line;
+          cell(r, p.name); cell(r, p.qty + " " + p.unit, true); cell(r, inr(p.price), true); cell(r, inr(line), true);
+        });
+        if (!parts.length) {
+          var empty = table.insertRow(); var td = cell(empty, "The parts of this system are not listed yet – the admin can add them under Admin → Systems."); td.colSpan = 4;
+        } else {
+          var d = parseFloat(disc.value) || 0, t = table.insertRow();
+          var label = cell(t, d > 0 ? "Total (after discount " + inr(d) + ")" : "Total", true); label.colSpan = 3; label.style.fontWeight = "700";
+          var amount = cell(t, inr(Math.max(sum - d, 0)), true); amount.style.fontWeight = "700";
+        }
+        partsBox.appendChild(table);
+      }
+      function refresh() { update(); showParts(); }
+      sel.addEventListener("change", refresh);
+      disc.addEventListener("input", refresh);
+      refresh();
     })();
   </script>
 <% end %>

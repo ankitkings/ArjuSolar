@@ -2,10 +2,128 @@
 <%= form_with model: package, url: (package.persisted? ? admin_solar_package_path(package) : admin_solar_packages_path), class: "form" do |f| %>
   <%= f.label :name, "Name (e.g. 3 kW Home)" %><%= f.text_field :name, required: true %>
   <%= f.label :capacity_kw, "System capacity (kW)" %><%= f.number_field :capacity_kw, step: 0.01, min: 0.1, required: true %>
-  <%= f.label :price, "Package amount (₹)" %><%= f.number_field :price, step: 0.01, min: 1, required: true %>
-  <%= f.label :panel_count, "Number of panels" %><%= f.number_field :panel_count, min: 1, required: true %>
-  <%= f.label :panel_brand, "Panel brand / model" %><%= f.text_field :panel_brand, required: true %>
-  <%= f.label :inverter_model, "Inverter model" %><%= f.text_field :inverter_model, required: true %>
+  <%= f.label :price, "Package amount (₹)" %><%= f.number_field :price, step: 0.01, min: 1, required: package.package_items.none?, readonly: package.package_items.any? %>
+  <%= f.label :panel_count, "Number of panels" %><%= f.number_field :panel_count, min: 1, required: package.package_items.none?, readonly: package.package_items.any? %>
+  <%= f.label :panel_brand, "Panel brand / model" %><%= f.text_field :panel_brand, required: package.package_items.none?, readonly: package.package_items.any? %>
+  <%= f.label :inverter_model, "Inverter model" %><%= f.text_field :inverter_model, required: package.package_items.none?, readonly: package.package_items.any? %>
+  <% catalog = CatalogItem.available.to_a %>
+  <% parts_data = catalog.to_h { |c| [c.id, { name: c.name, cat: c.category, price: c.unit_price.to_f, unit: c.unit }] } %>
+  <% initial_parts = if params[:items].present?
+                       Array(params[:items]).filter_map { |r| { id: r[:catalog_item_id].to_i, qty: r[:quantity] } if r[:catalog_item_id].present? }
+                     else
+                       package.package_items.includes(:catalog_item).map { |pi| { id: pi.catalog_item_id, qty: pi.quantity.to_f } }
+                     end %>
+  <h3>Parts in this system</h3>
+  <p class="muted small">List every part of the system – panels, inverter, mounting structure, cables, protection &amp; earthing, installation and so on. The package amount, number of panels, panel brand and inverter above are then <b>calculated from these parts</b> and their prices in the Parts price list. Leave the list empty to type the amount yourself.</p>
+  <%= hidden_field_tag :parts_section, "1" %>
+  <div class="actions">
+    <% CatalogItem::CATEGORIES.each do |key, label| %>
+      <% next unless catalog.any? { |c| c.category == key } %>
+      <button type="button" class="btn hold add-part" data-cat="<%= key %>">+ <%= label %></button>
+    <% end %>
+  </div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Part</th><th>Quantity</th><th>Unit</th><th class="right">Unit price</th><th class="right">Amount</th><th></th></tr></thead>
+    <tbody id="parts-body"></tbody>
+    <tfoot><tr><td colspan="4" class="right"><b>Total of all parts</b></td><td class="right"><b id="parts-total">₹0</b></td><td></td></tr></tfoot>
+  </table></div>
+  <template id="row-template">
+    <tr>
+      <td data-label="Part"><select name="items[][catalog_item_id]" class="part-select" required></select></td>
+      <td data-label="Quantity"><input type="number" name="items[][quantity]" class="qty" value="1" min="0.01" step="0.01" style="width:90px" required></td>
+      <td class="unit" data-label="Unit">—</td>
+      <td class="right unit-price" data-label="Unit price">—</td>
+      <td class="right line-total" data-label="Amount">₹0</td>
+      <td data-label=""><button type="button" class="linklike remove">Remove</button></td>
+    </tr>
+  </template>
+  <script>
+    (function () {
+      var CATALOG = <%= raw json_escape(parts_data.to_json) %>;
+      var CATEGORIES = <%= raw json_escape(CatalogItem::CATEGORIES.to_json) %>;
+      var INITIAL = <%= raw json_escape(initial_parts.to_json) %>;
+      var body = document.getElementById("parts-body");
+      var tpl = document.getElementById("row-template");
+      var fields = {
+        price: document.getElementById("solar_package_price"),
+        count: document.getElementById("solar_package_panel_count"),
+        brand: document.getElementById("solar_package_panel_brand"),
+        inverter: document.getElementById("solar_package_inverter_model")
+      };
+
+      function inr(n) { return "₹" + Number(n).toLocaleString("en-IN", { maximumFractionDigits: 2 }); }
+      function unique(list) { return list.filter(function (v, i) { return list.indexOf(v) === i; }); }
+
+      function fill(select, cat) {
+        select.innerHTML = "";
+        var blank = document.createElement("option");
+        blank.value = ""; blank.textContent = "Select a part…";
+        select.appendChild(blank);
+        Object.keys(CATEGORIES).forEach(function (c) {
+          if (cat && c !== cat) return;
+          var ids = Object.keys(CATALOG).filter(function (id) { return CATALOG[id].cat === c; });
+          if (!ids.length) return;
+          var group = document.createElement("optgroup");
+          group.label = CATEGORIES[c];
+          ids.forEach(function (id) {
+            var o = document.createElement("option");
+            o.value = id;
+            o.textContent = CATALOG[id].name + " — " + inr(CATALOG[id].price) + " / " + CATALOG[id].unit;
+            group.appendChild(o);
+          });
+          select.appendChild(group);
+        });
+      }
+
+      // the amount, panel count, brand and inverter above follow the parts
+      function recalc() {
+        var total = 0, panels = 0, panelNames = [], inverterNames = [], any = false;
+        body.querySelectorAll("tr").forEach(function (tr) {
+          var item = CATALOG[tr.querySelector(".part-select").value];
+          var qty = parseFloat(tr.querySelector(".qty").value) || 0;
+          if (!item) { tr.querySelector(".unit").textContent = "—"; tr.querySelector(".unit-price").textContent = "—"; tr.querySelector(".line-total").textContent = "₹0"; return; }
+          any = true;
+          total += item.price * qty;
+          tr.querySelector(".unit").textContent = item.unit;
+          tr.querySelector(".unit-price").textContent = inr(item.price);
+          tr.querySelector(".line-total").textContent = inr(item.price * qty);
+          if (item.cat === "panel") { panels += Math.round(qty); panelNames.push(item.name); }
+          if (item.cat === "inverter") inverterNames.push(item.name);
+        });
+        document.getElementById("parts-total").textContent = inr(total);
+        function lock(el, locked, value) {
+          if (!el) return;
+          el.readOnly = locked;
+          el.required = !locked;
+          if (locked && value !== undefined) el.value = value;
+        }
+        lock(fields.price, any, total.toFixed(2));
+        lock(fields.count, panelNames.length > 0, panels);
+        lock(fields.brand, panelNames.length > 0, unique(panelNames).join(" + "));
+        lock(fields.inverter, inverterNames.length > 0, unique(inverterNames).join(" + "));
+      }
+
+      function addRow(cat, id, qty) {
+        var tr = tpl.content.firstElementChild.cloneNode(true);
+        var sel = tr.querySelector(".part-select");
+        fill(sel, cat);
+        if (id) sel.value = String(id);
+        if (qty) tr.querySelector(".qty").value = qty;
+        sel.addEventListener("change", recalc);
+        tr.querySelector(".qty").addEventListener("input", recalc);
+        tr.querySelector(".remove").addEventListener("click", function () { tr.remove(); recalc(); });
+        body.appendChild(tr);
+        recalc();
+      }
+
+      document.querySelectorAll(".add-part").forEach(function (b) {
+        b.addEventListener("click", function () { addRow(b.dataset.cat); });
+      });
+      INITIAL.forEach(function (r) { var it = CATALOG[r.id]; addRow(it ? it.cat : null, r.id, r.qty); });
+      recalc();
+    })();
+  </script>
+
   <%= f.label :image, "Picture of the system (shown on the website)" %>
   <% if package.persisted? && package.image.attached? %>
     <%= image_tag url_for(package.image), alt: package.name, style: "max-width:260px;border-radius:8px" %>

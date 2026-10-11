@@ -73,13 +73,16 @@ class ServiceRequest < ApplicationRecord
   def create_quote!(package: nil, items: [], system_name: nil, discount: nil, valid_until: nil, notes: nil, subsidy_applies: false, by: nil)
     transaction do
       quotes.where(status: "sent").update_all(status: "superseded")
+      if package && items.empty?   # a ready-made system: list every part with its price
+        items = package.package_items.includes(:catalog_item).map { |pi| [pi.catalog_item, pi.quantity] }
+      end
       quote = quotes.build(solar_package: package, system_name: system_name.to_s.strip.presence,
                            discount: discount.presence, valid_until: valid_until.presence,
                            notes: notes.to_s.strip.presence, subsidy_applies: subsidy_applies, team_member: by)
       items.each_with_index { |(catalog_item, qty), i| quote.quote_items.build(catalog_item: catalog_item, quantity: qty, position: i) }
       quote.save!
       text = "Quote #{quote.number} created: #{quote.system_name}, #{Rupees.display(quote.total)}"
-      text += " (custom, #{quote.quote_items.size} parts)" if quote.custom?
+      text += " (#{quote.quote_items.size} parts listed)" if quote.quote_items.any?
       text += " (after a discount of #{Rupees.display(quote.discount)})" if quote.discount.positive?
       if status == "site_visit"
         advance!(to: "quote_sent", by: by, note: text)
