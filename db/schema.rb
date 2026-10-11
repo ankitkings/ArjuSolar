@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_01_13_000000) do
+ActiveRecord::Schema[7.1].define(version: 2026_01_14_000000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -130,6 +130,17 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_13_000000) do
     t.index ["service_request_id"], name: "index_maintenance_visits_on_service_request_id"
     t.index ["status", "due_on"], name: "index_maintenance_visits_on_status_and_due_on"
     t.index ["team_member_id"], name: "index_maintenance_visits_on_team_member_id"
+  end
+
+  create_table "package_items", force: :cascade do |t|
+    t.integer "solar_package_id", null: false
+    t.integer "catalog_item_id", null: false
+    t.decimal "quantity", precision: 8, scale: 2, default: "1.0", null: false
+    t.integer "position", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["catalog_item_id"], name: "index_package_items_on_catalog_item_id"
+    t.index ["solar_package_id"], name: "index_package_items_on_solar_package_id"
   end
 
   create_table "payments", force: :cascade do |t|
@@ -327,6 +338,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_13_000000) do
   add_foreign_key "maintenance_visits", "installations"
   add_foreign_key "maintenance_visits", "service_requests"
   add_foreign_key "maintenance_visits", "team_members"
+  add_foreign_key "package_items", "catalog_items"
+  add_foreign_key "package_items", "solar_packages"
   add_foreign_key "payments", "service_requests"
   add_foreign_key "payments", "team_members"
   add_foreign_key "quote_items", "catalog_items"

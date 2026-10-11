@@ -99,6 +99,32 @@ end
 end
 
 # ---------------------------------------------------------------
+# Parts of each standard system. The system's price is the total of its parts.
+# (Only added to systems that have no parts yet - nothing you have edited is overwritten.)
+# ---------------------------------------------------------------
+[
+  # system,             panel,                          panels, inverter,                  kW
+  ["1 kW Starter",     "Waaree 540W Mono PERC panel",   2,  "Luminous 1kW inverter",  1],
+  ["2 kW Home",        "Adani Solar 540W Mono panel",   4,  "Growatt 2kW inverter",   2],
+  ["3 kW Home",        "Waaree 540W Mono PERC panel",   6,  "Luminous 3kW inverter",  3],
+  ["5 kW Home Plus",   "Tata Power Solar 540W panel",  10,  "Sungrow 5kW inverter",   5],
+  ["10 kW Commercial", "Tata Power Solar 540W panel",  19,  "Sungrow 10kW inverter", 10],
+  ["20 kW Commercial", "Adani Solar 540W Mono panel",  38,  "Sungrow 20kW inverter", 20]
+].each do |system_name, panel, panels, inverter, kw|
+  system = SolarPackage.find_by(name: system_name)
+  next unless system && system.package_items.none?
+  rows = [[panel, panels], [inverter, 1],
+          ["GI mounting structure (per kW)", kw], ["DC + AC cables and connectors (per kW)", kw],
+          ["ACDB / DCDB protection boxes", 1], ["Earthing and lightning arrestor kit", 1],
+          ["Wi-Fi monitoring device", 1], ["Installation and commissioning (per kW)", kw],
+          ["Net-metering and documentation", 1], ["Transport and handling", 1]]
+         .map { |part, qty| [CatalogItem.find_by!(name: part), qty] }
+  system.assign_attributes(SolarPackage.attributes_from_parts(rows))
+  system.save!
+  system.replace_parts!(rows)
+end
+
+# ---------------------------------------------------------------
 # DEMO DATA (requests, installations, maintenance, payments, visitors)
 # Skipped in production or with SEED_DEMO=false. Runs only if tables are empty.
 # ---------------------------------------------------------------

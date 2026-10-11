@@ -62,7 +62,8 @@ class Quote < ApplicationRecord
   end
 
   # built from individual parts (not from a ready-made package)
-  def custom? = quote_items.any?
+  # built from individual parts with no ready-made system behind it
+  def custom? = solar_package_id.nil? && quote_items.any?
   def expired? = status == "sent" && valid_until < Date.current
 
   # what the client effectively pays once the government subsidy reaches their bank account
@@ -97,6 +98,7 @@ class Quote < ApplicationRecord
     panels    = items.select { |i| i.category == "panel" }
     inverters = items.select { |i| i.category == "inverter" }
     self.list_price     = items.sum { |i| i.line_total || 0 }
+    return if solar_package   # a ready-made system keeps its own capacity, panels and brands
     self.panel_count    = panels.sum { |i| i.quantity.to_i }
     self.capacity_kw    = panels.sum { |i| (i.quantity || 0) * (i.capacity_kw || 0) }.round(2)
     self.panel_brand    = panels.map(&:description).uniq.join(" + ").presence
@@ -127,7 +129,7 @@ class Quote < ApplicationRecord
 
   def custom_needs_panel_and_inverter
     items = quote_items.to_a
-    return if items.empty?
+    return if items.empty? || solar_package
     categories = items.map(&:category)
     errors.add(:base, "Add at least one solar panel and one inverter") unless categories.include?("panel") && categories.include?("inverter")
     errors.add(:base, "The chosen panel has no capacity (kW) in the parts price list") if categories.include?("panel") && capacity_kw.to_f <= 0

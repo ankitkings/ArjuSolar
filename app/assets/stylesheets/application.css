@@ -14,8 +14,8 @@ a{color:#b45309}.wrap{max-width:1100px;margin:0 auto;padding:24px 16px}.narrow{m
 .flash{padding:10px 16px;margin:0;background:#dcfce7}.flash.alert{background:#fee2e2}
 .site-footer{background:var(--dark);color:#cbd5e1}.site-footer a{color:var(--brand)}.site-footer h4{color:#fff;margin:0}
 /* admin */
-body.admin{display:flex;min-height:100vh}body.admin aside{width:200px;background:var(--dark);padding:20px;display:flex;flex-direction:column;gap:8px;flex-shrink:0}
-body.admin aside h3{color:var(--brand);margin:0 0 12px}body.admin aside a{color:#e2e8f0;text-decoration:none;padding:6px 0}
+body.admin{display:flex;min-height:100vh}body.admin > aside{width:200px;background:var(--dark);padding:20px;display:flex;flex-direction:column;gap:8px;flex-shrink:0}
+body.admin > aside h3{color:var(--brand);margin:0 0 12px}body.admin > aside a{color:#e2e8f0;text-decoration:none;padding:6px 0}
 .admin-main{flex:1;padding:24px;min-width:0}.linklike{background:none;border:0;color:#fca5a5;cursor:pointer;padding:6px 0;font:inherit}.admin-main .linklike{color:#b91c1c}
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px}.stat,.panel{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px;text-decoration:none;color:inherit}
 .stat b{display:block;font-size:1.8rem}.stat.small b{font-size:1.3rem}.stat span{color:var(--muted)}
@@ -23,7 +23,7 @@ body.admin aside h3{color:var(--brand);margin:0 0 12px}body.admin aside a{color:
 .badge{padding:2px 10px;border-radius:99px;font-size:.8rem;background:#e2e8f0}.badge.pending{background:#fef3c7}.badge.contacted,.badge.site_visit{background:#dbeafe}.badge.quote_sent{background:#ede9fe}.badge.installation{background:#ffedd5}.badge.completed{background:#dcfce7}.badge.cancelled{background:#fee2e2}
 .bar{display:inline-block;width:90px;height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden;vertical-align:middle}.bar i{display:block;height:100%;background:#16a34a}.bar.big{display:block;width:100%;height:14px;margin-bottom:8px}
 .filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}.timeline{list-style:none;padding:0;border-left:3px solid var(--brand)}.timeline li{padding:6px 0 12px 16px}
-@media(max-width:700px){body.admin{flex-direction:column}body.admin aside{width:100%;flex-direction:row;flex-wrap:wrap}}
+
 
 /* workflow buttons + statuses */
 button.btn{border:0;font:inherit;font-weight:600;cursor:pointer;padding:10px 16px;border-radius:8px}
@@ -39,7 +39,7 @@ button.btn{border:0;font:inherit;font-weight:600;cursor:pointer;padding:10px 16p
 .receipt th,.receipt td{white-space:normal}
 .right{text-align:right}.badge.partial{background:#fef3c7}
 @media print{
-  body.admin aside,.no-print,.flash,.site-header,.site-footer{display:none !important}
+  body.admin > aside,.no-print,.flash,.site-header,.site-footer{display:none !important}
   body.admin{display:block}.admin-main{padding:0}
   .receipt{border:0;max-width:none;padding:0}
 }
@@ -129,3 +129,86 @@ details.part-group[open] summary{margin-bottom:10px}
 .badge.preparing{background:#e2e8f0}.badge.applied,.badge.feasibility_approved,.badge.net_meter_applied{background:#dbeafe}
 .badge.commissioned,.badge.bank_submitted{background:#ede9fe}.badge.subsidy_received{background:#bbf7d0;color:#166534;font-weight:700}
 .badge.rejected{background:#fee2e2;color:#b91c1c;font-weight:700}.badge.withdrawn{background:#e2e8f0;color:#64748b}
+
+/* ================= phones & tablets ================= */
+img{max-width:100%}
+.two-col{grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr))}
+.grid{grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr))}
+.site-footer p{overflow-wrap:anywhere}
+.nav-toggle,.app-bar,.drawer-backdrop,.chat-jump{display:none}
+
+/* public website menu */
+.nav-toggle{background:none;border:1px solid #475569;color:#fff;font-size:1.4rem;line-height:1;padding:6px 12px;border-radius:8px;cursor:pointer;min-height:44px}
+@media(max-width:767px){
+  .nav-toggle{display:block}
+  .site-header nav{display:none;width:100%;flex-direction:column;margin-top:10px}
+  .site-header nav.open{display:flex}
+  .site-header nav a{margin:0;padding:12px 4px;border-top:1px solid #1e293b;font-size:1.05rem}
+}
+
+/* admin & staff panels: top bar + sliding menu on phones and tablets */
+@media(max-width:900px){
+  body.admin{display:block}
+  .app-bar{display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:40;background:var(--dark);color:#fff;padding:8px 14px}
+  .app-bar .menu-toggle{background:none;border:0;color:#fff;font-size:1.7rem;cursor:pointer;min-width:44px;min-height:44px}
+  .app-bar .app-title{color:var(--brand);font-weight:700;font-size:1.1rem}
+  body.admin > aside{position:fixed;top:0;bottom:0;left:0;width:270px;z-index:60;overflow-y:auto;flex-direction:column;flex-wrap:nowrap;transform:translateX(-100%);transition:transform .2s ease}
+  body.menu-open > aside{transform:none}
+  body.menu-open .drawer-backdrop{display:block;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:50}
+  body.admin > aside a,body.admin > aside .linklike{padding:11px 0;font-size:1.05rem}
+  .admin-main{padding:16px}
+}
+
+/* tables become small cards on a phone (labels are added by a script) */
+@media screen and (max-width:700px){
+  table.stack,table.stack tbody,table.stack tfoot,table.stack tr{display:block;width:100%}
+  table.stack thead,table.stack tr.th-row{display:none}
+  table.stack tr{padding:8px 12px;border-bottom:1px solid var(--line)}
+  table.stack td{display:flex;justify-content:space-between;align-items:center;gap:12px;border:0;padding:5px 0;white-space:normal;text-align:right}
+  table.stack td::before{content:attr(data-label);font-weight:600;color:var(--muted);text-align:left;flex-shrink:0}
+  table.stack td[data-label=""]{justify-content:flex-start}
+  table.stack td[data-label=""]::before{display:none}
+  table.stack td select,table.stack td input{max-width:60vw}
+}
+
+/* phones */
+@media(max-width:700px){
+  .wrap{padding:16px 14px}
+  h1{font-size:1.6rem}h2{font-size:1.3rem}
+  .admin-main{padding:12px}
+  .hero .wrap{padding:70px 14px}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .stat{padding:12px}.stat b{font-size:1.4rem}.stat span{font-size:.85rem}
+  .form input,.form select,.form textarea,.filters input,.filters select,.chat-form textarea{font-size:16px}
+  .filters input,.filters select{flex:1 1 100%}
+  .form input[type=submit]{align-self:stretch}
+  .btn,input[type=submit]{padding:12px 18px}
+  .receipt{padding:14px}.receipt-head .right{text-align:left}
+  .panel{padding:12px}
+  .alert-new{padding:10px 12px}
+}
+@media(max-width:480px){
+  .hero h1{font-size:1.9rem}.hero p{font-size:1rem}
+  .brand{font-size:1.15rem}
+}
+
+/* chat on phones and tablets: the conversation comes first, the list below it */
+@media(max-width:800px){
+  .chat-main{order:-1}
+  .chat-jump{display:block;margin:0 0 6px}
+  .chat-messages{height:50vh}
+  .bubble{max-width:90%}
+  .chat-toasts{left:12px;right:12px;bottom:12px}.chat-toast{max-width:none}
+}
+
+/* bigger tap targets on touch screens */
+@media(pointer:coarse){
+  .btn,button.btn,input[type=submit],.linklike{min-height:44px}
+  .chat-list li a,.chat-person{padding:11px 8px}
+}
+
+@media print{.app-bar,.drawer-backdrop,.chat-toasts,.nav-toggle{display:none !important}}
+
+/* the menu buttons never show on a wide screen, whatever else is on the page */
+@media(min-width:768px){.nav-toggle{display:none !important}}
+@media(min-width:901px){.app-bar,.drawer-backdrop{display:none !important}}

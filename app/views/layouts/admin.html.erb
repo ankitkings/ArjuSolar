@@ -6,8 +6,19 @@
   <meta name="robots" content="noindex,nofollow">
   <%= csrf_meta_tags %><%= csp_meta_tag %>
   <%= stylesheet_link_tag "application" %>
+  <style>
+    .app-bar,.drawer-backdrop{display:none}
+    @media(max-width:900px){.app-bar{display:flex}}
+    @media(min-width:901px){.app-bar,.drawer-backdrop{display:none !important}}
+  </style>
 </head>
 <body class="admin">
+  <header class="app-bar">
+    <button type="button" class="menu-toggle" aria-label="Menu" aria-expanded="false">☰</button>
+    <span class="app-title">Arju Solars</span>
+    <% if new_request_count.positive? %><span class="nav-badge"><%= new_request_count %> new</span><% end %>
+  </header>
+  <div class="drawer-backdrop"></div>
   <aside>
     <h3>Arju Solars</h3>
     <%= link_to "Dashboard", admin_root_path %>
@@ -29,5 +40,6 @@
     <%= yield %>
   </main>
   <%= render "shared/chat_notifier", url: notifications_admin_chats_path, user_key: "admin:#{current_admin.id}" %>
+  <%= render "shared/responsive" %>
 </body>
 </html>
