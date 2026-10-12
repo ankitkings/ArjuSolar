@@ -1,0 +1,30 @@
+<% if req.status == "installation" %>
+  <% waiting = req.installation_status == "waiting_for_stock" %>
+  <% parts = req.required_parts %>
+  <div class="panel <%= 'waiting' if waiting %>" style="margin-top:16px">
+    <h3>Installation schedule</h3>
+    <% if waiting %>
+      <p><b>Waiting for parts.</b> Some parts are not in stock yet, so the installation cannot be booked. It is booked automatically as soon as they arrive.</p>
+    <% elsif req.installation_scheduled_on %>
+      <% days = (req.installation_scheduled_on - Date.current).to_i %>
+      <p><b>Installation date:</b> <%= l req.installation_scheduled_on, format: :long %>
+        (<%= days.zero? ? "today" : (days == 1 ? "tomorrow" : (days.negative? ? "overdue" : "in #{days} days")) %>)
+        · <b>Installer:</b> <%= req.team_member&.name || "not assigned" %></p>
+    <% else %>
+      <p class="muted">No installation date has been set.</p>
+    <% end %>
+    <% if parts.any? %>
+      <table>
+        <tr><th>Part</th><th class="right">Quantity</th><th>Stock</th></tr>
+        <% parts.each do |item, qty| %>
+          <% free = item.available_quantity(except: req) %>
+          <tr>
+            <td><%= item.name %></td>
+            <td class="right"><%= format("%g", qty.to_f) %> <%= item.unit %></td>
+            <td><%= req.installation_status == "scheduled" ? "✔ Set aside for this job" : (free >= qty ? "✔ In stock" : "⚠ Short by #{format('%g', (qty - free).to_f)}") %></td>
+          </tr>
+        <% end %>
+      </table>
+    <% end %>
+  </div>
+<% end %>

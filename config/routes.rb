@@ -77,6 +77,12 @@ Rails.application.routes.draw do
     resources :installations, only: :update
     resources :solar_packages, except: :show
     resources :catalog_items, path: "parts", except: :show
+    resource :stock, only: :show, controller: "stock" do
+      post :receive
+      post :adjust
+      patch :min_level
+      patch :rules
+    end
     resource :subsidy, only: %i[show update], controller: "subsidy_schemes"
     resources :subsidy_applications, only: %i[index show create update]
     resources :team_members

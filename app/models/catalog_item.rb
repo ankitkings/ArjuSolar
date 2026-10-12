@@ -3,6 +3,7 @@ class CatalogItem < ApplicationRecord
   CATEGORIES = {
     "panel"      => "Solar panel",
     "inverter"   => "Inverter",
+    "battery"    => "Battery",
     "mounting"   => "Mounting structure",
     "cables"     => "Cables & connectors",
     "protection" => "Protection & earthing",
@@ -15,6 +16,8 @@ class CatalogItem < ApplicationRecord
   before_destroy { @package_ids_to_refresh = package_items.pluck(:solar_package_id) }
   has_many :quote_items, dependent: :nullify
   has_many :package_items, dependent: :destroy
+  has_many :stock_movements, dependent: :destroy
+  has_many :stock_reservations, dependent: :destroy
   after_update :refresh_packages, if: :saved_change_to_unit_price?
   after_destroy :refresh_packages
 
@@ -29,6 +32,28 @@ class CatalogItem < ApplicationRecord
   scope :available, -> { where(active: true).order(:name) }
 
   def category_label = CATEGORIES[category]
+
+  # Services (installation, paperwork, transport) are not kept in stock
+  scope :stocked, -> { where.not(category: "labour") }
+  def tracks_stock? = category != "labour"
+
+  def reserved_quantity(except: nil)
+    scope = stock_reservations
+    scope = scope.where.not(service_request_id: except.id) if except
+    scope.sum(:quantity)
+  end
+
+  # in stock and not set aside for another job
+  def available_quantity(except: nil) = stock_quantity - reserved_quantity(except: except)
+
+  # quantity: + when stock comes in, - when it is used. Every change is kept in the history.
+  def add_stock!(quantity, kind:, note: nil, request: nil)
+    transaction do
+      self.class.where(id: id).update_all(["stock_quantity = stock_quantity + ?", quantity])
+      stock_movements.create!(quantity: quantity, kind: kind, note: note, service_request: request)
+      reload
+    end
+  end
 
   private
 

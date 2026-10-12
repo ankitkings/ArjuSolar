@@ -82,7 +82,9 @@
 
 <%= render "staff/subsidy_documents/panel", task: @task %>
 
-<% if @task.status == "installation" %>
+<%= render "shared/installation_schedule", req: @task %>
+
+<% if @task.status == "installation" && @task.installation_status != "waiting_for_stock" %>
   <div class="panel" style="margin-top:16px">
     <h3>Installation done? Enter the system details</h3>
     <%= render "shared/installation_form", installation: @installation, url: complete_staff_task_path(@task) %>

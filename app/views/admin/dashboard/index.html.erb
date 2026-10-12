@@ -29,6 +29,7 @@
 <div class="stats">
   <%= link_to admin_service_requests_path(status: "pending"), class: "stat #{'alert' if @new_requests.any?}" do %><b><%= @new_requests.size %></b><span>New requests (not addressed)</span><% end %>
   <%= link_to admin_service_requests_path(unassigned: 1), class: "stat" do %><b><%= @unassigned %></b><span>Unassigned requests</span><% end %>
+  <%= link_to admin_stock_path(tab: "order"), class: "stat #{'alert' if parts_short_count.positive?}" do %><b><%= parts_short_count %></b><span>Parts to order today</span><% end %>
   <%= link_to admin_maintenance_visits_path, class: "stat" do %><b><%= @maintenance_due %></b><span>Maintenance due (7 days)</span><% end %>
   <%= link_to admin_payments_path, class: "stat" do %><b><%= @payments_pending %></b><span>Payments pending (<%= inr(@outstanding) %> outstanding)</span><% end %>
 </div>

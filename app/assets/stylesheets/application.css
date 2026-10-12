@@ -216,3 +216,9 @@ img{max-width:100%}
 /* subsidy documents */
 .doc-row{border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-bottom:8px;background:#fff}
 .doc-row p{margin:2px 0 6px}
+
+/* stock + installation schedule */
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 16px}
+.tabs a.tab{padding:8px 14px;border-radius:99px;background:#e2e8f0;color:#0f172a;text-decoration:none;font-weight:600}
+.tabs a.tab.active{background:var(--brand)}
+.panel.waiting{border:2px solid #f59e0b;background:#fffbeb}.panel.waiting h3{color:#b45309}
