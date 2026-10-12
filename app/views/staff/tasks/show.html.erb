@@ -1,4 +1,6 @@
 <% actions = RequestWorkflow.actions_for(@task.status) %>
+<% docs_pending = @task.status == "quote_sent" && @task.subsidy_documents_pending? %>
+<% actions = actions.reject { |a| a[:to] == "installation" } if docs_pending %>
 <p><%= link_to "← My tasks", staff_root_path %></p>
 <h1>Task #<%= @task.id %> — <%= @task.name %></h1>
 <div class="two-col">
@@ -23,6 +25,15 @@
         <p class="muted small">After you speak to the client, choose the result. The request is handed to the next team automatically.</p>
       <% end %>
       <%= render "shared/stage_actions", actions: actions, url: advance_staff_task_path(@task) %>
+      <% if docs_pending %>
+        <div class="flash alert" style="margin-top:10px">
+          <b>Before handing over to installation</b>, collect the PM Surya Ghar documents below.
+          Still missing: <%= @task.missing_subsidy_documents.to_sentence %>.
+        </div>
+        <%= button_to "Hand over to installation without the documents", advance_staff_task_path(@task),
+              params: { to: "installation", without_documents: "1" }, class: "btn hold",
+              form: { onsubmit: "return confirm('The documents are still missing. The admin will have to collect them later. Hand over anyway?')" } %>
+      <% end %>
     <% elsif @task.status == "installation" %>
       <p class="muted">When the installation is finished, fill in the system details and add photos of the site below. The request then goes to the cashier for payment, and the maintenance checks are scheduled automatically.</p>
     <% elsif @task.status == "payment" %>
@@ -68,6 +79,8 @@
     </details>
   <% end %>
 <% end %>
+
+<%= render "staff/subsidy_documents/panel", task: @task %>
 
 <% if @task.status == "installation" %>
   <div class="panel" style="margin-top:16px">

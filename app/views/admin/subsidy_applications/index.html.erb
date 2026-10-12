@@ -16,13 +16,14 @@
 <% end %>
 
 <div class="table-wrap"><table>
-  <tr><th>Client</th><th>Phone</th><th>System</th><th>Subsidy</th><th>Status</th><th>Portal application no.</th><th>Applied on</th><th>Received</th><th></th></tr>
+  <tr><th>Client</th><th>Phone</th><th>System</th><th>Subsidy</th><th>Documents</th><th>Status</th><th>Portal application no.</th><th>Applied on</th><th>Received</th><th></th></tr>
   <% @applications.each do |a| %>
     <% req = a.service_request %>
     <tr>
       <td><%= req.name %></td><td><%= req.phone %></td>
       <td><%= a.system_capacity_kw ? "#{format('%g', a.system_capacity_kw.to_f)} kW" : "—" %></td>
       <td><%= inr(a.expected_amount) %></td>
+      <td><%= a.collected_documents.size %> of <%= SubsidyApplication::DOCUMENTS.size %></td>
       <td><span class="badge <%= a.status %>"><%= a.status_label %></span></td>
       <td><%= a.portal_application_no.presence || "—" %></td>
       <td><%= a.applied_on ? l(a.applied_on, format: :short) : "—" %></td>

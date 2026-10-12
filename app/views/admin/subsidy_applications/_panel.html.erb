@@ -3,7 +3,8 @@
   <h3>PM Surya Ghar subsidy</h3>
   <% if application %>
     <p><span class="badge <%= application.status %>"><%= application.status_label %></span>
-      expected <%= inr(application.expected_amount) %>
+      expected <%= inr(application.expected_amount) %> ·
+      documents <%= application.collected_documents.size %> of <%= SubsidyApplication::DOCUMENTS.size %>
       <%= " · received #{inr(application.received_amount)} on #{l application.received_on, format: :short}" if application.status == "subsidy_received" %>
       · <%= link_to "Open the application", admin_subsidy_application_path(application) %></p>
   <% elsif sr.status != "cancelled" %>

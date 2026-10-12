@@ -1,0 +1,23 @@
+<% quote = task.latest_quote %>
+<% if task.status == "quote_sent" && quote&.subsidy_applies %>
+  <% application = task.subsidy_application || SubsidyApplication.new %>
+  <div class="panel" style="margin-top:16px">
+    <h3>Client accepted the quote? Collect the PM Surya Ghar documents</h3>
+    <p class="muted small">The quote includes the government subsidy of <b><%= inr(quote.subsidy_amount) %></b>. Take these documents from the client – tick each one when you have it, and add a clear photo or PDF if you can. Then hand the request over to installation.</p>
+    <p><b><%= application.collected_documents.size %> of <%= SubsidyApplication::DOCUMENTS.size %></b> collected<%= " ✅" if application.documents_complete? %></p>
+    <%= form_with model: application, url: staff_task_subsidy_documents_path(task), method: :patch, class: "form" do |f| %>
+      <% SubsidyApplication::DOCUMENTS.each do |flag, doc| %>
+        <div class="doc-row">
+          <label><%= f.check_box flag %> <b><%= doc[:label] %></b></label>
+          <p class="muted small"><%= doc[:hint] %></p>
+          <% attachment = application.public_send(doc[:file]) %>
+          <% if application.persisted? && attachment.attached? %>
+            <p class="small">📎 <%= link_to attachment.filename.to_s, url_for(attachment), target: "_blank", rel: "noopener" %> – choose a new file to replace it</p>
+          <% end %>
+          <%= f.file_field doc[:file], accept: "image/*,application/pdf" %>
+        </div>
+      <% end %>
+      <%= f.submit "Save documents", class: "btn go" %>
+    <% end %>
+  </div>
+<% end %>

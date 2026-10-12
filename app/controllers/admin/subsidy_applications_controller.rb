@@ -61,7 +61,7 @@ module Admin
         :status, :consumer_number, :discom, :portal_application_no, :system_capacity_kw, :expected_amount,
         :received_amount, :applied_on, :feasibility_on, :net_meter_on, :commissioned_on, :bank_submitted_on, :received_on,
         :rejection_reason, :notes, :electricity_bill_received, :bank_account_confirmed, :cancelled_cheque_received,
-        :roof_ownership_confirmed
+        :roof_ownership_confirmed, :electricity_bill_file, :ownership_proof_file, :bank_proof_file, :cancelled_cheque_file
       )
     end
   end

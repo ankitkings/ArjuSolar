@@ -257,7 +257,8 @@ if !Rails.env.production? && ENV["SEED_DEMO"] != "false"
       request = ServiceRequest.where(name: name).order(:created_at).first
       application = SubsidyApplication.start_for!(request)
       details = { status: status, portal_application_no: "PMSG-#{rng.rand(100_000..999_999)}",
-                  consumer_number: "N#{rng.rand(1_000_000_000..9_999_999_999)}" }
+                  consumer_number: "N#{rng.rand(1_000_000_000..9_999_999_999)}",
+                  electricity_bill_received: true, roof_ownership_confirmed: true, bank_account_confirmed: true, cancelled_cheque_received: true }
       details[:rejection_reason] = "Commercial electricity connection - the home scheme does not cover it" if status == "rejected"
       application.update!(details)
     end

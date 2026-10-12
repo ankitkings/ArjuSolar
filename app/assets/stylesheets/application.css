@@ -212,3 +212,7 @@ img{max-width:100%}
 /* the menu buttons never show on a wide screen, whatever else is on the page */
 @media(min-width:768px){.nav-toggle{display:none !important}}
 @media(min-width:901px){.app-bar,.drawer-backdrop{display:none !important}}
+
+/* subsidy documents */
+.doc-row{border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-bottom:8px;background:#fff}
+.doc-row p{margin:2px 0 6px}

@@ -46,6 +46,7 @@ class ServiceRequest < ApplicationRecord
     transaction do
       save!
       quote_followup(from, to)
+      withdraw_subsidy_application(to)
       open_payment_task(agreed_amount_for(installation)) if to == "payment" && installation && payment.nil?
       updates.create!(status: status, progress: progress, team_member: by, admin_user: admin,
                       note: [note.presence, handover].compact.join(" — ").presence)
@@ -100,6 +101,16 @@ class ServiceRequest < ApplicationRecord
     same ? q.total : inst.package_price
   end
 
+  # The quote includes the government subsidy and the client's documents are not all collected yet
+  def subsidy_documents_pending?
+    quote = latest_quote
+    quote.present? && quote.status == "sent" && quote.subsidy_applies && !subsidy_application&.documents_complete?
+  end
+
+  def missing_subsidy_documents
+    (subsidy_application || SubsidyApplication.new).missing_documents
+  end
+
   # A blank installation form, pre-filled from the client's address and the accepted quote
   def new_installation
     q = accepted_quote
@@ -143,6 +154,12 @@ class ServiceRequest < ApplicationRecord
     return unless quote && quote.status == "sent"
     quote.update!(status: "accepted") if to == "installation"
     quote.update!(status: "declined") if to == "cancelled" && from == "quote_sent"
+  end
+
+  # a cancelled deal has no subsidy application any more
+  def withdraw_subsidy_application(to)
+    return unless to == "cancelled" && subsidy_application && !subsidy_application.finished?
+    subsidy_application.update!(status: "withdrawn")
   end
 
   def assign_initial_owner
