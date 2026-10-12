@@ -16,6 +16,8 @@ class ServiceRequest < ApplicationRecord
   has_many :maintenance_visits, -> { order(:due_on) }, dependent: :destroy
   has_one :payment, dependent: :destroy
   has_one :subsidy_application, dependent: :destroy
+  has_many :stock_reservations, dependent: :destroy
+  has_many :stock_movements, dependent: :nullify
 
   validates :name, presence: true, length: { maximum: 100 }
   validates :phone, presence: true, format: { with: /\A[+\d][\d\s-]{7,15}\z/, message: "is not a valid number" }
@@ -48,8 +50,9 @@ class ServiceRequest < ApplicationRecord
       quote_followup(from, to)
       withdraw_subsidy_application(to)
       open_payment_task(agreed_amount_for(installation)) if to == "payment" && installation && payment.nil?
+      plan = plan_installation(from, to)   # parts + installer + date when the quote was accepted
       updates.create!(status: status, progress: progress, team_member: by, admin_user: admin,
-                      note: [note.presence, handover].compact.join(" — ").presence)
+                      note: [note.presence, plan || handover].compact.join(" — ").presence)
     end
   end
 
@@ -111,6 +114,15 @@ class ServiceRequest < ApplicationRecord
     (subsidy_application || SubsidyApplication.new).missing_documents
   end
 
+  # [[catalog_item, quantity], ...] the accepted quote needs from stock (services are not stocked)
+  def required_parts
+    quote = accepted_quote
+    return [] unless quote
+    totals = Hash.new(0)
+    quote.quote_items.includes(:catalog_item).each { |qi| totals[qi.catalog_item] += qi.quantity if qi.catalog_item&.tracks_stock? }
+    totals.to_a
+  end
+
   # A blank installation form, pre-filled from the client's address and the accepted quote
   def new_installation
     q = accepted_quote
@@ -154,6 +166,24 @@ class ServiceRequest < ApplicationRecord
     return unless quote && quote.status == "sent"
     quote.update!(status: "accepted") if to == "installation"
     quote.update!(status: "declined") if to == "cancelled" && from == "quote_sent"
+  end
+
+  # Accepted quote -> reserve parts and book the date. Installation done -> the parts are used.
+  # Cancelled / moved back -> the parts are free again for other jobs.
+  def plan_installation(from, to)
+    if to == "installation"
+      InstallationScheduler.new(self).call
+    elsif from == "installation"
+      if to == "payment"
+        stock_reservations.includes(:catalog_item).each do |r|
+          r.catalog_item.add_stock!(-r.quantity, kind: "used", request: self, note: "Used in the installation of request ##{id}")
+        end
+      end
+      stock_reservations.destroy_all
+      update_columns(installation_status: nil)
+      InstallationScheduler.process_waiting! unless to == "payment"
+      nil
+    end
   end
 
   # a cancelled deal has no subsidy application any more

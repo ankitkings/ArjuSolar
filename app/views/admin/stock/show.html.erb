@@ -1,0 +1,130 @@
+<h1>Stock</h1>
+<p class="muted">The parts you hold. When a client accepts a quote, the parts it needs are set aside and the installation is booked – today if it was accepted before <%= InstallationSetting.current.cutoff_label %> and an installer is free, otherwise the next working day. Parts that are not in stock go on the order list.</p>
+<p class="tabs no-print">
+  <%= link_to "Parts in stock", admin_stock_path, class: "tab #{'active' if @tab == 'stock'}" %>
+  <%= link_to "Parts to order (#{parts_short_count})", admin_stock_path(tab: "order"), class: "tab #{'active' if @tab == 'order'}" %>
+  <%= link_to "History", admin_stock_path(tab: "history"), class: "tab #{'active' if @tab == 'history'}" %>
+</p>
+
+<% if @tab == "stock" %>
+  <div class="table-wrap"><table>
+    <tr><th>Part</th><th>Type</th><th class="right">In stock</th><th class="right">Set aside</th><th class="right">Free</th><th>Order again below</th><th>Add stock</th><th>Count</th></tr>
+    <% @items.each do |i| %>
+      <% reserved = @reserved[i.id].to_d %>
+      <% low = i.min_stock.positive? && i.stock_quantity < i.min_stock %>
+      <tr class="<%= 'new-request' if low %>">
+        <td><%= i.name %><%= " ⚠ low" if low %></td>
+        <td><%= i.category_label %></td>
+        <td class="right"><b><%= format("%g", i.stock_quantity.to_f) %></b> <%= i.unit %></td>
+        <td class="right"><%= format("%g", reserved.to_f) %></td>
+        <td class="right"><%= format("%g", (i.stock_quantity - reserved).to_f) %></td>
+        <td>
+          <%= form_with url: min_level_admin_stock_path, method: :patch, class: "inline-form" do %>
+            <%= hidden_field_tag :item_id, i.id %>
+            <%= number_field_tag :min_stock, format("%g", i.min_stock.to_f), min: 0, step: 0.01, style: "width:80px" %>
+            <%= submit_tag "Save", class: "btn hold" %>
+          <% end %>
+        </td>
+        <td>
+          <%= form_with url: receive_admin_stock_path, method: :post, class: "inline-form" do %>
+            <%= hidden_field_tag :item_id, i.id %>
+            <%= number_field_tag :quantity, nil, min: 0.01, step: 0.01, placeholder: "How many", required: true, style: "width:90px" %>
+            <%= submit_tag "Add", class: "btn go" %>
+          <% end %>
+        </td>
+        <td>
+          <%= form_with url: adjust_admin_stock_path, method: :post, class: "inline-form" do %>
+            <%= hidden_field_tag :item_id, i.id %>
+            <%= number_field_tag :counted, nil, min: 0, step: 0.01, placeholder: "Counted", required: true, style: "width:90px" %>
+            <%= submit_tag "Set", class: "btn hold" %>
+          <% end %>
+        </td>
+      </tr>
+    <% end %>
+    <% if @items.empty? %><tr><td colspan="8" class="muted">No parts yet. Add them under Admin → Parts first.</td></tr><% end %>
+  </table></div>
+  <p class="muted small">"Add" is for parts you have received. "Count" corrects the quantity after you counted the shelf. "Order again below" puts the part on the order list when the stock falls under that number.</p>
+
+  <h2>Rules for planning installations</h2>
+  <div class="panel">
+    <%= form_with model: @setting, url: rules_admin_stock_path, method: :patch, class: "form" do |f| %>
+      <%= f.label :cutoff_hour, "Same-day cut-off (hour, 24-hour clock)" %>
+      <%= f.number_field :cutoff_hour, min: 0, max: 23 %>
+      <p class="muted small">A quote accepted before this hour (now <%= @setting.cutoff_label %>) can start the same day. Later ones start the next working day.</p>
+      <%= f.label :work_end_hour, "Working day ends at (hour, 24-hour clock)" %>
+      <%= f.number_field :work_end_hour, min: 0, max: 23 %>
+      <%= f.label :jobs_per_installer_per_day, "Installations one installer can take per day" %>
+      <%= f.number_field :jobs_per_installer_per_day, min: 1 %>
+      <label><%= f.check_box :sunday_off %> Sunday is a day off</label>
+      <%= f.submit "Save rules", class: "btn" %>
+    <% end %>
+  </div>
+
+<% elsif @tab == "order" %>
+  <% lines = @report.order_lines %>
+  <% if lines.any? %>
+    <div class="alert-new">
+      <h3>🛒 Order <%= pluralize(lines.size, "part") %> today</h3>
+      <p class="small">These are short for accepted installations, or below their minimum level. Estimated cost: <b><%= inr(@report.estimated_cost) %></b>.</p>
+    </div>
+  <% else %>
+    <div class="all-clear">✅ Nothing to order – everything the open installations need is in stock.</div>
+  <% end %>
+
+  <%= form_with url: admin_stock_path, method: :get, class: "filters no-print" do %>
+    <%= hidden_field_tag :tab, "order" %>
+    <label><%= check_box_tag :include_quotes, "1", @include_quotes, onchange: "this.form.submit()" %> Also count quotes still waiting for the client's answer</label>
+  <% end %>
+
+  <h2>What the installations need</h2>
+  <div class="table-wrap"><table>
+    <tr><th>Part</th><th class="right">Needed</th><th class="right">In stock</th><th class="right">Set aside</th><th class="right">Free</th><th class="right">Short</th><th>For requests</th></tr>
+    <% @report.rows.each do |r| %>
+      <tr class="<%= 'new-request' if r.short.positive? %>">
+        <td><%= r.item.name %></td>
+        <td class="right"><%= format("%g", r.needed.to_f) %> <%= r.item.unit %></td>
+        <td class="right"><%= format("%g", r.in_stock.to_f) %></td>
+        <td class="right"><%= format("%g", r.reserved.to_f) %></td>
+        <td class="right"><%= format("%g", r.free.to_f) %></td>
+        <td class="right"><%= r.short.positive? ? "⚠ #{format('%g', r.short.to_f)}" : "✔ enough" %></td>
+        <td><%= safe_join(r.requests.map { |id| link_to("##{id}", admin_service_request_path(id)) }, ", ") %></td>
+      </tr>
+    <% end %>
+    <% if @report.rows.empty? %><tr><td colspan="7" class="muted">No installation is waiting for parts right now.</td></tr><% end %>
+  </table></div>
+
+  <% if lines.any? %>
+    <h2>Order list</h2>
+    <div class="table-wrap"><table>
+      <tr><th>Part</th><th class="right">Order</th><th>Why</th><th class="right">Estimated cost</th></tr>
+      <% lines.each do |item, qty, why| %>
+        <tr><td><%= item.name %></td><td class="right"><b><%= format("%g", qty.to_f) %> <%= item.unit %></b></td><td><%= why %></td><td class="right"><%= inr(item.unit_price * qty) %></td></tr>
+      <% end %>
+      <tr><td colspan="3" class="right"><b>Total</b></td><td class="right"><b><%= inr(@report.estimated_cost) %></b></td></tr>
+    </table></div>
+    <div class="no-print">
+      <p class="muted small">Copy this to send to your supplier:</p>
+      <textarea id="order-text" readonly rows="<%= [lines.size + 1, 4].max %>" style="width:100%"><%= lines.map { |item, qty, _| "#{item.name} – #{format('%g', qty.to_f)} #{item.unit}" }.join("\n") %></textarea>
+      <p class="actions">
+        <button type="button" class="btn go" onclick="navigator.clipboard.writeText(document.getElementById('order-text').value).then(function(){ alert('Order list copied'); })">Copy order list</button>
+        <button type="button" class="btn hold" onclick="window.print()">Print</button>
+      </p>
+    </div>
+  <% end %>
+
+<% else %>
+  <div class="table-wrap"><table>
+    <tr><th>When</th><th>Part</th><th class="right">Change</th><th>Type</th><th>Note</th><th>Request</th></tr>
+    <% @movements.each do |m| %>
+      <tr>
+        <td><%= l m.created_at, format: :short %></td>
+        <td><%= m.catalog_item.name %></td>
+        <td class="right"><b><%= m.quantity.positive? ? "+" : "" %><%= format("%g", m.quantity.to_f) %></b></td>
+        <td><%= m.kind_label %></td>
+        <td><%= m.note.presence || "—" %></td>
+        <td><%= m.service_request ? link_to("##{m.service_request_id}", admin_service_request_path(m.service_request)) : "—" %></td>
+      </tr>
+    <% end %>
+    <% if @movements.empty? %><tr><td colspan="6" class="muted">No stock movements yet.</td></tr><% end %>
+  </table></div>
+<% end %>

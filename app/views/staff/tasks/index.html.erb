@@ -8,18 +8,19 @@
 
 <h2><%= @filter.humanize %> requests</h2>
 <div class="table-wrap"><table>
-  <tr><th>#</th><th>Customer</th><th>Phone</th><th>Stage</th><th>Progress</th><th>Received</th><th></th></tr>
+  <tr><th>#</th><th>Customer</th><th>Phone</th><th>Stage</th><th>Progress</th><th>Install on</th><th>Received</th><th></th></tr>
   <% @tasks.each do |t| %>
     <tr>
       <td><%= t.id %></td><td><%= t.name %></td>
       <td><%= link_to t.phone, "tel:#{t.phone.gsub(/[^\d+]/, '')}" %></td>
       <td><span class="badge <%= t.status %>"><%= t.status_label %></span><%= " · due #{l t.final_touch_due_on, format: :short}" if t.status == "commissioning" && t.final_touch_due_on %></td>
       <td><%= progress_bar(t) %></td>
+      <td><%= t.installation_status == "waiting_for_stock" ? "⚠ Waiting for parts" : (t.installation_scheduled_on && t.status == "installation" ? l(t.installation_scheduled_on, format: :short) : "—") %></td>
       <td><%= l t.created_at, format: :short %></td>
       <td><%= link_to "Open", staff_task_path(t) %></td>
     </tr>
   <% end %>
-  <% if @tasks.empty? %><tr><td colspan="7" class="muted">No requests here. New work reaches you automatically when a request moves to your stage.</td></tr><% end %>
+  <% if @tasks.empty? %><tr><td colspan="8" class="muted">No requests here. New work reaches you automatically when a request moves to your stage.</td></tr><% end %>
 </table></div>
 
 <% if @visits.any? || current_staff.department == "daily_servicing" %>

@@ -79,4 +79,9 @@ module ApplicationHelper
     "#{open_tasks.positive? ? "Their #{pluralize(open_tasks, 'open task')} will become unassigned. " : ''}" \
     "Their login stops working and their chat messages stay as 'Former teammate'. This cannot be undone."
   end
+
+  # Parts that have to be ordered (short for accepted installations or below their minimum level)
+  def parts_short_count
+    @_parts_short ||= RequiredParts.new.count_to_order
+  end
 end

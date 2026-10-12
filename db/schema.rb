@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_01_14_000000) do
+ActiveRecord::Schema[7.1].define(version: 2026_01_15_000000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -56,6 +56,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_14_000000) do
     t.boolean "active", default: true, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.decimal "stock_quantity", precision: 10, scale: 2, default: "0.0", null: false
+    t.decimal "min_stock", precision: 10, scale: 2, default: "0.0", null: false
     t.index ["category", "name"], name: "index_catalog_items_on_category_and_name"
   end
 
@@ -91,6 +93,15 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_14_000000) do
     t.datetime "updated_at", null: false
     t.index ["direct_key"], name: "index_chats_on_direct_key", unique: true
     t.index ["system_key"], name: "index_chats_on_system_key", unique: true
+  end
+
+  create_table "installation_settings", force: :cascade do |t|
+    t.integer "cutoff_hour", default: 15, null: false
+    t.integer "work_end_hour", default: 19, null: false
+    t.integer "jobs_per_installer_per_day", default: 1, null: false
+    t.boolean "sunday_off", default: true, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "installations", force: :cascade do |t|
@@ -246,6 +257,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_14_000000) do
     t.datetime "updated_at", null: false
     t.text "address"
     t.date "final_touch_due_on"
+    t.date "installation_scheduled_on"
+    t.string "installation_status"
     t.index ["status"], name: "index_service_requests_on_status"
     t.index ["team_member_id"], name: "index_service_requests_on_team_member_id"
   end
@@ -261,6 +274,29 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_14_000000) do
     t.datetime "updated_at", null: false
     t.decimal "price", precision: 10, scale: 2
     t.boolean "subsidy_eligible", default: true, null: false
+  end
+
+  create_table "stock_movements", force: :cascade do |t|
+    t.integer "catalog_item_id", null: false
+    t.integer "service_request_id"
+    t.decimal "quantity", precision: 10, scale: 2, null: false
+    t.string "kind", null: false
+    t.string "note"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["catalog_item_id"], name: "index_stock_movements_on_catalog_item_id"
+    t.index ["service_request_id"], name: "index_stock_movements_on_service_request_id"
+  end
+
+  create_table "stock_reservations", force: :cascade do |t|
+    t.integer "service_request_id", null: false
+    t.integer "catalog_item_id", null: false
+    t.decimal "quantity", precision: 10, scale: 2, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["catalog_item_id"], name: "index_stock_reservations_on_catalog_item_id"
+    t.index ["service_request_id", "catalog_item_id"], name: "index_stock_reservations_uniqueness", unique: true
+    t.index ["service_request_id"], name: "index_stock_reservations_on_service_request_id"
   end
 
   create_table "subsidy_applications", force: :cascade do |t|
@@ -353,5 +389,9 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_14_000000) do
   add_foreign_key "request_updates", "service_requests"
   add_foreign_key "request_updates", "team_members"
   add_foreign_key "service_requests", "team_members"
+  add_foreign_key "stock_movements", "catalog_items"
+  add_foreign_key "stock_movements", "service_requests"
+  add_foreign_key "stock_reservations", "catalog_items"
+  add_foreign_key "stock_reservations", "service_requests"
   add_foreign_key "subsidy_applications", "service_requests"
 end
