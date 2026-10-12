@@ -42,6 +42,10 @@ module Staff
         return redirect_to(staff_task_path(@task), alert: "That step is not available for this request.")
       end
 
+      if to == "installation" && @task.subsidy_documents_pending? && params[:without_documents] != "1"
+        return redirect_to(staff_task_path(@task), alert: "Collect the PM Surya Ghar documents first. Still missing: #{@task.missing_subsidy_documents.to_sentence}.")
+      end
+
       @task.advance!(to: to, by: current_staff, note: params[:note].to_s.strip.presence)
       msg = "Request moved to #{@task.status_label}."
       if @task.team_member && @task.team_member != current_staff

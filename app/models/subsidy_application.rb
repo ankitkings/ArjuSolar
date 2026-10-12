@@ -1,4 +1,6 @@
 class SubsidyApplication < ApplicationRecord
+  include ImageAttachment
+
   # the steps of the official process, in order
   FLOW = %w[preparing applied feasibility_approved net_meter_applied commissioned bank_submitted subsidy_received].freeze
   STATUSES = (FLOW + %w[rejected withdrawn]).freeze
@@ -28,7 +30,26 @@ class SubsidyApplication < ApplicationRecord
     "commissioned" => :commissioned_on, "bank_submitted" => :bank_submitted_on, "subsidy_received" => :received_on
   }.freeze
 
+  # The documents the portal needs. Ticked when collected; a photo / PDF of each can be kept here too.
+  DOCUMENTS = {
+    electricity_bill_received: { file: :electricity_bill_file, label: "Electricity bill",
+                                 hint: "The latest bill. The consumer number and the name must be clearly visible." },
+    roof_ownership_confirmed:  { file: :ownership_proof_file, label: "Own house / roof",
+                                 hint: "Proof that the client owns the house or can use the roof, e.g. a property tax receipt or an ownership paper." },
+    bank_account_confirmed:    { file: :bank_proof_file, label: "Aadhaar-linked bank account",
+                                 hint: "First page of the passbook, or a bank statement, of the account that is linked to the client's Aadhaar. Do not photograph the Aadhaar card number." },
+    cancelled_cheque_received: { file: :cancelled_cheque_file, label: "Cancelled cheque",
+                                 hint: "A cheque of that same account with CANCELLED written across it." }
+  }.freeze
+
   belongs_to :service_request
+  has_one_attached :electricity_bill_file
+  has_one_attached :ownership_proof_file
+  has_one_attached :bank_proof_file
+  has_one_attached :cancelled_cheque_file
+  DOCUMENTS.each_value { |doc| validates_document doc[:file] }
+
+  before_validation :tick_documents_with_files
 
   before_validation :default_received_amount
   before_save :stamp_date
@@ -50,11 +71,20 @@ class SubsidyApplication < ApplicationRecord
     create!(service_request: request, system_capacity_kw: kw, expected_amount: SubsidyScheme.current.amount_for(kw || 0))
   end
 
+  def documents_complete? = DOCUMENTS.keys.all? { |flag| self[flag] }
+  def collected_documents = DOCUMENTS.select { |flag, _| self[flag] }.values.map { |doc| doc[:label] }
+  def missing_documents = DOCUMENTS.reject { |flag, _| self[flag] }.values.map { |doc| doc[:label] }
+
   def status_label = LABELS[status]
   def step_index = FLOW.index(status)
   def finished? = %w[subsidy_received rejected withdrawn].include?(status)
 
   private
+
+  # an uploaded photo / PDF counts as "collected"
+  def tick_documents_with_files
+    DOCUMENTS.each { |flag, doc| self[flag] = true if public_send(doc[:file]).attached? }
+  end
 
   # "Subsidy received" without an amount means the expected amount arrived
   def default_received_amount

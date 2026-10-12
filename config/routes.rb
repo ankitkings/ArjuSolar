@@ -32,6 +32,7 @@ Rails.application.routes.draw do
         post :complete
       end
       resources :quotes, only: %i[new create]
+      resource :subsidy_documents, only: :update
     end
     resources :quotes, only: :show do
       member do

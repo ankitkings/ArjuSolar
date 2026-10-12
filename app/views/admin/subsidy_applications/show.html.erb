@@ -51,11 +51,18 @@
       <%= f.label :bank_submitted_on, "Bank details submitted on" %><%= f.date_field :bank_submitted_on %>
       <%= f.label :received_on, "Subsidy received on" %><%= f.date_field :received_on %>
 
-      <b>Documents</b>
-      <label><%= f.check_box :electricity_bill_received %> Electricity bill received</label>
-      <label><%= f.check_box :roof_ownership_confirmed %> Own house / roof confirmed</label>
-      <label><%= f.check_box :bank_account_confirmed %> Aadhaar-linked bank account confirmed</label>
-      <label><%= f.check_box :cancelled_cheque_received %> Cancelled cheque received</label>
+      <b>Documents</b> <span class="muted small">(<%= a.collected_documents.size %> of <%= SubsidyApplication::DOCUMENTS.size %> collected)</span>
+      <% SubsidyApplication::DOCUMENTS.each do |flag, doc| %>
+        <div class="doc-row">
+          <label><%= f.check_box flag %> <b><%= doc[:label] %></b></label>
+          <p class="muted small"><%= doc[:hint] %></p>
+          <% attachment = a.public_send(doc[:file]) %>
+          <% if a.persisted? && attachment.attached? %>
+            <p class="small">📎 <%= link_to attachment.filename.to_s, url_for(attachment), target: "_blank", rel: "noopener" %> – choose a new file to replace it</p>
+          <% end %>
+          <%= f.file_field doc[:file], accept: "image/*,application/pdf" %>
+        </div>
+      <% end %>
 
       <%= f.label :rejection_reason, "Reason, if rejected" %><%= f.text_area :rejection_reason, rows: 2 %>
       <%= f.label :notes, "Notes" %><%= f.text_area :notes, rows: 3 %>
