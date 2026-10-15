@@ -84,4 +84,15 @@ module ApplicationHelper
   def parts_short_count
     @_parts_short ||= RequiredParts.new.count_to_order
   end
+
+  # "Install on" in the installer's list: the date, or what the job is waiting for
+  def installation_cell(request)
+    case request.installation_status
+    when "waiting_for_stock"    then "⚠ Waiting for parts"
+    when "waiting_for_approval" then "⏳ Waiting for DISCOM approval"
+    when "waiting_for_net_meter" then "⏳ Installed – waiting for net meter"
+    else
+      request.installation_scheduled_on && request.status == "installation" ? l(request.installation_scheduled_on, format: :short) : "—"
+    end
+  end
 end

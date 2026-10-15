@@ -73,7 +73,7 @@
 
   <%= form_with url: admin_stock_path, method: :get, class: "filters no-print" do %>
     <%= hidden_field_tag :tab, "order" %>
-    <label><%= check_box_tag :include_quotes, "1", @include_quotes, onchange: "this.form.submit()" %> Also count quotes still waiting for the client's answer</label>
+    <label><%= check_box_tag :include_quotes, "1", @include_quotes, onchange: "this.form.submit()" %> Also count quotes waiting for the client's answer and jobs waiting for the electricity company's approval</label>
   <% end %>
 
   <h2>What the installations need</h2>

@@ -1,9 +1,28 @@
 <% if req.status == "installation" %>
-  <% waiting = req.installation_status == "waiting_for_stock" %>
+  <% state = req.installation_status %>
+  <% waiting = ServiceRequest::INSTALLATION_WAITING.include?(state) %>
+  <% admin = local_assigns[:admin] %>
+  <% application = req.subsidy_application %>
   <% parts = req.required_parts %>
   <div class="panel <%= 'waiting' if waiting %>" style="margin-top:16px">
     <h3>Installation schedule</h3>
-    <% if waiting %>
+    <% if state == "waiting_for_approval" %>
+      <p><b>Waiting for the electricity company's approval.</b> The installation does not start until the PM Surya Ghar application has been made on the portal and the electricity company (DISCOM) has approved it. It is scheduled automatically as soon as the application shows <b>DISCOM approved</b>.</p>
+      <p class="small">Application status: <b><%= application ? application.status_label : "not started" %></b>
+        <%= link_to "Open the application", admin_subsidy_application_path(application) if admin && application %></p>
+      <% if admin %>
+        <%= button_to "Start the installation anyway", release_installation_admin_service_request_path(req), method: :post, class: "btn hold",
+              form: { onsubmit: "return confirm('Start the installation without the electricity company approval?')" } %>
+      <% end %>
+    <% elsif state == "waiting_for_net_meter" %>
+      <p><b>Installation done – waiting for the net meter.</b> The installation is recorded. The payment starts as soon as the subsidy application shows <b>Installed, net meter applied</b>.</p>
+      <p class="small">Application status: <b><%= application ? application.status_label : "not started" %></b>
+        <%= link_to "Open the application", admin_subsidy_application_path(application) if admin && application %></p>
+      <% if admin %>
+        <%= button_to "Start the payment anyway", release_payment_admin_service_request_path(req), method: :post, class: "btn hold",
+              form: { onsubmit: "return confirm('Start the payment without the net meter step?')" } %>
+      <% end %>
+    <% elsif state == "waiting_for_stock" %>
       <p><b>Waiting for parts.</b> Some parts are not in stock yet, so the installation cannot be booked. It is booked automatically as soon as they arrive.</p>
     <% elsif req.installation_scheduled_on %>
       <% days = (req.installation_scheduled_on - Date.current).to_i %>
@@ -13,7 +32,7 @@
     <% else %>
       <p class="muted">No installation date has been set.</p>
     <% end %>
-    <% if parts.any? %>
+    <% if parts.any? && state != "waiting_for_net_meter" %>
       <table>
         <tr><th>Part</th><th class="right">Quantity</th><th>Stock</th></tr>
         <% parts.each do |item, qty| %>
@@ -21,7 +40,7 @@
           <tr>
             <td><%= item.name %></td>
             <td class="right"><%= format("%g", qty.to_f) %> <%= item.unit %></td>
-            <td><%= req.installation_status == "scheduled" ? "✔ Set aside for this job" : (free >= qty ? "✔ In stock" : "⚠ Short by #{format('%g', (qty - free).to_f)}") %></td>
+            <td><%= state == "scheduled" ? "✔ Set aside for this job" : (free >= qty ? "✔ In stock" : "⚠ Short by #{format('%g', (qty - free).to_f)}") %></td>
           </tr>
         <% end %>
       </table>

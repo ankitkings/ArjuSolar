@@ -53,6 +53,7 @@ class SubsidyApplication < ApplicationRecord
 
   before_validation :default_received_amount
   before_save :stamp_date
+  after_save :release_holds, if: :saved_change_to_status?
 
   validates :status, inclusion: { in: STATUSES }
   validates :portal_application_no, presence: { message: "is needed once the application has been made on the portal" },
@@ -61,6 +62,7 @@ class SubsidyApplication < ApplicationRecord
   validates :received_amount, numericality: { greater_than: 0 }, if: -> { status == "subsidy_received" }
   validates :expected_amount, numericality: { greater_than_or_equal_to: 0 }
   validates :received_amount, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true
+  validate :dates_not_in_future
 
   scope :in_group, ->(group) { where(status: GROUP_STATUSES.fetch(group)) }
 
@@ -75,11 +77,38 @@ class SubsidyApplication < ApplicationRecord
   def collected_documents = DOCUMENTS.select { |flag, _| self[flag] }.values.map { |doc| doc[:label] }
   def missing_documents = DOCUMENTS.reject { |flag, _| self[flag] }.values.map { |doc| doc[:label] }
 
+  # has the application got to this step (or further)?
+  def reached?(step)
+    FLOW.include?(status) && FLOW.index(status) >= FLOW.index(step)
+  end
+
   def status_label = LABELS[status]
   def step_index = FLOW.index(status)
   def finished? = %w[subsidy_received rejected withdrawn].include?(status)
 
   private
+
+  # the dates are things that already happened
+  def dates_not_in_future
+    DATE_FOR_STATUS.values.each do |column|
+      value = self[column]
+      errors.add(column, "cannot be in the future") if value && value > Date.current
+    end
+  end
+
+  # Moving the application on releases the work that was waiting for it:
+  #  DISCOM approved          -> the installation can be scheduled
+  #  Installed, net meter ... -> the payment can start
+  def release_holds
+    request = service_request
+    if request.installation_status == "waiting_for_approval" && request.installation_hold_reason.nil?
+      note = InstallationScheduler.new(request).call
+      request.updates.create!(status: request.status, progress: request.progress,
+                              note: "The PM Surya Ghar application is approved by the electricity company, so the installation can start. #{note}")
+    elsif request.installation_status == "waiting_for_net_meter" && request.payment_hold_reason.nil?
+      request.advance!(to: "payment", note: "The net meter has been applied, so the payment can start")
+    end
+  end
 
   # an uploaded photo / PDF counts as "collected"
   def tick_documents_with_files

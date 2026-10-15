@@ -81,6 +81,8 @@ end
   ["inverter",   "Sungrow 5kW inverter",                    "piece", 72_000,  5],
   ["inverter",   "Sungrow 10kW inverter",                   "piece", 135_000, 10],
   ["inverter",   "Sungrow 20kW inverter",                   "piece", 240_000, 20],
+  ["battery",    "Luminous 150Ah tubular battery",           "piece", 14_500,  nil],
+  ["battery",    "Exide 100Ah tubular battery",              "piece", 10_500,  nil],
   ["mounting",   "GI mounting structure (per kW)",          "kW",    6_000,   nil],
   ["mounting",   "Elevated structure for terrace (per kW)", "kW",    9_000,   nil],
   ["cables",     "DC + AC cables and connectors (per kW)",  "kW",    3_500,   nil],
@@ -122,6 +124,20 @@ end
   system.assign_attributes(SolarPackage.attributes_from_parts(rows))
   system.save!
   system.replace_parts!(rows)
+end
+
+# ---------------------------------------------------------------
+# Opening stock (demo only, never in production; only parts without any stock history)
+# ---------------------------------------------------------------
+unless Rails.env.production?
+  { "panel" => 24, "inverter" => 3, "battery" => 6, "mounting" => 40, "cables" => 60,
+    "protection" => 6, "monitoring" => 8, "other" => 10 }.each do |category, quantity|
+    CatalogItem.where(category: category).find_each do |item|
+      next if item.stock_movements.any?
+      item.add_stock!(quantity, kind: "received", note: "Opening stock")
+      item.update_columns(min_stock: [quantity / 4, 1].max)
+    end
+  end
 end
 
 # ---------------------------------------------------------------
@@ -220,7 +236,7 @@ if !Rails.env.production? && ENV["SEED_DEMO"] != "false"
           end
           custom.save!
         else
-        req.quotes.create!(
+        demo_quote = req.quotes.build(
           solar_package: SolarPackage.find_by!(name: quoted.fetch(name, "3 kW Home")),
           discount: (name == "Priya Verma" ? 5_000 : 0), valid_until: times[3].to_date + 15,
           subsidy_applies: !quoted.fetch(name, "3 kW Home").include?("Commercial"),
@@ -228,8 +244,14 @@ if !Rails.env.production? && ENV["SEED_DEMO"] != "false"
           team_member: TeamMember.where(department: "site_visitor").order(:id).first,
           created_at: times[3], updated_at: times[3]
         )
+        demo_quote.solar_package.package_items.includes(:catalog_item).each_with_index do |pi, i|
+          demo_quote.quote_items.build(catalog_item: pi.catalog_item, quantity: pi.quantity, position: i)
+        end
+        demo_quote.save!
         end
       end
+
+      InstallationScheduler.new(req).call if final == "installation"   # sets the parts aside and books the installation
 
       # installed system + payment (demo installations have no photos, so they are not on the website)
       if %w[payment commissioning completed].include?(final)
