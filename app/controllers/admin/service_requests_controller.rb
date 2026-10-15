@@ -1,6 +1,6 @@
 module Admin
   class ServiceRequestsController < BaseController
-    before_action :set_service_request, only: %i[show update complete edit_details details destroy]
+    before_action :set_service_request, only: %i[show update complete edit_details details destroy release_installation release_payment]
 
     def index
       @requests = ServiceRequest.includes(:team_member).order(created_at: :desc)
@@ -73,9 +73,23 @@ module Admin
       redirect_to admin_service_request_path(@service_request), alert: "The request could not be deleted: #{e.message.truncate(160)}"
     end
 
+    # Do not wait for the electricity company / the net meter any longer
+    def release_installation
+      @service_request.release_installation!(admin: current_admin)
+      redirect_to admin_service_request_path(@service_request), notice: "Installation released: #{@service_request.reload.installation_status == 'scheduled' ? 'it has been scheduled.' : 'it is waiting for parts.'}"
+    end
+
+    def release_payment
+      @service_request.release_payment!(admin: current_admin)
+      redirect_to admin_service_request_path(@service_request), notice: "Payment started."
+    end
+
     def complete
       unless @service_request.status == "installation"
         return redirect_to(admin_service_request_path(@service_request), alert: "Only requests in the Installation stage can be completed.")
+      end
+      if %w[waiting_for_approval waiting_for_net_meter].include?(@service_request.installation_status)
+        return redirect_to(admin_service_request_path(@service_request), alert: "This job is on hold (see the Installation schedule box). Use the button there to release it.")
       end
 
       @installation = Installation.new(installation_params)

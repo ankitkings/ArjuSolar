@@ -9,6 +9,23 @@
   <div class="stat"><b><%= @not_started.size %></b><span>Not started yet</span></div>
 </div>
 
+<% if @holds.any? %>
+  <div class="alert-new">
+    <h3>⏳ <%= pluralize(@holds.size, "job") %> on hold until the subsidy application moves on</h3>
+    <div class="table-wrap"><table>
+      <tr><th>Client</th><th>Waiting for</th><th>Application status</th><th></th></tr>
+      <% @holds.each do |r| %>
+        <tr>
+          <td><%= link_to r.name, admin_service_request_path(r) %></td>
+          <td><%= r.installation_status == "waiting_for_approval" ? "DISCOM approval, then the installation starts" : "Installed, net meter applied, then the payment starts" %></td>
+          <td><%= r.subsidy_application ? r.subsidy_application.status_label : "No application yet" %></td>
+          <td><%= r.subsidy_application ? link_to("Open application", admin_subsidy_application_path(r.subsidy_application)) : "" %></td>
+        </tr>
+      <% end %>
+    </table></div>
+  </div>
+<% end %>
+
 <%= form_with url: admin_subsidy_applications_path, method: :get, class: "filters" do %>
   <%= text_field_tag :q, params[:q], placeholder: "Search client name / phone / portal application no." %>
   <%= select_tag :group, options_for_select([["All applications", ""], ["In progress", "in_progress"], ["Received", "received"], ["Rejected", "rejected"], ["Not applying", "not_applying"]], @group) %>

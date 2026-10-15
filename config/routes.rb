@@ -65,6 +65,8 @@ Rails.application.routes.draw do
       member do
         post :complete
         get :edit_details
+        post :release_installation
+        post :release_payment
         patch :details
       end
     end

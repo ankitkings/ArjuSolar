@@ -15,7 +15,7 @@
       <td><%= link_to t.phone, "tel:#{t.phone.gsub(/[^\d+]/, '')}" %></td>
       <td><span class="badge <%= t.status %>"><%= t.status_label %></span><%= " · due #{l t.final_touch_due_on, format: :short}" if t.status == "commissioning" && t.final_touch_due_on %></td>
       <td><%= progress_bar(t) %></td>
-      <td><%= t.installation_status == "waiting_for_stock" ? "⚠ Waiting for parts" : (t.installation_scheduled_on && t.status == "installation" ? l(t.installation_scheduled_on, format: :short) : "—") %></td>
+      <td><%= installation_cell(t) %></td>
       <td><%= l t.created_at, format: :short %></td>
       <td><%= link_to "Open", staff_task_path(t) %></td>
     </tr>

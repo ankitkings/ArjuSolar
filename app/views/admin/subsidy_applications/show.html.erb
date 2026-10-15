@@ -11,6 +11,12 @@
 <% if a.status == "rejected" %><div class="flash alert"><b>Rejected:</b> <%= a.rejection_reason %></div><% end %>
 <% if a.status == "subsidy_received" %><div class="flash">✅ Subsidy of <b><%= inr(a.received_amount) %></b> received on <%= l a.received_on, format: :long %>.</div><% end %>
 
+<% if req.installation_status == "waiting_for_approval" %>
+  <div class="flash alert">⏳ This client's installation is waiting for the status <b>DISCOM approved</b>. Set it below to release the installation.</div>
+<% elsif req.installation_status == "waiting_for_net_meter" %>
+  <div class="flash alert">⏳ The installation is done. Set the status <b>Installed, net meter applied</b> below to start the payment.</div>
+<% end %>
+
 <div class="two-col">
   <div>
     <div class="panel">
@@ -44,12 +50,12 @@
       <%= f.label :received_amount, "Subsidy received (₹)" %><%= f.number_field :received_amount, step: 1, min: 0 %>
 
       <b>Dates</b> <span class="muted small">(filled in automatically when you change the status)</span>
-      <%= f.label :applied_on, "Applied on" %><%= f.date_field :applied_on %>
-      <%= f.label :feasibility_on, "DISCOM approval on" %><%= f.date_field :feasibility_on %>
-      <%= f.label :net_meter_on, "Net meter applied on" %><%= f.date_field :net_meter_on %>
-      <%= f.label :commissioned_on, "Commissioned on" %><%= f.date_field :commissioned_on %>
-      <%= f.label :bank_submitted_on, "Bank details submitted on" %><%= f.date_field :bank_submitted_on %>
-      <%= f.label :received_on, "Subsidy received on" %><%= f.date_field :received_on %>
+      <%= f.label :applied_on, "Applied on" %><%= f.date_field :applied_on, max: Date.current %>
+      <%= f.label :feasibility_on, "DISCOM approval on" %><%= f.date_field :feasibility_on, max: Date.current %>
+      <%= f.label :net_meter_on, "Net meter applied on" %><%= f.date_field :net_meter_on, max: Date.current %>
+      <%= f.label :commissioned_on, "Commissioned on" %><%= f.date_field :commissioned_on, max: Date.current %>
+      <%= f.label :bank_submitted_on, "Bank details submitted on" %><%= f.date_field :bank_submitted_on, max: Date.current %>
+      <%= f.label :received_on, "Subsidy received on" %><%= f.date_field :received_on, max: Date.current %>
 
       <b>Documents</b> <span class="muted small">(<%= a.collected_documents.size %> of <%= SubsidyApplication::DOCUMENTS.size %> collected)</span>
       <% SubsidyApplication::DOCUMENTS.each do |flag, doc| %>

@@ -61,8 +61,8 @@ module Staff
       unless @task.status == "installation"
         return redirect_to(staff_task_path(@task), alert: "Only requests in the Installation stage can be completed.")
       end
-      if @task.installation_status == "waiting_for_stock"
-        return redirect_to(staff_task_path(@task), alert: "This job is waiting for parts that are not in stock yet.")
+      if @task.installation_waiting?
+        return redirect_to(staff_task_path(@task), alert: "This job is on hold – see the Installation schedule box for what it is waiting for.")
       end
 
       @installation = Installation.new(installation_params)

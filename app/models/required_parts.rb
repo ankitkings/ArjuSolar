@@ -57,6 +57,13 @@ class RequiredParts
     end
 
     if @include_quotes
+      ServiceRequest.where(status: "installation", installation_status: "waiting_for_approval").find_each do |request|
+        request.required_parts.each do |item, qty|
+          items[item.id] = item
+          future[item.id] += qty
+          jobs[item.id] << request.id
+        end
+      end
       ServiceRequest.where(status: "quote_sent").find_each do |request|
         quote = request.latest_quote
         next unless quote && quote.status == "sent"

@@ -11,6 +11,8 @@ module Admin
                      .where("service_requests.name LIKE :q OR service_requests.phone LIKE :q OR subsidy_applications.portal_application_no LIKE :q", q: q)
       end
       @applications = scope.to_a
+      # installations / payments that are on hold until the subsidy application moves on
+      @holds = ServiceRequest.where(installation_status: %w[waiting_for_approval waiting_for_net_meter]).includes(:subsidy_application).order(:updated_at).to_a
 
       @counts = SubsidyApplication::GROUP_STATUSES.keys.index_with { |g| SubsidyApplication.in_group(g).count }
       @received_total = SubsidyApplication.in_group("received").sum(:received_amount)

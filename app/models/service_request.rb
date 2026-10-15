@@ -114,6 +114,34 @@ class ServiceRequest < ApplicationRecord
     (subsidy_application || SubsidyApplication.new).missing_documents
   end
 
+  # Jobs that cannot go on yet
+  INSTALLATION_WAITING = %w[waiting_for_stock waiting_for_approval waiting_for_net_meter].freeze
+  def installation_waiting? = INSTALLATION_WAITING.include?(installation_status)
+
+  # Quotes with the government subsidy: the installation may only start after the application was
+  # made on the portal and the electricity company approved it ("DISCOM approved") ...
+  def installation_hold_reason
+    subsidy_hold_reason("feasibility_approved", "Waiting for the PM Surya Ghar application to be made on the portal and approved by the electricity company")
+  end
+
+  # ... and the payment only starts once the status is "Installed, net meter applied".
+  def payment_hold_reason
+    subsidy_hold_reason("net_meter_applied", "Waiting for the subsidy application to show \"Installed, net meter applied\"")
+  end
+
+  # Admin: do not wait any longer
+  def release_installation!(admin: nil)
+    return unless installation_status == "waiting_for_approval"
+    note = InstallationScheduler.new(self).call
+    updates.create!(status: status, progress: progress, admin_user: admin,
+                    note: "Installation released by the admin without waiting for the approval. #{note}")
+  end
+
+  def release_payment!(admin: nil)
+    return unless installation_status == "waiting_for_net_meter"
+    advance!(to: "payment", admin: admin, note: "Payment started by the admin without waiting for the net meter")
+  end
+
   # [[catalog_item, quantity], ...] the accepted quote needs from stock (services are not stocked)
   def required_parts
     quote = accepted_quote
@@ -141,8 +169,14 @@ class ServiceRequest < ApplicationRecord
       notes = ["Installation done (#{inst.summary})"]
       notes << "payment of #{Rupees.display(amount)} to be collected" if amount
       notes << "maintenance checks scheduled: #{visits.map { |v| v.due_on.strftime('%d %b %Y') }.join(', ')}" if visits.any?
-      advance!(to: "payment", by: by, admin: admin, note: notes.join(" — "))
-      open_payment_task(amount)
+      if (reason = payment_hold_reason)   # subsidy quotes: payment waits for "Installed, net meter applied"
+        update!(installation_status: "waiting_for_net_meter")
+        updates.create!(status: status, progress: progress, team_member: by, admin_user: admin,
+                        note: (notes + ["#{reason}. The payment starts as soon as that status is set."]).join(" — "))
+      else
+        advance!(to: "payment", by: by, admin: admin, note: notes.join(" — "))
+        open_payment_task(amount)
+      end
     end
   end
 
@@ -168,11 +202,31 @@ class ServiceRequest < ApplicationRecord
     quote.update!(status: "declined") if to == "cancelled" && from == "quote_sent"
   end
 
+  def subsidy_hold_reason(step, message)
+    return nil unless accepted_quote&.subsidy_applies
+    application = subsidy_application
+    return nil if application&.status == "withdrawn"   # the client is not taking the subsidy
+    return nil if application&.reached?(step)
+    message
+  end
+
+  def start_subsidy_application_if_needed
+    return unless accepted_quote&.subsidy_applies && subsidy_application.nil?
+    SubsidyApplication.start_for!(self)
+    association(:subsidy_application).reset
+  end
+
   # Accepted quote -> reserve parts and book the date. Installation done -> the parts are used.
   # Cancelled / moved back -> the parts are free again for other jobs.
   def plan_installation(from, to)
     if to == "installation"
-      InstallationScheduler.new(self).call
+      start_subsidy_application_if_needed
+      if (reason = installation_hold_reason)   # subsidy quotes: wait for the electricity company
+        update_columns(installation_status: "waiting_for_approval", installation_scheduled_on: nil)
+        "#{reason}. The installation is scheduled automatically as soon as the electricity company approves."
+      else
+        InstallationScheduler.new(self).call
+      end
     elsif from == "installation"
       if to == "payment"
         stock_reservations.includes(:catalog_item).each do |r|
