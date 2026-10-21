@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_01_15_000000) do
+ActiveRecord::Schema[7.1].define(version: 2026_01_17_000000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -259,6 +259,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_15_000000) do
     t.date "final_touch_due_on"
     t.date "installation_scheduled_on"
     t.string "installation_status"
+    t.boolean "assigned_to_admin", default: false, null: false
     t.index ["status"], name: "index_service_requests_on_status"
     t.index ["team_member_id"], name: "index_service_requests_on_team_member_id"
   end
@@ -286,6 +287,21 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_15_000000) do
     t.datetime "updated_at", null: false
     t.index ["catalog_item_id"], name: "index_stock_movements_on_catalog_item_id"
     t.index ["service_request_id"], name: "index_stock_movements_on_service_request_id"
+  end
+
+  create_table "stock_orders", force: :cascade do |t|
+    t.integer "catalog_item_id", null: false
+    t.decimal "quantity", precision: 10, scale: 2, null: false
+    t.decimal "quantity_received", precision: 10, scale: 2
+    t.string "status", default: "ordered", null: false
+    t.string "supplier"
+    t.string "note"
+    t.date "ordered_on", null: false
+    t.date "received_on"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["catalog_item_id"], name: "index_stock_orders_on_catalog_item_id"
+    t.index ["status"], name: "index_stock_orders_on_status"
   end
 
   create_table "stock_reservations", force: :cascade do |t|
@@ -391,6 +407,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_15_000000) do
   add_foreign_key "service_requests", "team_members"
   add_foreign_key "stock_movements", "catalog_items"
   add_foreign_key "stock_movements", "service_requests"
+  add_foreign_key "stock_orders", "catalog_items"
   add_foreign_key "stock_reservations", "catalog_items"
   add_foreign_key "stock_reservations", "service_requests"
   add_foreign_key "subsidy_applications", "service_requests"

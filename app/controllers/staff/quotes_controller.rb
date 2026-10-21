@@ -26,9 +26,17 @@ module Staff
                                     subsidy_applies: params[:subsidy_applies] == "1", by: current_staff)
       else
         attrs = quote_params
-        quote = @task.create_quote!(package: SolarPackage.find_by(id: attrs[:solar_package_id]), discount: attrs[:discount],
+        package = SolarPackage.find_by(id: attrs[:solar_package_id])
+        extras = extra_items
+        if extras.any? && package && package.package_items.none?
+          @quote = Quote.new(subsidy_applies: attrs[:subsidy_applies] == "1")
+          @quote.errors.add(:base, "This system has no parts list yet, so extra parts cannot be added. Ask the admin to list its parts under Admin → Systems.")
+          @installation = @task.new_installation
+          return render("staff/tasks/show", status: :unprocessable_entity)
+        end
+        quote = @task.create_quote!(package: package, discount: attrs[:discount],
                                     valid_until: attrs[:valid_until], notes: attrs[:notes],
-                                    subsidy_applies: attrs[:subsidy_applies], by: current_staff)
+                                    subsidy_applies: attrs[:subsidy_applies], extra_items: extras, by: current_staff)
       end
       msg = "Quote #{quote.number} created."
       msg += " The request moved to Quote sent." if first_quote
@@ -110,6 +118,15 @@ module Staff
       Array(params[:items]).filter_map do |row|
         item = CatalogItem.find_by(id: row[:catalog_item_id])
         [item, row[:quantity]] if item
+      end
+    end
+
+    # extra parts (e.g. a battery) added to a ready-made system
+    def extra_items
+      Array(params[:extras]).filter_map do |row|
+        item = CatalogItem.find_by(id: row[:catalog_item_id])
+        qty = row[:quantity].to_s.to_d
+        [item, qty] if item && qty.positive?
       end
     end
 

@@ -1,0 +1,72 @@
+<h1>Parts &amp; prices</h1>
+<p class="muted">The current price of every part and ready-made system – to show the client.</p>
+<p class="tabs">
+  <%= link_to "Parts", staff_parts_path, class: "tab #{'active' if @tab == 'parts'}" %>
+  <%= link_to "Ready-made systems", staff_parts_path(tab: "systems"), class: "tab #{'active' if @tab == 'systems'}" %>
+</p>
+<input type="search" id="part-filter" class="search-box" placeholder="Search a part or system…" autocomplete="off">
+
+<% if @tab == "parts" %>
+  <% CatalogItem::CATEGORIES.each do |key, label| %>
+    <% list = @parts[key] %>
+    <% next if list.blank? %>
+    <details class="part-group" open>
+      <summary><b><%= label %></b> <span class="muted">(<%= list.size %>)</span></summary>
+      <div class="table-wrap"><table>
+        <tr><th>Part</th><th>Details</th><th>Sold per</th><th class="right">Price</th></tr>
+        <% list.each do |i| %>
+          <tr data-search="<%= "#{i.name} #{label}".downcase %>">
+            <td><%= i.name %></td>
+            <td><%= i.capacity_kw ? (key == "panel" ? "#{format('%g', i.capacity_kw.to_f * 1000)} W" : "#{format('%g', i.capacity_kw.to_f)} kW") : "—" %></td>
+            <td><%= i.unit %></td>
+            <td class="right"><b><%= inr(i.unit_price) %></b></td>
+          </tr>
+        <% end %>
+      </table></div>
+    </details>
+  <% end %>
+  <% if @parts.empty? %><p class="muted">No parts have been added yet.</p><% end %>
+
+<% else %>
+  <% @systems.each do |system| %>
+    <div class="panel" style="margin-bottom:14px" data-search="<%= system.name.downcase %>">
+      <h3><%= system.name %> – <%= inr(system.price) %></h3>
+      <p class="muted small"><%= format("%g", system.capacity_kw.to_f) %> kW · <%= system.panel_count %> panels · <%= system.panel_brand %> · inverter <%= system.inverter_model %></p>
+      <% if system.subsidy_amount.positive? %>
+        <p class="subsidy">With the PM Surya Ghar subsidy of <b><%= inr(system.subsidy_amount) %></b>: <b class="net"><%= inr(system.effective_cost) %></b> <span class="muted small">effective cost</span></p>
+      <% end %>
+      <% if system.package_items.any? %>
+        <div class="table-wrap"><table>
+          <tr><th>Part</th><th class="right">Quantity</th><th class="right">Price</th><th class="right">Amount</th></tr>
+          <% system.package_items.each do |pi| %>
+            <tr>
+              <td><%= pi.catalog_item.name %></td>
+              <td class="right"><%= format("%g", pi.quantity.to_f) %> <%= pi.catalog_item.unit %></td>
+              <td class="right"><%= inr(pi.catalog_item.unit_price) %></td>
+              <td class="right"><%= inr(pi.line_total) %></td>
+            </tr>
+          <% end %>
+          <tr><td colspan="3" class="right"><b>Total</b></td><td class="right"><b><%= inr(system.price) %></b></td></tr>
+        </table></div>
+      <% end %>
+    </div>
+  <% end %>
+  <% if @systems.empty? %><p class="muted">No ready-made systems yet.</p><% end %>
+<% end %>
+
+<script>
+  (function () {
+    var box = document.getElementById("part-filter");
+    box.addEventListener("input", function () {
+      var q = box.value.trim().toLowerCase();
+      document.querySelectorAll("[data-search]").forEach(function (el) {
+        el.style.display = (!q || el.dataset.search.indexOf(q) !== -1) ? "" : "none";
+      });
+      document.querySelectorAll("details.part-group").forEach(function (group) {
+        var any = Array.prototype.some.call(group.querySelectorAll("[data-search]"), function (row) { return row.style.display !== "none"; });
+        group.style.display = any ? "" : "none";
+        if (q && any) group.open = true;
+      });
+    });
+  })();
+</script>

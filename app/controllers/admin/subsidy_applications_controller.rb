@@ -5,6 +5,8 @@ module Admin
       @group = params[:group].presence_in(SubsidyApplication::GROUP_STATUSES.keys)
       scope = SubsidyApplication.includes(service_request: :installation).order(updated_at: :desc)
       scope = scope.in_group(@group) if @group
+      @status = params[:status].presence_in(SubsidyApplication::STATUSES)
+      scope = scope.where(status: @status) if @status
       if params[:q].present?
         q = "%#{SubsidyApplication.sanitize_sql_like(params[:q])}%"
         scope = scope.joins(:service_request)

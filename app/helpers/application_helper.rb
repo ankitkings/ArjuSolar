@@ -95,4 +95,14 @@ module ApplicationHelper
       request.installation_scheduled_on && request.status == "installation" ? l(request.installation_scheduled_on, format: :short) : "—"
     end
   end
+
+  # Steps that are overdue (badge on the dashboard link)
+  def overdue_count
+    @_overdue_count ||= OverdueSteps.new.count
+  end
+
+  # where "Open" goes for an overdue item
+  def overdue_item_path(item)
+    item.record.is_a?(SubsidyApplication) ? admin_subsidy_application_path(item.record) : admin_service_request_path(item.record)
+  end
 end

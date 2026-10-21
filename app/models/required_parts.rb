@@ -1,10 +1,11 @@
-# The "parts to order" list: what the open installations need, what is in stock, and what is short.
+# The "parts to order" list: what the open installations need, what is in stock, what is already
+# on order, and what is still short.
 class RequiredParts
-  Row = Struct.new(:item, :needed, :in_stock, :reserved, :short, :requests, keyword_init: true) do
+  Row = Struct.new(:item, :needed, :in_stock, :reserved, :on_order, :short, :requests, keyword_init: true) do
     def free = in_stock - reserved
   end
 
-  # include_quotes: also count the quotes still waiting for the client's answer
+  # include_quotes: also count quotes waiting for the client's answer and jobs waiting for the electricity company
   def initialize(include_quotes: false)
     @include_quotes = include_quotes
   end
@@ -17,14 +18,17 @@ class RequiredParts
     @low ||= CatalogItem.stocked.select { |i| i.min_stock.positive? && i.stock_quantity < i.min_stock }
   end
 
-  # [[item, quantity to order, why], ...]
+  # [[item, suggested quantity, why], ...] - what is still missing after the parts already on order
   def order_lines
     @order_lines ||= begin
       lines = {}
-      short_rows.each { |r| lines[r.item] = [r.short, "needed for jobs"] }
+      short_rows.each do |r|
+        qty = r.short - r.on_order
+        lines[r.item] = [qty, "needed for jobs"] if qty.positive?
+      end
       low_stock_items.each do |item|
-        refill = item.min_stock - item.stock_quantity
-        lines[item] = [refill, "below the minimum level"] if !lines[item] || lines[item][0] < refill
+        refill = item.min_stock - item.stock_quantity - on_order_for(item)
+        lines[item] = [refill, "below the minimum level"] if refill.positive? && (!lines[item] || lines[item][0] < refill)
       end
       lines.map { |item, (qty, why)| [item, qty, why] }.sort_by { |item, _, _| [item.category, item.name] }
     end
@@ -33,7 +37,13 @@ class RequiredParts
   def count_to_order = order_lines.size
   def estimated_cost = order_lines.sum { |item, qty, _| item.unit_price * qty }
 
+  def on_order_for(item) = on_order_map.fetch(item.id, 0).to_d
+
   private
+
+  def on_order_map
+    @on_order_map ||= StockOrder.open_orders.group(:catalog_item_id).sum(:quantity)
+  end
 
   def build
     items = {}
@@ -80,7 +90,8 @@ class RequiredParts
     items.values.map do |item|
       free = item.stock_quantity - reserved[item.id]
       Row.new(item: item, needed: reserved[item.id] + waiting[item.id] + future[item.id], in_stock: item.stock_quantity,
-              reserved: reserved[item.id], short: [waiting[item.id] + future[item.id] - free, 0].max, requests: jobs[item.id].uniq)
+              reserved: reserved[item.id], on_order: on_order_for(item), short: [waiting[item.id] + future[item.id] - free, 0].max,
+              requests: jobs[item.id].uniq)
     end.sort_by { |r| [r.short.positive? ? 0 : 1, r.item.category, r.item.name] }
   end
 end

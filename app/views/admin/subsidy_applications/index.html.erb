@@ -33,7 +33,7 @@
 <% end %>
 
 <div class="table-wrap"><table>
-  <tr><th>Client</th><th>Phone</th><th>System</th><th>Subsidy</th><th>Documents</th><th>Status</th><th>Portal application no.</th><th>Applied on</th><th>Received</th><th></th></tr>
+  <tr><th>Client</th><th>Phone</th><th>System</th><th>Subsidy</th><th>Documents</th><th>Status</th><th>Portal application no.</th><th>Applied on</th><th>Received</th><th>Next step</th><th></th></tr>
   <% @applications.each do |a| %>
     <% req = a.service_request %>
     <tr>
@@ -45,6 +45,7 @@
       <td><%= a.portal_application_no.presence || "—" %></td>
       <td><%= a.applied_on ? l(a.applied_on, format: :short) : "—" %></td>
       <td><%= a.status == "subsidy_received" ? "#{inr(a.received_amount)} · #{l a.received_on, format: :short}" : "—" %></td>
+      <td><%= a.next_step %></td>
       <td><%= link_to "Open", admin_subsidy_application_path(a) %></td>
     </tr>
   <% end %>

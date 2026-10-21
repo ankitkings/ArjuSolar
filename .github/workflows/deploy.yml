@@ -37,7 +37,7 @@ jobs:
             RAILS_ENV=production bundle exec rake db:migrate
             
             # Uncomment only when needed
-            RAILS_ENV=production bundle exec rake db:seed
+            # RAILS_ENV=production bundle exec rake db:seed
             
             echo ">>> Precompiling assets..."
             RAILS_ENV=production bundle exec rails assets:precompile

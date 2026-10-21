@@ -15,6 +15,7 @@ Rails.application.routes.draw do
 
   namespace :staff do
     root "tasks#index"
+    get "parts", to: "parts#index"
     resources :chats, only: %i[index show new create] do
       member do
         get :poll
@@ -48,6 +49,7 @@ Rails.application.routes.draw do
 
   namespace :admin do
     root "dashboard#index"
+    get "overdue", to: "overdue#index"
     resources :chats, only: %i[index show new create] do
       member do
         get :poll
@@ -81,6 +83,9 @@ Rails.application.routes.draw do
     resources :catalog_items, path: "parts", except: :show
     resource :stock, only: :show, controller: "stock" do
       post :receive
+      post :order
+      post "orders/:id/receive", action: :receive_order, as: :receive_order
+      post "orders/:id/cancel", action: :cancel_order, as: :cancel_order
       post :adjust
       patch :min_level
       patch :rules

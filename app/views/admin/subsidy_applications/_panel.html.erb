@@ -7,6 +7,7 @@
       documents <%= application.collected_documents.size %> of <%= SubsidyApplication::DOCUMENTS.size %>
       <%= " · received #{inr(application.received_amount)} on #{l application.received_on, format: :short}" if application.status == "subsidy_received" %>
       · <%= link_to "Open the application", admin_subsidy_application_path(application) %></p>
+    <p class="small"><b>Next:</b> <%= application.next_step %></p>
   <% elsif sr.status != "cancelled" %>
     <p class="muted small">Track this client's government subsidy application: documents, portal number, each step, and whether the subsidy was received.</p>
     <%= button_to "Start subsidy application", admin_subsidy_applications_path, params: { service_request_id: sr.id }, class: "btn go" %>
