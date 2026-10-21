@@ -21,7 +21,7 @@
   <div class="drawer-backdrop"></div>
   <aside>
     <h3>Arju Solars</h3>
-    <%= link_to "Dashboard", admin_root_path %>
+    <%= link_to admin_root_path do %>Dashboard<% if overdue_count.positive? %><span class="nav-badge"><%= overdue_count %></span><% end %><% end %>
     <%= link_to admin_service_requests_path do %>Requests<% if new_request_count.positive? %><span class="nav-badge"><%= new_request_count %></span><% end %><% end %>
     <%= link_to "Users", admin_users_path %>
     <%= link_to "Visitors", admin_visits_path %>

@@ -56,6 +56,6 @@ class TeamMember < ApplicationRecord
     return unless active?
     statuses = RequestWorkflow::DEPARTMENT.select { |_status, dept| dept == department }.keys
     return if statuses.empty?
-    ServiceRequest.where(status: statuses, team_member_id: nil).find_each(&:reassign_for_stage!)
+    ServiceRequest.where(status: statuses, team_member_id: nil, assigned_to_admin: false).find_each(&:reassign_for_stage!)
   end
 end

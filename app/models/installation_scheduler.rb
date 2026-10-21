@@ -36,7 +36,7 @@ class InstallationScheduler
 
     needs.each { |item, qty| StockReservation.create!(service_request: @request, catalog_item: item, quantity: qty) }
     date, installer = earliest_slot
-    attrs = { installation_status: "scheduled", installation_scheduled_on: date }
+    attrs = { installation_status: "scheduled", installation_scheduled_on: date, assigned_to_admin: false }
     attrs[:team_member] = installer if installer
     @request.update!(attrs)
 

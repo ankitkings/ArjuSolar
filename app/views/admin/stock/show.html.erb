@@ -78,7 +78,7 @@
 
   <h2>What the installations need</h2>
   <div class="table-wrap"><table>
-    <tr><th>Part</th><th class="right">Needed</th><th class="right">In stock</th><th class="right">Set aside</th><th class="right">Free</th><th class="right">Short</th><th>For requests</th></tr>
+    <tr><th>Part</th><th class="right">Needed</th><th class="right">In stock</th><th class="right">Set aside</th><th class="right">Free</th><th class="right">On order</th><th class="right">Short</th><th>For requests</th></tr>
     <% @report.rows.each do |r| %>
       <tr class="<%= 'new-request' if r.short.positive? %>">
         <td><%= r.item.name %></td>
@@ -86,32 +86,82 @@
         <td class="right"><%= format("%g", r.in_stock.to_f) %></td>
         <td class="right"><%= format("%g", r.reserved.to_f) %></td>
         <td class="right"><%= format("%g", r.free.to_f) %></td>
+        <td class="right"><%= format("%g", r.on_order.to_f) %></td>
         <td class="right"><%= r.short.positive? ? "⚠ #{format('%g', r.short.to_f)}" : "✔ enough" %></td>
         <td><%= safe_join(r.requests.map { |id| link_to("##{id}", admin_service_request_path(id)) }, ", ") %></td>
       </tr>
     <% end %>
-    <% if @report.rows.empty? %><tr><td colspan="7" class="muted">No installation is waiting for parts right now.</td></tr><% end %>
+    <% if @report.rows.empty? %><tr><td colspan="8" class="muted">No installation is waiting for parts right now.</td></tr><% end %>
   </table></div>
 
+  <h2>Order list</h2>
+  <p class="muted small">The quantities are only suggestions (what is still missing after the parts already on order). Change a quantity to order as many pieces as you want, untick a part to leave it out, and use the form below the list to order any other part.</p>
   <% if lines.any? %>
-    <h2>Order list</h2>
-    <div class="table-wrap"><table>
-      <tr><th>Part</th><th class="right">Order</th><th>Why</th><th class="right">Estimated cost</th></tr>
-      <% lines.each do |item, qty, why| %>
-        <tr><td><%= item.name %></td><td class="right"><b><%= format("%g", qty.to_f) %> <%= item.unit %></b></td><td><%= why %></td><td class="right"><%= inr(item.unit_price * qty) %></td></tr>
-      <% end %>
-      <tr><td colspan="3" class="right"><b>Total</b></td><td class="right"><b><%= inr(@report.estimated_cost) %></b></td></tr>
-    </table></div>
+    <%= form_with url: order_admin_stock_path, method: :post do %>
+      <div class="table-wrap"><table>
+        <tr><th>Order</th><th>Part</th><th class="right">Suggested</th><th>Quantity to order</th><th>Why</th><th class="right">Estimated cost</th></tr>
+        <% lines.each do |item, qty, why| %>
+          <tr>
+            <td><%= check_box_tag "orders[#{item.id}][place]", "1", true %></td>
+            <td><%= item.name %></td>
+            <td class="right"><%= format("%g", qty.to_f) %> <%= item.unit %></td>
+            <td><%= number_field_tag "orders[#{item.id}][quantity]", format("%g", qty.to_f), min: 0.01, step: 0.01, style: "width:100px" %> <%= item.unit %></td>
+            <td><%= why %></td>
+            <td class="right"><%= inr(item.unit_price * qty) %></td>
+          </tr>
+        <% end %>
+      </table></div>
+      <div class="filters">
+        <%= text_field_tag :supplier, nil, placeholder: "Supplier (optional)" %>
+        <%= text_field_tag :note, nil, placeholder: "Note (optional)" %>
+        <%= submit_tag "Place the order for the ticked parts", class: "btn go" %>
+      </div>
+    <% end %>
     <div class="no-print">
-      <p class="muted small">Copy this to send to your supplier:</p>
+      <p class="muted small">Or copy the suggested list to send to your supplier:</p>
       <textarea id="order-text" readonly rows="<%= [lines.size + 1, 4].max %>" style="width:100%"><%= lines.map { |item, qty, _| "#{item.name} – #{format('%g', qty.to_f)} #{item.unit}" }.join("\n") %></textarea>
       <p class="actions">
         <button type="button" class="btn go" onclick="navigator.clipboard.writeText(document.getElementById('order-text').value).then(function(){ alert('Order list copied'); })">Copy order list</button>
         <button type="button" class="btn hold" onclick="window.print()">Print</button>
       </p>
     </div>
+  <% else %>
+    <p class="muted">Nothing is suggested right now.</p>
   <% end %>
 
+  <h3>Order any other part</h3>
+  <%= form_with url: order_admin_stock_path, method: :post, class: "filters no-print" do %>
+    <%= select_tag :item_id, grouped_options_for_select(CatalogItem.stocked.order(:name).group_by(&:category_label).map { |label, items| [label, items.map { |i| [i.name, i.id] }] }), include_blank: "Choose a part…", required: true %>
+    <%= number_field_tag :quantity, nil, min: 0.01, step: 0.01, placeholder: "How many", required: true, style: "width:110px" %>
+    <%= text_field_tag :supplier, nil, placeholder: "Supplier (optional)" %>
+    <%= text_field_tag :note, nil, placeholder: "Note (optional)" %>
+    <%= submit_tag "Order", class: "btn go" %>
+  <% end %>
+
+  <h2>On order – waiting to arrive</h2>
+  <% if @orders.empty? %>
+    <p class="muted">Nothing is on order.</p>
+  <% else %>
+    <div class="table-wrap"><table>
+      <tr><th>Ordered</th><th>Part</th><th class="right">Quantity</th><th>Supplier / note</th><th>Arrived</th><th></th></tr>
+      <% @orders.each do |o| %>
+        <tr>
+          <td><%= l o.ordered_on, format: :short %></td>
+          <td><%= o.catalog_item.name %></td>
+          <td class="right"><%= format("%g", o.quantity.to_f) %> <%= o.catalog_item.unit %></td>
+          <td><%= [o.supplier, o.note].compact_blank.join(" · ").presence || "—" %></td>
+          <td>
+            <%= form_with url: receive_order_admin_stock_path(o), method: :post, class: "inline-form" do %>
+              <%= number_field_tag :received_quantity, format("%g", o.quantity.to_f), min: 0.01, step: 0.01, style: "width:90px" %>
+              <%= submit_tag "Received", class: "btn go" %>
+            <% end %>
+          </td>
+          <td><%= button_to "Cancel", cancel_order_admin_stock_path(o), method: :post, class: "linklike",
+                    form: { style: "display:inline", onsubmit: "return confirm('Cancel this order?')" } %></td>
+        </tr>
+      <% end %>
+    </table></div>
+  <% end %>
 <% else %>
   <div class="table-wrap"><table>
     <tr><th>When</th><th>Part</th><th class="right">Change</th><th>Type</th><th>Note</th><th>Request</th></tr>

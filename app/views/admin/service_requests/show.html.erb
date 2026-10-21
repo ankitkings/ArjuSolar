@@ -23,6 +23,7 @@
     <p class="<%= 'cancel-text' if sr.status == 'cancelled' %>"><span class="badge <%= sr.status %>"><%= sr.status_label %></span> <%= sr.progress %>%<%= sr.status == "cancelled" ? " – deal cancelled" : " complete" %></p>
     <p class="muted small">
       Stage owner: <b><%= sr.stage_department_label || "—" %></b>.
+      <% if sr.assigned_to_admin? %><b>Currently with the Admin</b> (PM Surya Ghar step).<% end %>
       Moving a request to a new stage automatically assigns the least busy active member of that department.
     </p>
     <%= form_with model: sr, url: admin_service_request_path(sr), method: :patch, class: "form" do |f| %>

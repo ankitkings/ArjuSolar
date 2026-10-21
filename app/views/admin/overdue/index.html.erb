@@ -1,0 +1,29 @@
+<h1>Overdue steps</h1>
+<p class="muted">Anything that has stayed in a step longer than it should. High priority = it has taken twice as long as allowed (or a planned date was missed).</p>
+<% items = @overdue.items %>
+<% if items.empty? %>
+  <div class="all-clear">✅ Nothing is overdue.</div>
+<% else %>
+  <div class="table-wrap"><table>
+    <tr><th>Priority</th><th>What</th><th>Details</th><th>Overdue by</th><th>With</th><th></th></tr>
+    <% items.each do |i| %>
+      <tr class="<%= 'new-request' if i.high? %>">
+        <td><span class="badge <%= i.priority.downcase %>"><%= i.priority %></span></td>
+        <td><%= i.title %></td>
+        <td><%= i.detail %></td>
+        <td><b><%= time_ago_in_words(i.due_at) %></b></td>
+        <td><%= i.owner %></td>
+        <td><%= link_to "Open", overdue_item_path(i) %></td>
+      </tr>
+    <% end %>
+  </table></div>
+<% end %>
+
+<h2>How long each step may take</h2>
+<div class="table-wrap"><table>
+  <tr><th>Step</th><th>Allowed</th></tr>
+  <% OverdueSteps::LIMITS.each do |step, days| %><tr><td><%= step.humanize %></td><td><%= pluralize(days, "day") %></td></tr><% end %>
+  <% OverdueSteps::HOLD_LIMITS.each do |hold, days| %><tr><td><%= OverdueSteps::HOLD_LABELS[hold] %></td><td><%= pluralize(days, "day") %></td></tr><% end %>
+  <% OverdueSteps::SUBSIDY_LIMITS.each do |step, days| %><tr><td>Subsidy: <%= SubsidyApplication::LABELS[step] %></td><td><%= pluralize(days, "day") %></td></tr><% end %>
+</table></div>
+<p class="muted small">These limits are set in <code>app/models/overdue_steps.rb</code>.</p>

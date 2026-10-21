@@ -17,6 +17,18 @@ class SubsidyApplication < ApplicationRecord
     "withdrawn"            => "Not applying"
   }.freeze
 
+  NEXT_STEPS = {
+    "preparing"            => "Make the application on the portal",
+    "applied"              => "Wait for the electricity company's approval (check the portal)",
+    "feasibility_approved" => "Approved – the installation can start; then apply for the net meter",
+    "net_meter_applied"    => "Wait for the inspection and the net meter fitting",
+    "commissioned"         => "Submit the bank details on the portal",
+    "bank_submitted"       => "Wait for the subsidy to be credited",
+    "subsidy_received"     => "Done – subsidy received",
+    "rejected"             => "Rejected – decide what to do",
+    "withdrawn"            => "Not applying"
+  }.freeze
+
   GROUP_STATUSES = {
     "received"     => %w[subsidy_received],
     "rejected"     => %w[rejected],
@@ -80,6 +92,12 @@ class SubsidyApplication < ApplicationRecord
   # has the application got to this step (or further)?
   def reached?(step)
     FLOW.include?(status) && FLOW.index(status) >= FLOW.index(step)
+  end
+
+  # what the admin has to do now
+  def next_step
+    return "Collect the missing documents (#{missing_documents.to_sentence}), then apply on the portal" if status == "preparing" && !documents_complete?
+    NEXT_STEPS[status]
   end
 
   def status_label = LABELS[status]

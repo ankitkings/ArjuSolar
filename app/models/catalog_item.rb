@@ -18,6 +18,7 @@ class CatalogItem < ApplicationRecord
   has_many :package_items, dependent: :destroy
   has_many :stock_movements, dependent: :destroy
   has_many :stock_reservations, dependent: :destroy
+  has_many :stock_orders, dependent: :destroy
   after_update :refresh_packages, if: :saved_change_to_unit_price?
   after_destroy :refresh_packages
 

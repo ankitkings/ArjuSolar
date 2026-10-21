@@ -81,8 +81,16 @@ end
   ["inverter",   "Sungrow 5kW inverter",                    "piece", 72_000,  5],
   ["inverter",   "Sungrow 10kW inverter",                   "piece", 135_000, 10],
   ["inverter",   "Sungrow 20kW inverter",                   "piece", 240_000, 20],
-  ["battery",    "Luminous 150Ah tubular battery",           "piece", 14_500,  nil],
-  ["battery",    "Exide 100Ah tubular battery",              "piece", 10_500,  nil],
+  ["battery", "UTL ULIBES-12.8V100AH-LP100-SM:1kW",           "piece", 19_990,  1],  # Official ~₹19,990–20,660; IndiaMART ~₹14,500–16,500
+  ["battery", "Livguard Lithium XDT 100Ah:1kW",              "piece", 20_000,  1],  # Mostly sold as inverter+battery combo (~₹22,750–23,250); standalone similar Livguard 12.8V 100Ah Lithium ~₹19,700
+  ["battery", "UTL ULIBES-25.6V100Ah-LP100-SM:2kW",          "piece", 42_999,  2],  # Moglix ~₹44,899; Solar World ~₹42,999; IndiaMART ~₹33k–40k
+  ["battery", "Loom Solar CAML 50 Ah / 2.5 kWh:2kW",         "piece", 64_000,  2],  # Approx. (single ~2.5–2.56 kWh module; similar Loom 25.6V 100Ah ~₹64,375; HV systems price out at ~₹65–70k per module equivalent)
+  ["battery", "UTL ULIBES-51.2V100Ah-LP100-PM:3kW",          "piece", 77_999,  3],  # Moglix ₹77,999 (matches your original); other listings ~₹69,500–82,000
+  ["battery", "CAML 51.2 V 100 Ah, 5.12 kWh:3kW",            "piece", 1_08_000, 3], # Loom official rack-mount ₹108,000 / wall-mount ₹115,000; IndiaMART ~₹80k–82.5k
+  ["battery", "Waaree 51.2V 100Ah LiFePO4:5kW",              "piece", 1_09_999, 5], # Official Waaree shop ₹109,999; other listings ~₹99,999–1,09,999
+  ["battery", "Gronsol LV Battery 100Ah,51.2V,5.12 Kwh:5Kw", "piece", 80_000,  5],  # Limited direct listings; comparable 51.2V 100Ah LiFePO4 packs ~₹70k–85k
+  ["battery", "CAML 50 Ah, 204.8 V / 10 kWh:10kW",           "piece", 2_75_000, 10], # Loom official ₹275,000
+  ["battery", "CAML 100 Ah, 204.8 V / 20kWh:20kW",           "piece", 5_20_000, 20], # Loom official ₹520,000,
   ["mounting",   "GI mounting structure (per kW)",          "kW",    6_000,   nil],
   ["mounting",   "Elevated structure for terrace (per kW)", "kW",    9_000,   nil],
   ["cables",     "DC + AC cables and connectors (per kW)",  "kW",    3_500,   nil],

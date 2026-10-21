@@ -3,7 +3,7 @@
 # Everything is copied onto the quote, so later price changes never alter it.
 class Quote < ApplicationRecord
   STATUSES = %w[sent accepted declined superseded].freeze
-  DEFAULT_VALIDITY_DAYS = 15
+  DEFAULT_VALIDITY_DAYS = 2
   DEFAULT_COUNTRY_CODE = "91"   # added to 10-digit Indian numbers for WhatsApp
 
   belongs_to :service_request

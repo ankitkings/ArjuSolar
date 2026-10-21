@@ -29,8 +29,10 @@ class ServiceRequest < ApplicationRecord
 
   before_create :assign_initial_owner
   before_save :sync_progress_with_status
+  before_save :clear_admin_assignment
 
   def status_label = status.humanize
+  def owner_label = assigned_to_admin? ? "Admin" : (team_member&.name || "—")
   def stage_department = RequestWorkflow::DEPARTMENT[status]
   def stage_department_label = TeamMember::DEPARTMENTS[stage_department]
 
@@ -74,11 +76,11 @@ class ServiceRequest < ApplicationRecord
   # Site visitor: make a quote from the price list. On the first quote the request
   # moves to "Quote sent"; a later quote replaces the earlier one.
   # `package:` = a ready-made system; `items:` = [[catalog_item, quantity], ...] for a custom quote
-  def create_quote!(package: nil, items: [], system_name: nil, discount: nil, valid_until: nil, notes: nil, subsidy_applies: false, by: nil)
+  def create_quote!(package: nil, items: [], system_name: nil, discount: nil, valid_until: nil, notes: nil, subsidy_applies: false, extra_items: [], by: nil)
     transaction do
       quotes.where(status: "sent").update_all(status: "superseded")
       if package && items.empty?   # a ready-made system: list every part with its price
-        items = package.package_items.includes(:catalog_item).map { |pi| [pi.catalog_item, pi.quantity] }
+        items = package.package_items.includes(:catalog_item).map { |pi| [pi.catalog_item, pi.quantity] } + extra_items   # extras, e.g. a battery
       end
       quote = quotes.build(solar_package: package, system_name: system_name.to_s.strip.presence,
                            discount: discount.presence, valid_until: valid_until.presence,
@@ -170,9 +172,9 @@ class ServiceRequest < ApplicationRecord
       notes << "payment of #{Rupees.display(amount)} to be collected" if amount
       notes << "maintenance checks scheduled: #{visits.map { |v| v.due_on.strftime('%d %b %Y') }.join(', ')}" if visits.any?
       if (reason = payment_hold_reason)   # subsidy quotes: payment waits for "Installed, net meter applied"
-        update!(installation_status: "waiting_for_net_meter")
+        update!(installation_status: "waiting_for_net_meter", team_member: nil, assigned_to_admin: true)
         updates.create!(status: status, progress: progress, team_member: by, admin_user: admin,
-                        note: (notes + ["#{reason}. The payment starts as soon as that status is set."]).join(" — "))
+                        note: (notes + ["#{reason}. The request is now with the Admin; the payment starts as soon as that status is set."]).join(" — "))
       else
         advance!(to: "payment", by: by, admin: admin, note: notes.join(" — "))
         open_payment_task(amount)
@@ -222,8 +224,8 @@ class ServiceRequest < ApplicationRecord
     if to == "installation"
       start_subsidy_application_if_needed
       if (reason = installation_hold_reason)   # subsidy quotes: wait for the electricity company
-        update_columns(installation_status: "waiting_for_approval", installation_scheduled_on: nil)
-        "#{reason}. The installation is scheduled automatically as soon as the electricity company approves."
+        update_columns(installation_status: "waiting_for_approval", installation_scheduled_on: nil, team_member_id: nil, assigned_to_admin: true)
+        "#{reason}. The request is now with the Admin; the installation is scheduled automatically as soon as the electricity company approves."
       else
         InstallationScheduler.new(self).call
       end
@@ -276,6 +278,11 @@ class ServiceRequest < ApplicationRecord
   def sync_payment_owner
     return unless status == "payment" && payment && team_member&.department == "cashier"
     payment.update!(team_member: team_member) unless payment.team_member_id == team_member_id
+  end
+
+  # giving a request to a teammate takes it away from the Admin
+  def clear_admin_assignment
+    self.assigned_to_admin = false if team_member_id.present?
   end
 
   def sync_progress_with_status

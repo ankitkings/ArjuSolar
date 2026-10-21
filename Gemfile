@@ -11,3 +11,4 @@ gem "prawn-table", "~> 0.2"
 gem "tzinfo-data", platforms: %i[windows jruby]
 
 gem "kamal", "~> 2.12", :group => :development
+gem "byebug", "~> 11.1", :group => [:development, :test]

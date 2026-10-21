@@ -3,9 +3,10 @@ module Admin
     before_action :set_service_request, only: %i[show update complete edit_details details destroy release_installation release_payment]
 
     def index
-      @requests = ServiceRequest.includes(:team_member).order(created_at: :desc)
+      @requests = ServiceRequest.includes(:team_member, :subsidy_application).order(created_at: :desc)
       @requests = @requests.where(status: params[:status]) if ServiceRequest::STATUSES.include?(params[:status])
-      @requests = @requests.where(team_member_id: nil, status: RequestWorkflow::ACTIVE_STATUSES) if params[:unassigned].present?
+      @requests = @requests.where(team_member_id: nil, assigned_to_admin: false, status: RequestWorkflow::ACTIVE_STATUSES) if params[:unassigned].present?
+      @requests = @requests.where(assigned_to_admin: true) if params[:with_admin].present?
       if params[:q].present?
         q = "%#{ServiceRequest.sanitize_sql_like(params[:q])}%"
         @requests = @requests.where("name LIKE :q OR phone LIKE :q OR email LIKE :q", q: q)
@@ -96,7 +97,7 @@ module Admin
       @installation.service_request = @service_request
       if @installation.valid?
         @service_request.complete_installation!(@installation, admin: current_admin)
-        redirect_to admin_service_request_path(@service_request), notice: "Installation saved. The request moved to Payment (85%) and was assigned to a cashier. Maintenance checks are scheduled."
+        redirect_to admin_service_request_path(@service_request), notice: (@service_request.reload.status == "payment" ? "Installation saved. The request moved to Payment (85%) and was assigned to a cashier. Maintenance checks are scheduled." : "Installation saved. The request is now with the Admin until the subsidy net meter step is done; the payment starts after that.")
       else
         render :show, status: :unprocessable_entity
       end

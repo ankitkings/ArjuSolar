@@ -50,6 +50,8 @@ module Staff
       msg = "Request moved to #{@task.status_label}."
       if @task.team_member && @task.team_member != current_staff
         msg += " Handed over to #{@task.team_member.name} (#{@task.team_member.department_label})."
+      elsif @task.assigned_to_admin?
+        msg += " It is now with the Admin until the electricity company approves the subsidy application."
       elsif @task.team_member.nil? && RequestWorkflow::ACTIVE_STATUSES.include?(@task.status)
         msg += " No active member in the next department – the admin must assign it."
       end
@@ -69,7 +71,7 @@ module Staff
       @installation.service_request = @task
       if @installation.valid?
         @task.complete_installation!(@installation, by: current_staff)
-        redirect_to staff_root_path, notice: "Installation saved. The request moved to Payment (85%) and was assigned to a cashier. Maintenance checks are scheduled."
+        redirect_to staff_root_path, notice: (@task.reload.status == "payment" ? "Installation saved. The request moved to Payment (85%) and was assigned to a cashier. Maintenance checks are scheduled." : "Installation saved. The request is now with the Admin until the subsidy net meter step is done; the payment starts after that.")
       else
         render :show, status: :unprocessable_entity
       end
