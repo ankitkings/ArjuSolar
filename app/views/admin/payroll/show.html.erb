@@ -1,0 +1,32 @@
+<%= render "shared/hr_styles" %>
+<p><%= link_to "← Payroll", admin_payroll_path(month: @month.strftime("%Y-%m")) %></p>
+<h1><%= @member.name %> <span class="muted" style="font-size:1rem">· <%= @member.department_label %> · <%= @month.strftime("%B %Y") %></span></h1>
+<p class="tabs no-print">
+  <%= link_to "← #{(@month - 1.month).strftime('%B')}", admin_payroll_member_path(@member.id, month: (@month - 1.month).strftime("%Y-%m")), class: "tab" %>
+  <% if @month < Date.current.beginning_of_month %><%= link_to "#{(@month + 1.month).strftime('%B')} →", admin_payroll_member_path(@member.id, month: (@month + 1.month).strftime("%Y-%m")), class: "tab" %><% end %>
+</p>
+<% s = @summary %>
+<div class="stats">
+  <div class="stat"><b><%= s.present %></b><span>Present</span></div>
+  <div class="stat"><b><%= s.half_days %></b><span>Half days</span></div>
+  <div class="stat"><b><%= s.paid_leave + s.unpaid_leave %></b><span>Leave days</span></div>
+  <div class="stat <%= 'alert' if s.absent.positive? %>"><b><%= s.absent %></b><span>Absent</span></div>
+  <div class="stat"><b><%= format("%g", s.payable) %> / <%= s.working_days %></b><span>Payable days</span></div>
+  <div class="stat"><b><%= s.earned ? inr(s.earned) : "—" %></b><span><%= s.complete? ? "Salary" : "Salary so far" %><%= " (of #{inr(s.salary)})" if s.salary %></span></div>
+</div>
+<% if s.daily_rate %><p class="muted small">Daily rate: <%= inr(s.daily_rate.round(2)) %> (<%= inr(s.salary) %> ÷ <%= s.working_days %> working days).</p><% end %>
+
+<div class="table-wrap"><table>
+  <tr><th>Date</th><th>Day</th><th>Status</th><th>Check in</th><th>Check out</th><th class="right">Hours</th><th>Note</th></tr>
+  <% @days.each do |date, kind, label, _counted, record| %>
+    <tr class="<%= 'day-off' if %i[off future].include?(kind) %>">
+      <td><%= l date, format: "%d %b" %></td>
+      <td><%= l date, format: "%a" %></td>
+      <td><span class="badge <%= kind %>"><%= label.presence || "—" %></span></td>
+      <td><%= record&.check_in_at ? l(record.check_in_at, format: "%I:%M %p") : "—" %></td>
+      <td><%= record&.check_out_at ? l(record.check_out_at, format: "%I:%M %p") : "—" %></td>
+      <td class="right"><%= record&.hours ? "#{record.hours} h" : "—" %></td>
+      <td><%= record&.note.presence || "—" %></td>
+    </tr>
+  <% end %>
+</table></div>

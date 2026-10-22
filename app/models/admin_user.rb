@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class AdminUser < ApplicationRecord
   has_secure_password
   has_many :chat_memberships, as: :member, dependent: :destroy

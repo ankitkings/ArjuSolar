@@ -1,21 +1,29 @@
+# frozen_string_literal: true
+
 Rails.application.routes.draw do
-  root "pages#home"
+  root 'pages#home'
   %w[about services projects systems team contact].each { |p| get p, to: "pages##{p}" }
   resources :service_requests, only: :create
-  get "q/:token/pdf", to: "public_quotes#pdf", as: :public_quote_pdf
-  get "q/:token", to: "public_quotes#show", as: :public_quote   # the client's quotation page (opened from WhatsApp)
+  get 'q/:token/pdf', to: 'public_quotes#pdf', as: :public_quote_pdf
+  get 'q/:token', to: 'public_quotes#show', as: :public_quote # the client's quotation page (opened from WhatsApp)
 
-  get    "admin/login",  to: "sessions#new",     as: :admin_login
-  post   "admin/login",  to: "sessions#create"
-  delete "admin/logout", to: "sessions#destroy", as: :admin_logout
+  get    'admin/login',  to: 'sessions#new', as: :admin_login
+  post   'admin/login',  to: 'sessions#create'
+  delete 'admin/logout', to: 'sessions#destroy', as: :admin_logout
 
-  get    "staff/login",  to: "staff_sessions#new",     as: :staff_login
-  post   "staff/login",  to: "staff_sessions#create"
-  delete "staff/logout", to: "staff_sessions#destroy", as: :staff_logout
+  get    'staff/login',  to: 'staff_sessions#new', as: :staff_login
+  post   'staff/login',  to: 'staff_sessions#create'
+  delete 'staff/logout', to: 'staff_sessions#destroy', as: :staff_logout
 
   namespace :staff do
-    root "tasks#index"
-    get "parts", to: "parts#index"
+    root 'tasks#index'
+    get 'parts', to: 'parts#index'
+    get 'attendance', to: 'attendance#show'
+    post 'attendance/check_in', to: 'attendance#check_in', as: :attendance_check_in
+    post 'attendance/check_out', to: 'attendance#check_out', as: :attendance_check_out
+    resources :leave_requests, only: %i[index create] do
+      member { patch :cancel }
+    end
     resources :chats, only: %i[index show new create] do
       member do
         get :poll
@@ -48,8 +56,22 @@ Rails.application.routes.draw do
   end
 
   namespace :admin do
-    root "dashboard#index"
-    get "overdue", to: "overdue#index"
+    root 'dashboard#index'
+    get 'overdue', to: 'overdue#index'
+    resource :margins, only: %i[show update], controller: 'margins'
+    get 'attendance', to: 'attendance#index'
+    post 'attendance', to: 'attendance#mark'
+    get 'attendance/:id', to: 'attendance#show', as: :attendance_member
+    resources :leave_requests, only: :index do
+      member do
+        patch :approve
+        patch :cancel
+      end
+    end
+    get 'payroll', to: 'payroll#index'
+    patch 'payroll/settings', to: 'payroll#settings', as: :payroll_settings
+    get 'payroll/:member_id', to: 'payroll#show', as: :payroll_member
+    patch 'payroll/:member_id/salary', to: 'payroll#salary', as: :payroll_salary
     resources :chats, only: %i[index show new create] do
       member do
         get :poll
@@ -80,20 +102,20 @@ Rails.application.routes.draw do
     end
     resources :installations, only: :update
     resources :solar_packages, except: :show
-    resources :catalog_items, path: "parts", except: :show
-    resource :stock, only: :show, controller: "stock" do
+    resources :catalog_items, path: 'parts', except: :show
+    resource :stock, only: :show, controller: 'stock' do
       post :receive
       post :order
-      post "orders/:id/receive", action: :receive_order, as: :receive_order
-      post "orders/:id/cancel", action: :cancel_order, as: :cancel_order
+      post 'orders/:id/receive', action: :receive_order, as: :receive_order
+      post 'orders/:id/cancel', action: :cancel_order, as: :cancel_order
       post :adjust
       patch :min_level
       patch :rules
     end
-    resource :subsidy, only: %i[show update], controller: "subsidy_schemes"
+    resource :subsidy, only: %i[show update], controller: 'subsidy_schemes'
     resources :subsidy_applications, only: %i[index show create update]
     resources :team_members
   end
 
-  get "up" => "rails/health#show", as: :rails_health_check
+  get 'up' => 'rails/health#show', as: :rails_health_check
 end

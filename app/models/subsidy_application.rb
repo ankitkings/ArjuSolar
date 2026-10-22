@@ -1,57 +1,60 @@
+# frozen_string_literal: true
+
 class SubsidyApplication < ApplicationRecord
   include ImageAttachment
 
   # the steps of the official process, in order
-  FLOW = %w[preparing applied feasibility_approved net_meter_applied commissioned bank_submitted subsidy_received].freeze
+  FLOW = %w[preparing applied feasibility_approved net_meter_applied commissioned bank_submitted
+            subsidy_received].freeze
   STATUSES = (FLOW + %w[rejected withdrawn]).freeze
 
   LABELS = {
-    "preparing"            => "Preparing documents",
-    "applied"              => "Applied on portal",
-    "feasibility_approved" => "DISCOM approved",
-    "net_meter_applied"    => "Installed, net meter applied",
-    "commissioned"         => "Commissioned (net meter fitted)",
-    "bank_submitted"       => "Bank details submitted",
-    "subsidy_received"     => "Subsidy received",
-    "rejected"             => "Rejected",
-    "withdrawn"            => "Not applying"
+    'preparing' => 'Preparing documents',
+    'applied' => 'Applied on portal',
+    'feasibility_approved' => 'DISCOM approved',
+    'net_meter_applied' => 'Installed, net meter applied',
+    'commissioned' => 'Commissioned (net meter fitted)',
+    'bank_submitted' => 'Bank details submitted',
+    'subsidy_received' => 'Subsidy received',
+    'rejected' => 'Rejected',
+    'withdrawn' => 'Not applying'
   }.freeze
 
   NEXT_STEPS = {
-    "preparing"            => "Make the application on the portal",
-    "applied"              => "Wait for the electricity company's approval (check the portal)",
-    "feasibility_approved" => "Approved – the installation can start; then apply for the net meter",
-    "net_meter_applied"    => "Wait for the inspection and the net meter fitting",
-    "commissioned"         => "Submit the bank details on the portal",
-    "bank_submitted"       => "Wait for the subsidy to be credited",
-    "subsidy_received"     => "Done – subsidy received",
-    "rejected"             => "Rejected – decide what to do",
-    "withdrawn"            => "Not applying"
+    'preparing' => 'Make the application on the portal',
+    'applied' => "Wait for the electricity company's approval (check the portal)",
+    'feasibility_approved' => 'Approved – the installation can start; then apply for the net meter',
+    'net_meter_applied' => 'Wait for the inspection and the net meter fitting',
+    'commissioned' => 'Submit the bank details on the portal',
+    'bank_submitted' => 'Wait for the subsidy to be credited',
+    'subsidy_received' => 'Done – subsidy received',
+    'rejected' => 'Rejected – decide what to do',
+    'withdrawn' => 'Not applying'
   }.freeze
 
   GROUP_STATUSES = {
-    "received"     => %w[subsidy_received],
-    "rejected"     => %w[rejected],
-    "not_applying" => %w[withdrawn],
-    "in_progress"  => %w[preparing applied feasibility_approved net_meter_applied commissioned bank_submitted]
+    'received' => %w[subsidy_received],
+    'rejected' => %w[rejected],
+    'not_applying' => %w[withdrawn],
+    'in_progress' => %w[preparing applied feasibility_approved net_meter_applied commissioned bank_submitted]
   }.freeze
 
   # the date that is stamped automatically when a status is reached
   DATE_FOR_STATUS = {
-    "applied" => :applied_on, "feasibility_approved" => :feasibility_on, "net_meter_applied" => :net_meter_on,
-    "commissioned" => :commissioned_on, "bank_submitted" => :bank_submitted_on, "subsidy_received" => :received_on
+    'applied' => :applied_on, 'feasibility_approved' => :feasibility_on, 'net_meter_applied' => :net_meter_on,
+    'commissioned' => :commissioned_on, 'bank_submitted' => :bank_submitted_on, 'subsidy_received' => :received_on
   }.freeze
 
   # The documents the portal needs. Ticked when collected; a photo / PDF of each can be kept here too.
   DOCUMENTS = {
-    electricity_bill_received: { file: :electricity_bill_file, label: "Electricity bill",
-                                 hint: "The latest bill. The consumer number and the name must be clearly visible." },
-    roof_ownership_confirmed:  { file: :ownership_proof_file, label: "Own house / roof",
-                                 hint: "Proof that the client owns the house or can use the roof, e.g. a property tax receipt or an ownership paper." },
-    bank_account_confirmed:    { file: :bank_proof_file, label: "Aadhaar-linked bank account",
-                                 hint: "First page of the passbook, or a bank statement, of the account that is linked to the client's Aadhaar. Do not photograph the Aadhaar card number." },
-    cancelled_cheque_received: { file: :cancelled_cheque_file, label: "Cancelled cheque",
-                                 hint: "A cheque of that same account with CANCELLED written across it." }
+    electricity_bill_received: { file: :electricity_bill_file, label: 'Electricity bill',
+                                 hint: 'The latest bill. The consumer number and the name must be clearly visible.' },
+    roof_ownership_confirmed: { file: :ownership_proof_file, label: 'Own house / roof',
+                                hint: 'Proof that the client owns the house or can use the roof, e.g. a property tax receipt or an ownership paper.' },
+    bank_account_confirmed: { file: :bank_proof_file, label: 'Aadhaar-linked bank account',
+                              hint: "First page of the passbook, or a bank statement, of the account that is linked to the client's Aadhaar. Do not photograph the Aadhaar card number." },
+    cancelled_cheque_received: { file: :cancelled_cheque_file, label: 'Cancelled cheque',
+                                 hint: 'A cheque of that same account with CANCELLED written across it.' }
   }.freeze
 
   belongs_to :service_request
@@ -68,10 +71,12 @@ class SubsidyApplication < ApplicationRecord
   after_save :release_holds, if: :saved_change_to_status?
 
   validates :status, inclusion: { in: STATUSES }
-  validates :portal_application_no, presence: { message: "is needed once the application has been made on the portal" },
+  validates :portal_application_no, presence: { message: 'is needed once the application has been made on the portal' },
                                     unless: -> { %w[preparing withdrawn].include?(status) }
-  validates :rejection_reason, presence: { message: "is needed – write why it was rejected" }, if: -> { status == "rejected" }
-  validates :received_amount, numericality: { greater_than: 0 }, if: -> { status == "subsidy_received" }
+  validates :rejection_reason, presence: { message: 'is needed – write why it was rejected' }, if: lambda {
+    status == 'rejected'
+  }
+  validates :received_amount, numericality: { greater_than: 0 }, if: -> { status == 'subsidy_received' }
   validates :expected_amount, numericality: { greater_than_or_equal_to: 0 }
   validates :received_amount, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true
   validate :dates_not_in_future
@@ -82,7 +87,8 @@ class SubsidyApplication < ApplicationRecord
   def self.start_for!(request)
     quote = request.accepted_quote || request.latest_quote
     kw = request.installation&.capacity_kw || quote&.capacity_kw
-    create!(service_request: request, system_capacity_kw: kw, expected_amount: SubsidyScheme.current.amount_for(kw || 0))
+    create!(service_request: request, system_capacity_kw: kw,
+            expected_amount: SubsidyScheme.current.amount_for(kw || 0))
   end
 
   def documents_complete? = DOCUMENTS.keys.all? { |flag| self[flag] }
@@ -96,7 +102,10 @@ class SubsidyApplication < ApplicationRecord
 
   # what the admin has to do now
   def next_step
-    return "Collect the missing documents (#{missing_documents.to_sentence}), then apply on the portal" if status == "preparing" && !documents_complete?
+    if status == 'preparing' && !documents_complete?
+      return "Collect the missing documents (#{missing_documents.to_sentence}), then apply on the portal"
+    end
+
     NEXT_STEPS[status]
   end
 
@@ -108,9 +117,9 @@ class SubsidyApplication < ApplicationRecord
 
   # the dates are things that already happened
   def dates_not_in_future
-    DATE_FOR_STATUS.values.each do |column|
+    DATE_FOR_STATUS.each_value do |column|
       value = self[column]
-      errors.add(column, "cannot be in the future") if value && value > Date.current
+      errors.add(column, 'cannot be in the future') if value && value > Date.current
     end
   end
 
@@ -119,12 +128,12 @@ class SubsidyApplication < ApplicationRecord
   #  Installed, net meter ... -> the payment can start
   def release_holds
     request = service_request
-    if request.installation_status == "waiting_for_approval" && request.installation_hold_reason.nil?
+    if request.installation_status == 'waiting_for_approval' && request.installation_hold_reason.nil?
       note = InstallationScheduler.new(request).call
       request.updates.create!(status: request.status, progress: request.progress,
                               note: "The PM Surya Ghar application is approved by the electricity company, so the installation can start. #{note}")
-    elsif request.installation_status == "waiting_for_net_meter" && request.payment_hold_reason.nil?
-      request.advance!(to: "payment", note: "The net meter has been applied, so the payment can start")
+    elsif request.installation_status == 'waiting_for_net_meter' && request.payment_hold_reason.nil?
+      request.advance!(to: 'payment', note: 'The net meter has been applied, so the payment can start')
     end
   end
 
@@ -135,7 +144,9 @@ class SubsidyApplication < ApplicationRecord
 
   # "Subsidy received" without an amount means the expected amount arrived
   def default_received_amount
-    self.received_amount = expected_amount if status == "subsidy_received" && received_amount.blank? && expected_amount.to_f.positive?
+    return unless status == 'subsidy_received' && received_amount.blank? && expected_amount.to_f.positive?
+
+    self.received_amount = expected_amount
   end
 
   def stamp_date

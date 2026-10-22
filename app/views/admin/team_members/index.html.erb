@@ -19,8 +19,9 @@
       <td><%= @done_counts[m.id].to_i %></td>
       <td><%= m.can_login? ? "Yes" : "No" %></td>
       <td><%= m.show_on_website ? "Yes" : "No" %></td><td><%= m.active ? "Yes" : "No" %></td>
-      <td><%= link_to "Tasks", admin_team_member_path(m) %> ·
-          <%= link_to "Edit", edit_admin_team_member_path(m) %>
+      <td><%= link_to "Tasks", admin_team_member_path(m) %> .
+          <%= link_to "Attendance", admin_attendance_member_path(m) %> .
+          <%= link_to "Edit", edit_admin_team_member_path(m) %> .
           <%= button_to "Delete", admin_team_member_path(m), method: :delete, class: "linklike", form: { style: "display:inline", onsubmit: "return confirm(#{delete_member_warning(m).to_json})" } %></td>
     </tr>
   <% end %>

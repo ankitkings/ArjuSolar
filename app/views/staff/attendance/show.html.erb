@@ -1,0 +1,49 @@
+<%= render "shared/hr_styles" %>
+<h1>My attendance</h1>
+<% rec = @today %>
+<div class="panel">
+  <h3>Today – <%= l Date.current, format: "%A, %d %B" %></h3>
+  <% if @on_leave %>
+    <p>You are on <b>approved leave</b> today (<%= @on_leave.kind_label %>). You do not need to check in.</p>
+  <% elsif @off_day %>
+    <p>Today is your weekly off.</p>
+  <% elsif rec.nil? || rec.check_in_at.nil? %>
+    <% if rec %><p class="muted">The admin marked you <b><%= rec.status_label.downcase %></b> for today. Checking in will replace that.</p><% end %>
+    <p class="muted">You have not checked in yet.</p>
+    <%= button_to "Check in", staff_attendance_check_in_path, method: :post, class: "btn go" %>
+  <% elsif rec.check_out_at.nil? %>
+    <p>✅ Checked in at <b><%= l rec.check_in_at, format: "%I:%M %p" %></b>. Do not forget to check out when you finish.</p>
+    <%= button_to "Check out", staff_attendance_check_out_path, method: :post, class: "btn hold",
+          form: { onsubmit: "return confirm('Check out now?')" } %>
+  <% else %>
+    <p>✅ Checked in <b><%= l rec.check_in_at, format: "%I:%M %p" %></b> · checked out <b><%= l rec.check_out_at, format: "%I:%M %p" %></b> ·
+      worked <b><%= rec.hours %> h</b> · <span class="badge <%= rec.status %>"><%= rec.status_label %></span></p>
+  <% end %>
+</div>
+
+<h2><%= @month.strftime("%B %Y") %></h2>
+<p class="tabs">
+  <%= link_to "← #{(@month - 1.month).strftime('%B')}", staff_attendance_path(month: (@month - 1.month).strftime("%Y-%m")), class: "tab" %>
+  <%= link_to "This month", staff_attendance_path, class: "tab #{'active' if @month == Date.current.beginning_of_month}" %>
+  <% if @month < Date.current.beginning_of_month %><%= link_to "#{(@month + 1.month).strftime('%B')} →", staff_attendance_path(month: (@month + 1.month).strftime("%Y-%m")), class: "tab" %><% end %>
+</p>
+<div class="stats">
+  <div class="stat"><b><%= @summary.present %></b><span>Present</span></div>
+  <div class="stat"><b><%= @summary.half_days %></b><span>Half days</span></div>
+  <div class="stat"><b><%= @summary.paid_leave + @summary.unpaid_leave %></b><span>Leave days</span></div>
+  <div class="stat <%= 'alert' if @summary.absent.positive? %>"><b><%= @summary.absent %></b><span>Absent</span></div>
+</div>
+
+<div class="table-wrap"><table>
+  <tr><th>Date</th><th>Day</th><th>Status</th><th>Check in</th><th>Check out</th><th class="right">Hours</th></tr>
+  <% @days.each do |date, kind, label, _counted, record| %>
+    <tr class="<%= 'day-off' if %i[off future].include?(kind) %>">
+      <td><%= l date, format: "%d %b" %></td>
+      <td><%= l date, format: "%a" %></td>
+      <td><span class="badge <%= kind %>"><%= label.presence || "—" %></span></td>
+      <td><%= record&.check_in_at ? l(record.check_in_at, format: "%I:%M %p") : "—" %></td>
+      <td><%= record&.check_out_at ? l(record.check_out_at, format: "%I:%M %p") : "—" %></td>
+      <td class="right"><%= record&.hours ? "#{record.hours} h" : "—" %></td>
+    </tr>
+  <% end %>
+</table></div>

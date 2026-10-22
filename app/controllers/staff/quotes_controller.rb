@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Staff
   # Site visitor: create a quote - from a ready-made system, or by arranging individual parts.
   # Everyone involved can view / print it.
@@ -6,40 +8,50 @@ module Staff
 
     # The "arrange the parts" builder
     def new
-      return redirect_to(staff_task_path(@task), alert: "A quote can only be made after the site visit.") unless quoting_allowed?
+      unless quoting_allowed?
+        return redirect_to(staff_task_path(@task),
+                           alert: 'A quote can only be made after the site visit.')
+      end
+
       @quote = Quote.new
       @initial = []
     end
 
     def create
-      return redirect_to(staff_task_path(@task), alert: "A quote can only be made after the site visit.") unless quoting_allowed?
+      unless quoting_allowed?
+        return redirect_to(staff_task_path(@task),
+                           alert: 'A quote can only be made after the site visit.')
+      end
 
-      first_quote = @task.status == "site_visit"
+      first_quote = @task.status == 'site_visit'
       if params.key?(:items)
         items = custom_items
         if items.empty?
-          @quote, @initial, @error = Quote.new, [], "Choose at least one part."
+          @quote = Quote.new
+          @initial = []
+          @error = 'Choose at least one part.'
           return render(:new, status: :unprocessable_entity)
         end
         quote = @task.create_quote!(items: items, system_name: params[:system_name], discount: params[:discount],
                                     valid_until: params[:valid_until], notes: params[:notes],
-                                    subsidy_applies: params[:subsidy_applies] == "1", by: current_staff)
+                                    subsidy_applies: params[:subsidy_applies] == '1', by: current_staff)
       else
         attrs = quote_params
         package = SolarPackage.find_by(id: attrs[:solar_package_id])
         extras = extra_items
-        if extras.any? && package && package.package_items.none?
-          @quote = Quote.new(subsidy_applies: attrs[:subsidy_applies] == "1")
-          @quote.errors.add(:base, "This system has no parts list yet, so extra parts cannot be added. Ask the admin to list its parts under Admin → Systems.")
+        if extras.any? && package&.package_items&.none?
+          @quote = Quote.new(subsidy_applies: attrs[:subsidy_applies] == '1')
+          @quote.errors.add(:base,
+                            'This system has no parts list yet, so extra parts cannot be added. Ask the admin to list its parts under Admin → Systems.')
           @installation = @task.new_installation
-          return render("staff/tasks/show", status: :unprocessable_entity)
+          return render('staff/tasks/show', status: :unprocessable_entity)
         end
         quote = @task.create_quote!(package: package, discount: attrs[:discount],
                                     valid_until: attrs[:valid_until], notes: attrs[:notes],
                                     subsidy_applies: attrs[:subsidy_applies], extra_items: extras, by: current_staff)
       end
       msg = "Quote #{quote.number} created."
-      msg += " The request moved to Quote sent." if first_quote
+      msg += ' The request moved to Quote sent.' if first_quote
       redirect_to staff_quote_path(quote), notice: msg
     rescue ActiveRecord::RecordInvalid => e
       @quote = e.record.is_a?(Quote) ? e.record : Quote.new
@@ -49,7 +61,7 @@ module Staff
         render :new, status: :unprocessable_entity
       else
         @installation = @task.new_installation
-        render "staff/tasks/show", status: :unprocessable_entity
+        render 'staff/tasks/show', status: :unprocessable_entity
       end
     end
 
@@ -61,26 +73,30 @@ module Staff
     def whatsapp
       quote = visible_quotes.find(params[:id])
       back = staff_quote_path(quote)
-      return redirect_to(back, alert: "Only a current quote can be sent. Create a new quote first.") unless %w[sent accepted].include?(quote.status)
-      return redirect_to(back, alert: "This quote has expired. Revise it before sending.") if quote.expired?
+      return redirect_to(back, alert: 'Only a current quote can be sent. Create a new quote first.') unless %w[sent
+                                                                                                               accepted].include?(quote.status)
+      return redirect_to(back, alert: 'This quote has expired. Revise it before sending.') if quote.expired?
       if Quote.whatsapp_number(quote.service_request.phone).length < 11
-        return redirect_to(back, alert: "The client's phone number does not look like a WhatsApp number. Check it with the contact person.")
+        return redirect_to(back,
+                           alert: "The client's phone number does not look like a WhatsApp number. Check it with the contact person.")
       end
 
       log_whatsapp_send(quote, "sent to the client on WhatsApp (#{quote.service_request.phone})")
-      redirect_to quote.whatsapp_url(helpers.public_quote_link(quote), current_staff.name, pdf_link: helpers.public_quote_pdf_link(quote)), allow_other_host: true
+      redirect_to quote.whatsapp_url(helpers.public_quote_link(quote), current_staff.name, pdf_link: helpers.public_quote_pdf_link(quote)),
+                  allow_other_host: true
     end
 
     # The quotation as a PDF file
     def pdf
       quote = visible_quotes.find(params[:id])
-      send_data QuotePdf.render(quote), filename: "Quotation-#{quote.number}.pdf", type: "application/pdf", disposition: "attachment"
+      send_data QuotePdf.render(quote), filename: "Quotation-#{quote.number}.pdf", type: 'application/pdf',
+                                        disposition: 'attachment'
     end
 
     # Called by the "Share PDF on WhatsApp" button after the phone's share sheet was used
     def shared
       quote = visible_quotes.find(params[:id])
-      log_whatsapp_send(quote, "PDF shared on WhatsApp")
+      log_whatsapp_send(quote, 'PDF shared on WhatsApp')
       head :ok
     end
 
@@ -98,7 +114,7 @@ module Staff
     # quotes this person may open: of requests assigned to them, or made by them
     def visible_quotes
       Quote.joins(:service_request)
-           .where("service_requests.team_member_id = :id OR quotes.team_member_id = :id", id: current_staff.id)
+           .where('service_requests.team_member_id = :id OR quotes.team_member_id = :id', id: current_staff.id)
     end
 
     def set_task

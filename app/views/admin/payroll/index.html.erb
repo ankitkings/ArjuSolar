@@ -1,0 +1,52 @@
+<%= render "shared/hr_styles" %>
+<h1>Payroll</h1>
+<% key = ->(date) { date.strftime("%Y-%m") } %>
+<p class="tabs no-print">
+  <%= link_to "← #{(@month - 1.month).strftime('%B')}", admin_payroll_path(month: key.(@month - 1.month)), class: "tab" %>
+  <%= link_to "This month", admin_payroll_path, class: "tab #{'active' if @month == Date.current.beginning_of_month}" %>
+  <% if @month < Date.current.beginning_of_month %><%= link_to "#{(@month + 1.month).strftime('%B')} →", admin_payroll_path(month: key.(@month + 1.month)), class: "tab" %><% end %>
+</p>
+<h2><%= @month.strftime("%B %Y") %> · <%= @payroll.working_dates.size %> working days</h2>
+<p class="muted small">Salary = monthly salary ÷ working days × payable days. A present day counts 1, a half day 0.5, paid and sick leave 1; unpaid leave and absent days count 0. Weekly offs are paid. For the running month the salary is what has been earned so far.</p>
+
+<% totals = { earned: 0, projected: 0 } %>
+<div class="table-wrap"><table>
+  <tr><th>Employee</th><th>Monthly salary</th><th class="right">Present</th><th class="right">Half</th><th class="right">Paid leave</th><th class="right">Unpaid leave</th><th class="right">Absent</th><th class="right">Payable days</th><th class="right">Salary</th><th class="right">If the rest is attended</th></tr>
+  <% @summaries.each do |s| %>
+    <% m = s.member %>
+    <% totals[:earned] += s.earned.to_d; totals[:projected] += (s.projected || 0).to_d %>
+    <tr>
+      <td><%= link_to m.name, admin_payroll_member_path(m.id, month: key.(@month)) %><br><span class="muted small"><%= m.department_label %></span></td>
+      <td>
+        <%= form_with url: admin_payroll_salary_path(m.id), method: :patch, class: "inline-form" do %>
+          <%= hidden_field_tag :month, key.(@month) %>
+          <%= number_field_tag :monthly_salary, (m.monthly_salary ? format("%g", m.monthly_salary.to_f) : nil), min: 0, step: 1, placeholder: "₹ per month", style: "width:110px" %>
+          <%= submit_tag "Save", class: "btn hold" %>
+        <% end %>
+      </td>
+      <td class="right"><%= s.present %></td>
+      <td class="right"><%= s.half_days %></td>
+      <td class="right"><%= s.paid_leave %></td>
+      <td class="right"><%= s.unpaid_leave %></td>
+      <td class="right"><%= s.absent %></td>
+      <td class="right"><b><%= format("%g", s.payable) %></b> of <%= s.working_days %></td>
+      <td class="right"><b><%= s.earned ? inr(s.earned) : "no salary set" %></b></td>
+      <td class="right"><%= s.complete? || !s.projected ? "—" : inr(s.projected) %></td>
+    </tr>
+  <% end %>
+  <% if @summaries.empty? %><tr><td colspan="10" class="muted">No team members yet.</td></tr><% end %>
+  <% if @summaries.any? %>
+    <tr><td colspan="8" class="right"><b>Total</b></td><td class="right"><b><%= inr(totals[:earned]) %></b></td><td class="right"><%= inr(totals[:projected]) unless @summaries.all?(&:complete?) %></td></tr>
+  <% end %>
+</table></div>
+
+<h2>Rules</h2>
+<div class="panel">
+  <%= form_with model: @setting, url: admin_payroll_settings_path, method: :patch, class: "form" do |f| %>
+    <%= hidden_field_tag :month, key.(@month) %>
+    <%= f.label :half_day_hours, "Checking out before this many hours of work counts as a half day" %>
+    <%= f.number_field :half_day_hours, min: 0.5, max: 12, step: 0.5 %>
+    <label><%= f.check_box :sunday_off %> Sunday is the weekly off (paid, not counted as a working day)</label>
+    <%= f.submit "Save rules", class: "btn" %>
+  <% end %>
+</div>

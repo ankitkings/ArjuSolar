@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Admin
   # Admin > Subsidy: who has applied for the PM Surya Ghar subsidy, how far it is, who received it and who did not
   class SubsidyApplicationsController < BaseController
@@ -10,19 +12,21 @@ module Admin
       if params[:q].present?
         q = "%#{SubsidyApplication.sanitize_sql_like(params[:q])}%"
         scope = scope.joins(:service_request)
-                     .where("service_requests.name LIKE :q OR service_requests.phone LIKE :q OR subsidy_applications.portal_application_no LIKE :q", q: q)
+                     .where('service_requests.name LIKE :q OR service_requests.phone LIKE :q OR subsidy_applications.portal_application_no LIKE :q', q: q)
       end
       @applications = scope.to_a
       # installations / payments that are on hold until the subsidy application moves on
-      @holds = ServiceRequest.where(installation_status: %w[waiting_for_approval waiting_for_net_meter]).includes(:subsidy_application).order(:updated_at).to_a
+      @holds = ServiceRequest.where(installation_status: %w[waiting_for_approval
+                                                            waiting_for_net_meter]).includes(:subsidy_application).order(:updated_at).to_a
 
       @counts = SubsidyApplication::GROUP_STATUSES.keys.index_with { |g| SubsidyApplication.in_group(g).count }
-      @received_total = SubsidyApplication.in_group("received").sum(:received_amount)
-      @waiting_total  = SubsidyApplication.in_group("in_progress").sum(:expected_amount)
+      @received_total = SubsidyApplication.in_group('received').sum(:received_amount)
+      @waiting_total  = SubsidyApplication.in_group('in_progress').sum(:expected_amount)
 
       # clients whose quote includes the subsidy but nobody has started an application for yet
-      @not_started = ServiceRequest.where.not(status: "cancelled")
-                                   .where(id: Quote.where(subsidy_applies: true, status: "accepted").select(:service_request_id))
+      @not_started = ServiceRequest.where.not(status: 'cancelled')
+                                   .where(id: Quote.where(subsidy_applies: true,
+                                                          status: 'accepted').select(:service_request_id))
                                    .where.not(id: SubsidyApplication.select(:service_request_id))
                                    .order(:created_at).to_a
     end
@@ -37,7 +41,7 @@ module Admin
       unless application
         application = SubsidyApplication.start_for!(request)
         request.updates.create!(status: request.status, progress: request.progress, admin_user: current_admin,
-                                note: "PM Surya Ghar subsidy application started")
+                                note: 'PM Surya Ghar subsidy application started')
       end
       redirect_to admin_subsidy_application_path(application)
     end
@@ -52,7 +56,7 @@ module Admin
           req.updates.create!(status: req.status, progress: req.progress, admin_user: current_admin,
                               note: "PM Surya Ghar subsidy: #{@application.status_label}")
         end
-        redirect_to admin_subsidy_application_path(@application), notice: "Saved"
+        redirect_to admin_subsidy_application_path(@application), notice: 'Saved'
       else
         render :show, status: :unprocessable_entity
       end

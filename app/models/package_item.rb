@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # One part (and how many) in a ready-made system
 class PackageItem < ApplicationRecord
   belongs_to :solar_package

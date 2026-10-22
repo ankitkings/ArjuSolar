@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class CreatePackageItems < ActiveRecord::Migration[7.1]
   def change
     # The parts a ready-made system is made of (with quantities). The system's price is the sum of these parts.

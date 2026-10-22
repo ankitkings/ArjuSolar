@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module ApplicationHelper
   def inr(amount)
     Rupees.display(amount)
@@ -5,8 +7,8 @@ module ApplicationHelper
 
   # Progress bar; a cancelled deal is drawn fully red (and shows 0%)
   def progress_bar(record, big: false)
-    classes = ["bar", ("big" if big), ("cancelled" if record.status == "cancelled")].compact.join(" ")
-    content_tag(:div, content_tag(:i, "", style: "width:#{record.progress}%"), class: classes)
+    classes = ['bar', ('big' if big), ('cancelled' if record.status == 'cancelled')].compact.join(' ')
+    content_tag(:div, content_tag(:i, '', style: "width:#{record.progress}%"), class: classes)
   end
 
   # The picture the admin uploaded for a system, or a default solar photo
@@ -26,6 +28,7 @@ module ApplicationHelper
     groups = TeamMember::DEPARTMENTS.filter_map do |key, label|
       list = members[key]
       next if list.blank?
+
       options = list.sort_by { |m| [counts[m.id], m.name] }.map do |m|
         n = counts[m.id]
         ["#{m.name} (#{label}) (#{n} active #{n == 1 ? 'task' : 'tasks'})", m.id]
@@ -37,33 +40,39 @@ module ApplicationHelper
 
   # Requests nobody has addressed yet (still "pending"); shown as a badge for the admin
   def new_request_count
-    @_new_request_count ||= ServiceRequest.where(status: "pending").count
+    @new_request_count ||= ServiceRequest.where(status: 'pending').count
   end
 
   # Link the client opens to see the quotation. Set PUBLIC_BASE_URL (e.g. https://www.arjusolars.com)
   # in production; otherwise the address of the current request is used.
   def public_quote_link(quote)
-    base = ENV["PUBLIC_BASE_URL"].to_s.chomp("/").presence || request.base_url
+    base = ENV['PUBLIC_BASE_URL'].to_s.chomp('/').presence || request.base_url
     "#{base}#{public_quote_path(quote.ensure_public_token!)}"
   end
 
   # Direct link to the quotation PDF (opens on the client's phone)
   def public_quote_pdf_link(quote)
-    base = ENV["PUBLIC_BASE_URL"].to_s.chomp("/").presence || request.base_url
+    base = ENV['PUBLIC_BASE_URL'].to_s.chomp('/').presence || request.base_url
     "#{base}#{public_quote_pdf_path(quote.ensure_public_token!)}"
   end
 
   # Text of the "are you sure?" box when a request is deleted: lists what goes with it
   def delete_request_warning(req)
     parts = ["its timeline (#{req.updates.count} entries)"]
-    parts << pluralize(req.quotes.count, "quote") if req.quotes.any?
-    parts << "the installation record and its photos" if req.installation
+    parts << pluralize(req.quotes.count, 'quote') if req.quotes.any?
+    parts << 'the installation record and its photos' if req.installation
     if req.payment
       paid = req.payment.amount_paid
-      parts << (paid.positive? ? "the payment record with #{inr(paid)} received (#{pluralize(req.payment.receipts.count, 'receipt')})" : "the payment record")
+      parts << (if paid.positive?
+                  "the payment record with #{inr(paid)} received (#{pluralize(
+                    req.payment.receipts.count, 'receipt'
+)})"
+                else
+                  'the payment record'
+                end)
     end
-    parts << pluralize(req.maintenance_visits.count, "maintenance visit") if req.maintenance_visits.any?
-    parts << "the subsidy application" if req.subsidy_application
+    parts << pluralize(req.maintenance_visits.count, 'maintenance visit') if req.maintenance_visits.any?
+    parts << 'the subsidy application' if req.subsidy_application
     "Delete request ##{req.id} (#{req.name})?\n\nThis also permanently deletes: #{parts.to_sentence}.\n\nThis cannot be undone."
   end
 
@@ -82,27 +91,37 @@ module ApplicationHelper
 
   # Parts that have to be ordered (short for accepted installations or below their minimum level)
   def parts_short_count
-    @_parts_short ||= RequiredParts.new.count_to_order
+    @parts_short_count ||= RequiredParts.new.count_to_order
   end
 
   # "Install on" in the installer's list: the date, or what the job is waiting for
   def installation_cell(request)
     case request.installation_status
-    when "waiting_for_stock"    then "⚠ Waiting for parts"
-    when "waiting_for_approval" then "⏳ Waiting for DISCOM approval"
-    when "waiting_for_net_meter" then "⏳ Installed – waiting for net meter"
+    when 'waiting_for_stock'    then '⚠ Waiting for parts'
+    when 'waiting_for_approval' then '⏳ Waiting for DISCOM approval'
+    when 'waiting_for_net_meter' then '⏳ Installed – waiting for net meter'
     else
-      request.installation_scheduled_on && request.status == "installation" ? l(request.installation_scheduled_on, format: :short) : "—"
+      if request.installation_scheduled_on && request.status == 'installation'
+        l(request.installation_scheduled_on,
+          format: :short)
+      else
+        '—'
+      end
     end
   end
 
   # Steps that are overdue (badge on the dashboard link)
   def overdue_count
-    @_overdue_count ||= OverdueSteps.new.count
+    @overdue_count ||= OverdueSteps.new.count
   end
 
   # where "Open" goes for an overdue item
   def overdue_item_path(item)
     item.record.is_a?(SubsidyApplication) ? admin_subsidy_application_path(item.record) : admin_service_request_path(item.record)
+  end
+
+  # Leave requests waiting for the admin's decision
+  def pending_leave_count
+    @pending_leave_count ||= LeaveRequest.where(status: 'pending').count
   end
 end

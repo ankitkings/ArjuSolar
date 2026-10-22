@@ -1,12 +1,14 @@
+# frozen_string_literal: true
+
 class AddStockAndInstallationScheduling < ActiveRecord::Migration[7.1]
   def change
     # stock of every physical part (labour / services are not stocked)
     add_column :catalog_items, :stock_quantity, :decimal, precision: 10, scale: 2, null: false, default: 0
-    add_column :catalog_items, :min_stock, :decimal, precision: 10, scale: 2, null: false, default: 0   # order again below this
+    add_column :catalog_items, :min_stock, :decimal, precision: 10, scale: 2, null: false, default: 0 # order again below this
 
     # when the installation of an accepted quote is planned
     add_column :service_requests, :installation_scheduled_on, :date
-    add_column :service_requests, :installation_status, :string   # "scheduled" or "waiting_for_stock"
+    add_column :service_requests, :installation_status, :string # "scheduled" or "waiting_for_stock"
 
     # every change of the stock: received, used on a job, or corrected after a count
     create_table :stock_movements do |t|
@@ -25,7 +27,8 @@ class AddStockAndInstallationScheduling < ActiveRecord::Migration[7.1]
       t.decimal :quantity, precision: 10, scale: 2, null: false
       t.timestamps
     end
-    add_index :stock_reservations, %i[service_request_id catalog_item_id], unique: true, name: "index_stock_reservations_uniqueness"
+    add_index :stock_reservations, %i[service_request_id catalog_item_id], unique: true,
+                                                                           name: 'index_stock_reservations_uniqueness'
 
     # the rules for planning installations (one row)
     create_table :installation_settings do |t|

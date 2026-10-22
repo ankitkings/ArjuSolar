@@ -1,13 +1,15 @@
+# frozen_string_literal: true
+
 class TeamMember < ApplicationRecord
   DEPARTMENTS = {
-    "contact_person"  => "Contact Person",
-    "site_visitor"    => "Site Visitor",
-    "installation"    => "Installation Team",
-    "daily_servicing" => "Daily Servicing",
-    "cashier"         => "Cashier Department"
+    'contact_person' => 'Contact Person',
+    'site_visitor' => 'Site Visitor',
+    'installation' => 'Installation Team',
+    'daily_servicing' => 'Daily Servicing',
+    'cashier' => 'Cashier Department'
   }.freeze
 
-  has_secure_password validations: false   # login is optional per member
+  has_secure_password validations: false # login is optional per member
 
   has_many :service_requests, dependent: :nullify
   has_many :request_updates, dependent: :nullify
@@ -32,6 +34,7 @@ class TeamMember < ApplicationRecord
   def self.least_busy(department)
     members = where(department: department, active: true).order(:id).to_a
     return nil if members.empty?
+
     counts = active_task_counts
     members.min_by { |m| [counts[m.id], m.id] }
   end
@@ -41,7 +44,7 @@ class TeamMember < ApplicationRecord
     counts = Hash.new(0)
     ServiceRequest.where(status: RequestWorkflow::ACTIVE_STATUSES).where.not(team_member_id: nil)
                   .group(:team_member_id).count.each { |id, n| counts[id] += n }
-    MaintenanceVisit.where(status: "assigned").group(:team_member_id).count.each { |id, n| counts[id] += n }
+    MaintenanceVisit.where(status: 'assigned').group(:team_member_id).count.each { |id, n| counts[id] += n }
     counts
   end
 
@@ -54,8 +57,11 @@ class TeamMember < ApplicationRecord
   # As soon as an active member exists for that department, they are handed over automatically.
   def pick_up_waiting_requests
     return unless active?
+
     statuses = RequestWorkflow::DEPARTMENT.select { |_status, dept| dept == department }.keys
     return if statuses.empty?
-    ServiceRequest.where(status: statuses, team_member_id: nil, assigned_to_admin: false).find_each(&:reassign_for_stage!)
+
+    ServiceRequest.where(status: statuses, team_member_id: nil,
+                         assigned_to_admin: false).find_each(&:reassign_for_stage!)
   end
 end

@@ -1,17 +1,19 @@
+# frozen_string_literal: true
+
 module ChatHelper
   def person_name(user)
     case user
     when TeamMember then user.name
     when AdminUser  then "Admin (#{user.email.to_s.split('@').first})"
-    else "Former teammate"
+    else 'Former teammate'
     end
   end
 
   def person_subtitle(user)
     case user
     when TeamMember then user.department_label
-    when AdminUser  then "Admin"
-    else ""
+    when AdminUser  then 'Admin'
+    else ''
     end
   end
 
@@ -23,6 +25,6 @@ module ChatHelper
   end
 
   def chat_unread_count(user)
-    @_chat_unread ||= ChatMessage.unread_counts_for(user).values.sum
+    @chat_unread_count ||= ChatMessage.unread_counts_for(user).values.sum
   end
 end

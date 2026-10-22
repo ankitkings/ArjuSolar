@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # Catalog of the systems we install (capacity, panels, panel brand, inverter, price, picture).
 # The installation team picks one when finishing an installation; the admin's picture
 # is shown on the public Systems page.
@@ -20,14 +22,14 @@ class SolarPackage < ApplicationRecord
 
   # Price, number of panels, panel brand and inverter worked out from a list of [catalog_item, quantity]
   def self.attributes_from_parts(rows)
-    panels    = rows.select { |item, _| item.category == "panel" }
-    inverters = rows.select { |item, _| item.category == "inverter" }
+    panels    = rows.select { |item, _| item.category == 'panel' }
+    inverters = rows.select { |item, _| item.category == 'inverter' }
     attrs = { price: rows.sum { |item, qty| item.unit_price * qty.to_d } }
     if panels.any?
       attrs[:panel_count] = panels.sum { |_, qty| qty.to_d.round }
-      attrs[:panel_brand] = panels.map { |item, _| item.name }.uniq.join(" + ")
+      attrs[:panel_brand] = panels.map { |item, _| item.name }.uniq.join(' + ')
     end
-    attrs[:inverter_model] = inverters.map { |item, _| item.name }.uniq.join(" + ") if inverters.any?
+    attrs[:inverter_model] = inverters.map { |item, _| item.name }.uniq.join(' + ') if inverters.any?
     attrs
   end
 
@@ -50,6 +52,7 @@ class SolarPackage < ApplicationRecord
   # Central subsidy for a home system of this size, and what the client effectively pays
   def subsidy_amount
     return 0 unless subsidy_eligible
+
     [SubsidyScheme.current.amount_for(capacity_kw), price.to_d].min
   end
 
@@ -58,6 +61,7 @@ class SolarPackage < ApplicationRecord
   def label = "#{name} — #{format('%g', capacity_kw.to_f)} kW — #{Rupees.display(price)}"
 
   def details
-    "Capacity #{format('%g', capacity_kw.to_f)} kW · #{panel_count} panels · #{panel_brand} · Inverter #{inverter_model} · Price #{Rupees.display(price)}"
+    "Capacity #{format('%g',
+                       capacity_kw.to_f)} kW · #{panel_count} panels · #{panel_brand} · Inverter #{inverter_model} · Price #{Rupees.display(price)}"
   end
 end

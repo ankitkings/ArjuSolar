@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Admin
   class QuotesController < BaseController
     def show
@@ -6,7 +8,8 @@ module Admin
 
     def pdf
       quote = Quote.find(params[:id])
-      send_data QuotePdf.render(quote), filename: "Quotation-#{quote.number}.pdf", type: "application/pdf", disposition: "attachment"
+      send_data QuotePdf.render(quote), filename: "Quotation-#{quote.number}.pdf", type: 'application/pdf',
+                                        disposition: 'attachment'
     end
   end
 end

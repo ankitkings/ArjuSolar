@@ -1,6 +1,8 @@
+# frozen_string_literal: true
+
 # Real photographs for the public website (Pexels - free to use).
 module SiteImages
-  PEXELS = "https://images.pexels.com/photos".freeze
+  PEXELS = 'https://images.pexels.com/photos'
 
   HERO          = "#{PEXELS}/356036/pexels-photo-356036.jpeg?auto=compress&cs=tinysrgb&w=1920".freeze
   RESIDENTIAL   = "#{PEXELS}/17762230/pexels-photo-17762230/free-photo-of-solar-panels-on-house-roof.jpeg?auto=compress&cs=tinysrgb&w=900".freeze

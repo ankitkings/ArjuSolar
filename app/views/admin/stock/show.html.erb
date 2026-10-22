@@ -65,7 +65,7 @@
   <% if lines.any? %>
     <div class="alert-new">
       <h3>🛒 Order <%= pluralize(lines.size, "part") %> today</h3>
-      <p class="small">These are short for accepted installations, or below their minimum level. Estimated cost: <b><%= inr(@report.estimated_cost) %></b>.</p>
+      <p class="small">These are short for accepted installations, or below their minimum level. Estimated cost at the actual prices: <b><%= inr(@report.estimated_cost) %></b>.</p>
     </div>
   <% else %>
     <div class="all-clear">✅ Nothing to order – everything the open installations need is in stock.</div>
@@ -99,7 +99,7 @@
   <% if lines.any? %>
     <%= form_with url: order_admin_stock_path, method: :post do %>
       <div class="table-wrap"><table>
-        <tr><th>Order</th><th>Part</th><th class="right">Suggested</th><th>Quantity to order</th><th>Why</th><th class="right">Estimated cost</th></tr>
+        <tr><th>Order</th><th>Part</th><th class="right">Suggested</th><th>Quantity to order</th><th>Why</th><th class="right">Actual price</th><th class="right">Estimated cost</th></tr>
         <% lines.each do |item, qty, why| %>
           <tr>
             <td><%= check_box_tag "orders[#{item.id}][place]", "1", true %></td>
@@ -107,7 +107,8 @@
             <td class="right"><%= format("%g", qty.to_f) %> <%= item.unit %></td>
             <td><%= number_field_tag "orders[#{item.id}][quantity]", format("%g", qty.to_f), min: 0.01, step: 0.01, style: "width:100px" %> <%= item.unit %></td>
             <td><%= why %></td>
-            <td class="right"><%= inr(item.unit_price * qty) %></td>
+            <td class="right"><%= inr(item.cost_price) %></td>
+            <td class="right"><%= inr(item.cost_price * qty) %></td>
           </tr>
         <% end %>
       </table></div>
@@ -131,7 +132,7 @@
 
   <h3>Order any other part</h3>
   <%= form_with url: order_admin_stock_path, method: :post, class: "filters no-print" do %>
-    <%= select_tag :item_id, grouped_options_for_select(CatalogItem.stocked.order(:name).group_by(&:category_label).map { |label, items| [label, items.map { |i| [i.name, i.id] }] }), include_blank: "Choose a part…", required: true %>
+    <%= select_tag :item_id, grouped_options_for_select(CatalogItem.stocked.order(:name).group_by(&:category_label).map { |label, items| [label, items.map { |i| ["#{i.name} – actual #{inr(i.cost_price)}", i.id] }] }), include_blank: "Choose a part…", required: true %>
     <%= number_field_tag :quantity, nil, min: 0.01, step: 0.01, placeholder: "How many", required: true, style: "width:110px" %>
     <%= text_field_tag :supplier, nil, placeholder: "Supplier (optional)" %>
     <%= text_field_tag :note, nil, placeholder: "Note (optional)" %>
@@ -143,12 +144,13 @@
     <p class="muted">Nothing is on order.</p>
   <% else %>
     <div class="table-wrap"><table>
-      <tr><th>Ordered</th><th>Part</th><th class="right">Quantity</th><th>Supplier / note</th><th>Arrived</th><th></th></tr>
+      <tr><th>Ordered</th><th>Part</th><th class="right">Quantity</th><th class="right">Actual price</th><th>Supplier / note</th><th>Arrived</th><th></th></tr>
       <% @orders.each do |o| %>
         <tr>
           <td><%= l o.ordered_on, format: :short %></td>
           <td><%= o.catalog_item.name %></td>
           <td class="right"><%= format("%g", o.quantity.to_f) %> <%= o.catalog_item.unit %></td>
+          <td class="right"><%= inr(o.unit_cost || o.catalog_item.cost_price) %></td>
           <td><%= [o.supplier, o.note].compact_blank.join(" · ").presence || "—" %></td>
           <td>
             <%= form_with url: receive_order_admin_stock_path(o), method: :post, class: "inline-form" do %>

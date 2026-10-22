@@ -1,12 +1,14 @@
+# frozen_string_literal: true
+
 class CreateCatalogItemsAndQuoteItems < ActiveRecord::Migration[7.1]
   def change
     # Every part we sell, each with its own price (panels by model, inverters by model / kW, structure, cables, labour ...)
     create_table :catalog_items do |t|
       t.string :category, null: false
       t.string :name, null: false
-      t.string :unit, null: false, default: "piece"
+      t.string :unit, null: false, default: 'piece'
       t.decimal :unit_price, precision: 10, scale: 2, null: false
-      t.decimal :capacity_kw, precision: 6, scale: 3   # per unit: a panel's kW, an inverter's rating
+      t.decimal :capacity_kw, precision: 6, scale: 3 # per unit: a panel's kW, an inverter's rating
       t.boolean :active, null: false, default: true
       t.timestamps
     end
