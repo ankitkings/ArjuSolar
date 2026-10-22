@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class CreateChats < ActiveRecord::Migration[7.1]
   def change
     # a conversation: a group (shared "Everyone" or a custom one) or a personal chat between two people
@@ -16,10 +18,11 @@ class CreateChats < ActiveRecord::Migration[7.1]
       t.references :chat, null: false, foreign_key: true
       t.string :member_type, null: false
       t.bigint :member_id, null: false
-      t.bigint :last_read_message_id       # everything up to here is read
+      t.bigint :last_read_message_id # everything up to here is read
       t.timestamps
     end
-    add_index :chat_memberships, %i[chat_id member_type member_id], unique: true, name: "index_chat_memberships_uniqueness"
+    add_index :chat_memberships, %i[chat_id member_type member_id], unique: true,
+                                                                    name: 'index_chat_memberships_uniqueness'
     add_index :chat_memberships, %i[member_type member_id]
 
     create_table :chat_messages do |t|

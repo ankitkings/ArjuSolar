@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # Parts set aside for one scheduled installation
 class StockReservation < ApplicationRecord
   belongs_to :service_request

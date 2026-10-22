@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class AddSolarPackagesAndAddress < ActiveRecord::Migration[7.1]
   def change
     create_table :solar_packages do |t|
@@ -10,6 +12,6 @@ class AddSolarPackagesAndAddress < ActiveRecord::Migration[7.1]
     end
 
     add_reference :installations, :solar_package, foreign_key: true
-    add_column :service_requests, :address, :text   # entered by the client on the contact form
+    add_column :service_requests, :address, :text # entered by the client on the contact form
   end
 end

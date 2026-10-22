@@ -1,11 +1,13 @@
+# frozen_string_literal: true
+
 module Admin
   # "Users" = clients who have submitted a request, grouped by phone number.
   # Editing or deleting a client applies to all of that client's requests.
   class UsersController < BaseController
     def index
       @users = ServiceRequest
-        .select("phone, MAX(name) AS name, MAX(email) AS email, COUNT(*) AS requests_count, MIN(id) AS client_id, MIN(created_at) AS first_seen, MAX(created_at) AS last_seen")
-        .group(:phone).order("last_seen DESC")
+               .select('phone, MAX(name) AS name, MAX(email) AS email, COUNT(*) AS requests_count, MIN(id) AS client_id, MIN(created_at) AS first_seen, MAX(created_at) AS last_seen')
+               .group(:phone).order('last_seen DESC')
     end
 
     def edit

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Staff
   class MaintenanceVisitsController < BaseController
     before_action :set_visit
@@ -5,11 +7,10 @@ module Staff
     def show; end
 
     def update
-      unless @visit.status == "assigned"
-        return redirect_to(staff_root_path, alert: "This visit is not open.")
-      end
+      return redirect_to(staff_root_path, alert: 'This visit is not open.') unless @visit.status == 'assigned'
+
       @visit.finish!(params[:report])
-      redirect_to staff_root_path, notice: "Maintenance visit marked as done"
+      redirect_to staff_root_path, notice: 'Maintenance visit marked as done'
     end
 
     private

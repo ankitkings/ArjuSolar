@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class QuoteItem < ApplicationRecord
   belongs_to :quote, inverse_of: :quote_items
   belongs_to :catalog_item, optional: true

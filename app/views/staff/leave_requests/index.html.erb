@@ -1,0 +1,39 @@
+<%= render "shared/hr_styles" %>
+<h1>My leaves</h1>
+<div class="panel">
+  <h3>Apply for leave</h3>
+  <% if @leave.errors.any? %><div class="flash alert"><%= @leave.errors.full_messages.to_sentence %></div><% end %>
+  <%= form_with model: @leave, url: staff_leave_requests_path, method: :post, class: "form" do |f| %>
+    <%= f.label :kind, "Type of leave" %>
+    <%= f.select :kind, LeaveRequest::KINDS.map { |key, label| [label, key] } %>
+    <%= f.label :from_date, "From" %><%= f.date_field :from_date, required: true %>
+    <%= f.label :to_date, "To (the same day for a single day)" %><%= f.date_field :to_date, required: true %>
+    <%= f.label :reason, "Reason" %><%= f.text_area :reason, rows: 2, required: true, maxlength: 500 %>
+    <%= f.submit "Send leave request", class: "btn go" %>
+  <% end %>
+  <p class="muted small">The admin approves or cancels it. Paid and sick leave are paid; unpaid leave is not. Sundays are not counted.</p>
+</div>
+
+<h2>My requests</h2>
+<div class="table-wrap"><table>
+  <tr><th>Dates</th><th class="right">Days</th><th>Type</th><th>Reason</th><th>Status</th><th></th></tr>
+  <% @leaves.each do |l| %>
+    <tr>
+      <td><%= l.from_date == l.to_date ? l(l.from_date, format: "%a %d %b") : "#{l(l.from_date, format: '%a %d %b')} – #{l(l.to_date, format: '%a %d %b')}" %></td>
+      <td class="right"><%= l.days %></td>
+      <td><%= l.kind_label %></td>
+      <td><%= l.reason %></td>
+      <td>
+        <span class="badge <%= l.status %>"><%= l.status_label %></span>
+        <% if l.admin_note.present? %><br><span class="muted small">Admin: <%= l.admin_note %></span><% end %>
+      </td>
+      <td>
+        <% if l.status == "pending" %>
+          <%= button_to "Withdraw", cancel_staff_leave_request_path(l), method: :patch, class: "linklike",
+                form: { style: "display:inline", onsubmit: "return confirm('Withdraw this leave request?')" } %>
+        <% end %>
+      </td>
+    </tr>
+  <% end %>
+  <% if @leaves.empty? %><tr><td colspan="6" class="muted">You have not applied for any leave yet.</td></tr><% end %>
+</table></div>

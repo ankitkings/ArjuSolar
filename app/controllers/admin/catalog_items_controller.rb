@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Admin
   # The parts price list: every part has its own price
   class CatalogItemsController < BaseController
@@ -12,23 +14,33 @@ module Admin
     end
 
     def new
-      @item = CatalogItem.new(category: params[:category].presence_in(CatalogItem::CATEGORIES.keys) || "panel")
+      @item = CatalogItem.new(category: params[:category].presence_in(CatalogItem::CATEGORIES.keys) || 'panel')
     end
 
     def create
       @item = CatalogItem.new(item_params)
-      @item.save ? redirect_to(admin_catalog_items_path, notice: "Part added") : render(:new, status: :unprocessable_entity)
+      if @item.save
+        redirect_to(admin_catalog_items_path,
+                    notice: 'Part added')
+      else
+        render(:new, status: :unprocessable_entity)
+      end
     end
 
     def edit; end
 
     def update
-      @item.update(item_params) ? redirect_to(admin_catalog_items_path, notice: "Part updated") : render(:edit, status: :unprocessable_entity)
+      if @item.update(item_params)
+        redirect_to(admin_catalog_items_path,
+                    notice: 'Part updated')
+      else
+        render(:edit, status: :unprocessable_entity)
+      end
     end
 
     def destroy
       @item.destroy
-      redirect_to admin_catalog_items_path, notice: "Part removed. Quotes already made keep their prices."
+      redirect_to admin_catalog_items_path, notice: 'Part removed. Quotes already made keep their prices.'
     end
 
     private

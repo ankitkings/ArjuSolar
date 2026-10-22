@@ -1,16 +1,22 @@
+# frozen_string_literal: true
+
 module Admin
   class ServiceRequestsController < BaseController
-    before_action :set_service_request, only: %i[show update complete edit_details details destroy release_installation release_payment]
+    before_action :set_service_request,
+                  only: %i[show update complete edit_details details destroy release_installation release_payment]
 
     def index
       @requests = ServiceRequest.includes(:team_member, :subsidy_application).order(created_at: :desc)
       @requests = @requests.where(status: params[:status]) if ServiceRequest::STATUSES.include?(params[:status])
-      @requests = @requests.where(team_member_id: nil, assigned_to_admin: false, status: RequestWorkflow::ACTIVE_STATUSES) if params[:unassigned].present?
-      @requests = @requests.where(assigned_to_admin: true) if params[:with_admin].present?
-      if params[:q].present?
-        q = "%#{ServiceRequest.sanitize_sql_like(params[:q])}%"
-        @requests = @requests.where("name LIKE :q OR phone LIKE :q OR email LIKE :q", q: q)
+      if params[:unassigned].present?
+        @requests = @requests.where(team_member_id: nil, assigned_to_admin: false,
+                                    status: RequestWorkflow::ACTIVE_STATUSES)
       end
+      @requests = @requests.where(assigned_to_admin: true) if params[:with_admin].present?
+      return unless params[:q].present?
+
+      q = "%#{ServiceRequest.sanitize_sql_like(params[:q])}%"
+      @requests = @requests.where('name LIKE :q OR phone LIKE :q OR email LIKE :q', q: q)
     end
 
     def show
@@ -23,9 +29,9 @@ module Admin
       note = params[:note].to_s.strip.presence
       new_status = attrs[:status].presence
 
-      if new_status == "completed" && !%w[completed commissioning].include?(@service_request.status)
+      if new_status == 'completed' && !%w[completed commissioning].include?(@service_request.status)
         return redirect_to(admin_service_request_path(@service_request),
-                           alert: "A request can be completed only after payment and the final touch (Daily Servicing). Fill in the installation form first.")
+                           alert: 'A request can be completed only after payment and the final touch (Daily Servicing). Fill in the installation form first.')
       end
 
       old_member_id = @service_request.team_member_id
@@ -46,7 +52,7 @@ module Admin
                                            admin_user: current_admin, note: note)
         end
       end
-      redirect_to admin_service_request_path(@service_request), notice: "Request updated"
+      redirect_to admin_service_request_path(@service_request), notice: 'Request updated'
     rescue ActiveRecord::RecordInvalid
       @installation = @service_request.new_installation
       render :show, status: :unprocessable_entity
@@ -58,8 +64,8 @@ module Admin
     def details
       if @service_request.update(params.require(:service_request).permit(:name, :phone, :email, :address, :message))
         @service_request.updates.create!(status: @service_request.status, progress: @service_request.progress,
-                                         admin_user: current_admin, note: "Client details edited by admin")
-        redirect_to admin_service_request_path(@service_request), notice: "Details saved"
+                                         admin_user: current_admin, note: 'Client details edited by admin')
+        redirect_to admin_service_request_path(@service_request), notice: 'Details saved'
       else
         render :edit_details, status: :unprocessable_entity
       end
@@ -71,33 +77,38 @@ module Admin
       @service_request.destroy!
       redirect_to admin_service_requests_path, notice: "Request #{label} and everything linked to it was deleted"
     rescue ActiveRecord::RecordNotDestroyed, ActiveRecord::InvalidForeignKey => e
-      redirect_to admin_service_request_path(@service_request), alert: "The request could not be deleted: #{e.message.truncate(160)}"
+      redirect_to admin_service_request_path(@service_request),
+                  alert: "The request could not be deleted: #{e.message.truncate(160)}"
     end
 
     # Do not wait for the electricity company / the net meter any longer
     def release_installation
       @service_request.release_installation!(admin: current_admin)
-      redirect_to admin_service_request_path(@service_request), notice: "Installation released: #{@service_request.reload.installation_status == 'scheduled' ? 'it has been scheduled.' : 'it is waiting for parts.'}"
+      redirect_to admin_service_request_path(@service_request),
+                  notice: "Installation released: #{@service_request.reload.installation_status == 'scheduled' ? 'it has been scheduled.' : 'it is waiting for parts.'}"
     end
 
     def release_payment
       @service_request.release_payment!(admin: current_admin)
-      redirect_to admin_service_request_path(@service_request), notice: "Payment started."
+      redirect_to admin_service_request_path(@service_request), notice: 'Payment started.'
     end
 
     def complete
-      unless @service_request.status == "installation"
-        return redirect_to(admin_service_request_path(@service_request), alert: "Only requests in the Installation stage can be completed.")
+      unless @service_request.status == 'installation'
+        return redirect_to(admin_service_request_path(@service_request),
+                           alert: 'Only requests in the Installation stage can be completed.')
       end
       if %w[waiting_for_approval waiting_for_net_meter].include?(@service_request.installation_status)
-        return redirect_to(admin_service_request_path(@service_request), alert: "This job is on hold (see the Installation schedule box). Use the button there to release it.")
+        return redirect_to(admin_service_request_path(@service_request),
+                           alert: 'This job is on hold (see the Installation schedule box). Use the button there to release it.')
       end
 
       @installation = Installation.new(installation_params)
       @installation.service_request = @service_request
       if @installation.valid?
         @service_request.complete_installation!(@installation, admin: current_admin)
-        redirect_to admin_service_request_path(@service_request), notice: (@service_request.reload.status == "payment" ? "Installation saved. The request moved to Payment (85%) and was assigned to a cashier. Maintenance checks are scheduled." : "Installation saved. The request is now with the Admin until the subsidy net meter step is done; the payment starts after that.")
+        redirect_to admin_service_request_path(@service_request),
+                    notice: (@service_request.reload.status == 'payment' ? 'Installation saved. The request moved to Payment (85%) and was assigned to a cashier. Maintenance checks are scheduled.' : 'Installation saved. The request is now with the Admin until the subsidy net meter step is done; the payment starts after that.')
       else
         render :show, status: :unprocessable_entity
       end

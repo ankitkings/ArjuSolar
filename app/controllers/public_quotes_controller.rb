@@ -1,14 +1,17 @@
+# frozen_string_literal: true
+
 # The page a client opens from the WhatsApp message. No login: the long secret token in the link is the key.
 class PublicQuotesController < ApplicationController
   def show
     @quote = find_quote
-    response.set_header("X-Robots-Tag", "noindex, nofollow")
+    response.set_header('X-Robots-Tag', 'noindex, nofollow')
   end
 
   def pdf
     quote = find_quote
-    response.set_header("X-Robots-Tag", "noindex, nofollow")
-    send_data QuotePdf.render(quote), filename: "Quotation-#{quote.number}.pdf", type: "application/pdf", disposition: "inline"
+    response.set_header('X-Robots-Tag', 'noindex, nofollow')
+    send_data QuotePdf.render(quote), filename: "Quotation-#{quote.number}.pdf", type: 'application/pdf',
+                                      disposition: 'inline'
   end
 
   private

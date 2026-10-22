@@ -1,0 +1,63 @@
+<%= render "shared/hr_styles" %>
+<h1>Attendance</h1>
+<p class="tabs no-print">
+  <%= link_to "← Previous day", admin_attendance_path(date: (@date - 1).iso8601), class: "tab" %>
+  <%= link_to "Today", admin_attendance_path, class: "tab #{'active' if @date == Date.current}" %>
+  <% if @date < Date.current %><%= link_to "Next day →", admin_attendance_path(date: (@date + 1).iso8601), class: "tab" %><% end %>
+</p>
+<%= form_with url: admin_attendance_path, method: :get, class: "filters no-print" do %>
+  <%= date_field_tag :date, @date, max: Date.current %>
+  <%= submit_tag "Show this day", class: "btn" %>
+<% end %>
+<h2><%= l @date, format: "%A, %d %B %Y" %><%= " – weekly off" if @off_day %></h2>
+
+<% present  = @members.count { |m| %w[present half_day].include?(@records[m.id]&.status) } %>
+<% on_leave = @members.count { |m| @leaves[m.id] && !@records[m.id] } %>
+<% absent   = @members.count { |m| @records[m.id]&.status == "absent" } %>
+<% unmarked = @members.count { |m| !@records[m.id] && !@leaves[m.id] } %>
+<div class="stats">
+  <div class="stat"><b><%= present %></b><span>Present</span></div>
+  <div class="stat"><b><%= on_leave %></b><span>On leave</span></div>
+  <div class="stat <%= 'alert' if absent.positive? %>"><b><%= absent %></b><span>Absent</span></div>
+  <div class="stat"><b><%= @off_day ? 0 : unmarked %></b><span>Not marked</span></div>
+</div>
+
+<div class="table-wrap"><table>
+  <tr><th>Employee</th><th>Department</th><th>Status</th><th>Check in</th><th>Check out</th><th class="right">Hours</th><th>Note</th><th>Correct</th></tr>
+  <% @members.each do |m| %>
+    <% record = @records[m.id] %>
+    <% leave = @leaves[m.id] %>
+    <tr>
+      <td><b><%= m.name %></b></td>
+      <td><%= m.department_label %></td>
+      <td>
+        <% if record %>
+          <span class="badge <%= record.status %>"><%= record.status_label %></span><%= " (marked by admin)" if record.marked_by == "admin" %>
+        <% elsif leave %>
+          <span class="badge paid_leave">On leave</span> <span class="muted small"><%= leave.kind_label %></span>
+        <% elsif @off_day %>
+          <span class="badge off">Weekly off</span>
+        <% elsif @date > Date.current %>—
+        <% else %>
+          <span class="badge today">Not marked</span>
+        <% end %>
+      </td>
+      <td><%= record&.check_in_at ? l(record.check_in_at, format: "%I:%M %p") : "—" %></td>
+      <td><%= record&.check_out_at ? l(record.check_out_at, format: "%I:%M %p") : "—" %></td>
+      <td class="right"><%= record&.hours ? "#{record.hours} h" : "—" %></td>
+      <td><%= record&.note.presence || "—" %></td>
+      <td>
+        <% if @date <= Date.current %>
+          <%= form_with url: admin_attendance_path, method: :post, class: "inline-form" do %>
+            <%= hidden_field_tag :member_id, m.id %>
+            <%= hidden_field_tag :date, @date.iso8601 %>
+            <%= select_tag :status, options_for_select([["Present", "present"], ["Half day", "half_day"], ["Absent", "absent"], ["Not marked", "clear"]], record&.status || "present") %>
+            <%= text_field_tag :note, record&.note, placeholder: "Note", style: "width:130px" %>
+            <%= submit_tag "Save", class: "btn hold" %>
+          <% end %>
+        <% end %>
+      </td>
+    </tr>
+  <% end %>
+  <% if @members.empty? %><tr><td colspan="8" class="muted">No team members yet.</td></tr><% end %>
+</table></div>

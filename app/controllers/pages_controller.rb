@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class PagesController < ApplicationController
   before_action { Visit.log(request) if request.get? }
 
@@ -23,6 +25,6 @@ class PagesController < ApplicationController
   end
 
   def contact
-    @service_request = ServiceRequest.new(message: "I am interested in solar installation. Please contact me.")
+    @service_request = ServiceRequest.new(message: 'I am interested in solar installation. Please contact me.')
   end
 end

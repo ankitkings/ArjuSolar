@@ -1,0 +1,46 @@
+<h1>Margins</h1>
+<p class="muted">For every part: the <b>actual price</b> we pay, our <b>margin</b>, and the <b>selling price</b> the client pays (actual price + margin). Quotes and the staff price list use the selling price; the actual price is only shown to you, in the order panel. When you enter an actual price, the margin is filled in so that <b>today's selling price stays the same</b> – change the margin yourself if you want to change what the client pays.</p>
+<% unset = @items.count { |i| i.margin.zero? } %>
+<% if unset.positive? %>
+  <div class="flash alert"><%= pluralize(unset, "part") %> still <%= unset == 1 ? "has" : "have" %> no margin – the actual price is the same as the selling price. Enter the real actual prices below.</div>
+<% end %>
+
+<%= form_with url: admin_margins_path, method: :patch do %>
+  <div class="table-wrap"><table>
+    <tr><th>Part</th><th>Type</th><th>Sold per</th><th class="right">Actual price (₹)</th><th class="right">Margin (₹)</th><th class="right">Selling price</th><th class="right">Margin</th></tr>
+    <% @items.each do |i| %>
+      <tr data-selling="<%= i.unit_price.to_f %>">
+        <td><%= i.name %></td><td><%= i.category_label %></td><td><%= i.unit %></td>
+        <td><%= number_field_tag "parts[#{i.id}][cost_price]", format("%g", i.cost_price.to_f), min: 0, step: 0.01, class: "cost", style: "width:110px" %></td>
+        <td><%= number_field_tag "parts[#{i.id}][margin]", format("%g", i.margin.to_f), min: 0, step: 0.01, class: "margin", style: "width:110px" %></td>
+        <td class="right selling"><b><%= inr(i.unit_price) %></b></td>
+        <td class="right pct"><%= i.margin_percent %>%</td>
+      </tr>
+    <% end %>
+    <% if @items.empty? %><tr><td colspan="7" class="muted">No parts yet.</td></tr><% end %>
+  </table></div>
+  <p><%= submit_tag "Save margins", class: "btn go" %></p>
+<% end %>
+
+<script>
+  (function () {
+    function inr(n) { return "₹" + Number(n).toLocaleString("en-IN", { maximumFractionDigits: 2 }); }
+    document.querySelectorAll("tr[data-selling]").forEach(function (row) {
+      var original = parseFloat(row.dataset.selling);
+      var cost = row.querySelector(".cost"), margin = row.querySelector(".margin");
+      function refresh() {
+        var c = parseFloat(cost.value) || 0, m = parseFloat(margin.value) || 0, selling = c + m;
+        var cell = row.querySelector(".selling");
+        cell.innerHTML = "<b>" + inr(selling) + "</b>" + (Math.abs(selling - original) > 0.004 ? "<br><span class='muted small'>was " + inr(original) + "</span>" : "");
+        row.querySelector(".pct").textContent = (selling > 0 ? (m / selling * 100).toFixed(1) : "0") + "%";
+        row.style.background = Math.abs(selling - original) > 0.004 ? "#fffbeb" : "";
+      }
+      // a new actual price keeps today's selling price: the margin takes the difference
+      cost.addEventListener("input", function () {
+        margin.value = Math.max(original - (parseFloat(cost.value) || 0), 0).toFixed(2);
+        refresh();
+      });
+      margin.addEventListener("input", refresh);
+    });
+  })();
+</script>

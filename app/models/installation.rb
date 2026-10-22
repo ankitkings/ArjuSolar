@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # The installed solar system (saved when the installation team finishes the installation).
 # Capacity / panels / brand / inverter / price are copied from the chosen SolarPackage,
 # so later edits to the catalog never change past installations.
@@ -8,17 +10,18 @@ class Installation < ApplicationRecord
 
   belongs_to :service_request
   belongs_to :solar_package, optional: true
-  belongs_to :quote, optional: true   # set when the client accepted a custom (parts-based) quote
+  belongs_to :quote, optional: true # set when the client accepted a custom (parts-based) quote
   has_many :maintenance_visits, dependent: :destroy
-  has_many_attached :photos   # taken by the installer on site; shown on the website's Projects page
+  has_many_attached :photos # taken by the installer on site; shown on the website's Projects page
 
-  attr_accessor :skip_photo_validation   # only used for demo seed data
+  attr_accessor :skip_photo_validation # only used for demo seed data
 
   before_validation :copy_from_package
 
-  validates :solar_package, presence: { message: "must be selected" }, on: :create, unless: -> { quote&.custom? }
+  validates :solar_package, presence: { message: 'must be selected' }, on: :create, unless: -> { quote&.custom? }
   validates :site_address, presence: true, on: :create
-  validates :photos, presence: { message: "are required – take pictures of the finished site" }, on: :create, unless: :skip_photo_validation
+  validates :photos, presence: { message: 'are required – take pictures of the finished site' }, on: :create,
+                     unless: :skip_photo_validation
   validates :installed_on, presence: true
   validates :capacity_kw, presence: true, numericality: { greater_than: 0, less_than: 1000 }
   validates :panel_count, numericality: { only_integer: true, greater_than: 0 }, allow_nil: true
@@ -29,23 +32,23 @@ class Installation < ApplicationRecord
   validates_image :photos
 
   # Completed projects with photos that the admin has not hidden (public Projects page)
-  scope :on_website, -> {
+  scope :on_website, lambda {
     where(show_on_website: true)
-      .where(service_request_id: ServiceRequest.where(status: "completed").select(:id))
-      .where(id: ActiveStorage::Attachment.where(record_type: "Installation", name: "photos").select(:record_id))
+      .where(service_request_id: ServiceRequest.where(status: 'completed').select(:id))
+      .where(id: ActiveStorage::Attachment.where(record_type: 'Installation', name: 'photos').select(:record_id))
   }
 
   # "Flat 12, Shree Apts, Vijay Nagar, Indore 452010" -> "Vijay Nagar, Indore"
   # (drops the parts with numbers, so no house number or PIN code is published)
   def self.guess_location(address)
-    address.to_s.split(",").map(&:strip).reject { |part| part.empty? || part.match?(/\d/) }.last(2).join(", ")
+    address.to_s.split(',').map(&:strip).reject { |part| part.empty? || part.match?(/\d/) }.last(2).join(', ')
   end
 
   def summary
     parts = ["#{format('%g', capacity_kw.to_f)} kW"]
     parts << "#{panel_count} panels" if panel_count
     parts << panel_brand if panel_brand.present?
-    parts.join(", ")
+    parts.join(', ')
   end
 
   # Creates the default maintenance dates (see MaintenanceVisit::SCHEDULE), counted from `from`
@@ -76,11 +79,11 @@ class Installation < ApplicationRecord
   end
 
   def quote_belongs_to_request
-    errors.add(:quote, "does not belong to this request") if quote && quote.service_request_id != service_request_id
+    errors.add(:quote, 'does not belong to this request') if quote && quote.service_request_id != service_request_id
   end
 
   def installed_on_not_in_future
-    errors.add(:installed_on, "cannot be in the future") if installed_on.present? && installed_on > Date.current
+    errors.add(:installed_on, 'cannot be in the future') if installed_on.present? && installed_on > Date.current
   end
 
   def not_too_many_photos

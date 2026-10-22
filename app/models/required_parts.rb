@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # The "parts to order" list: what the open installations need, what is in stock, what is already
 # on order, and what is still short.
 class RequiredParts
@@ -15,7 +17,7 @@ class RequiredParts
 
   # parts that are below their minimum level
   def low_stock_items
-    @low ||= CatalogItem.stocked.select { |i| i.min_stock.positive? && i.stock_quantity < i.min_stock }
+    @low_stock_items ||= CatalogItem.stocked.select { |i| i.min_stock.positive? && i.stock_quantity < i.min_stock }
   end
 
   # [[item, suggested quantity, why], ...] - what is still missing after the parts already on order
@@ -24,18 +26,22 @@ class RequiredParts
       lines = {}
       short_rows.each do |r|
         qty = r.short - r.on_order
-        lines[r.item] = [qty, "needed for jobs"] if qty.positive?
+        lines[r.item] = [qty, 'needed for jobs'] if qty.positive?
       end
       low_stock_items.each do |item|
         refill = item.min_stock - item.stock_quantity - on_order_for(item)
-        lines[item] = [refill, "below the minimum level"] if refill.positive? && (!lines[item] || lines[item][0] < refill)
+        if refill.positive? && (!lines[item] || lines[item][0] < refill)
+          lines[item] =
+            [refill, 'below the minimum level']
+        end
       end
       lines.map { |item, (qty, why)| [item, qty, why] }.sort_by { |item, _, _| [item.category, item.name] }
     end
   end
 
   def count_to_order = order_lines.size
-  def estimated_cost = order_lines.sum { |item, qty, _| item.unit_price * qty }
+  # what we pay (actual prices)
+  def estimated_cost = order_lines.sum { |item, qty, _| item.cost_price * qty }
 
   def on_order_for(item) = on_order_map.fetch(item.id, 0).to_d
 
@@ -58,7 +64,7 @@ class RequiredParts
       jobs[r.catalog_item_id] << r.service_request_id
     end
 
-    ServiceRequest.where(status: "installation", installation_status: "waiting_for_stock").find_each do |request|
+    ServiceRequest.where(status: 'installation', installation_status: 'waiting_for_stock').find_each do |request|
       request.required_parts.each do |item, qty|
         items[item.id] = item
         waiting[item.id] += qty
@@ -67,19 +73,21 @@ class RequiredParts
     end
 
     if @include_quotes
-      ServiceRequest.where(status: "installation", installation_status: "waiting_for_approval").find_each do |request|
+      ServiceRequest.where(status: 'installation', installation_status: 'waiting_for_approval').find_each do |request|
         request.required_parts.each do |item, qty|
           items[item.id] = item
           future[item.id] += qty
           jobs[item.id] << request.id
         end
       end
-      ServiceRequest.where(status: "quote_sent").find_each do |request|
+      ServiceRequest.where(status: 'quote_sent').find_each do |request|
         quote = request.latest_quote
-        next unless quote && quote.status == "sent"
+        next unless quote && quote.status == 'sent'
+
         quote.quote_items.includes(:catalog_item).each do |qi|
           item = qi.catalog_item
           next unless item&.tracks_stock?
+
           items[item.id] = item
           future[item.id] += qi.quantity
           jobs[item.id] << request.id
