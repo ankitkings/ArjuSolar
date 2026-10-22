@@ -22,7 +22,6 @@ class Payroll
   def summaries(members) = members.map { |member| summary(member) }
 
   def summary(member)
-    byebug
     working = working_dates
     result = Summary.new(member: member, salary: member.monthly_salary, working_days: working.size,
                          present: 0, half_days: 0, paid_leave: 0, unpaid_leave: 0, absent: 0, remaining: 0, payable: 0.0)
