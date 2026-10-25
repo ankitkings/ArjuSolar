@@ -22,6 +22,7 @@
   <aside>
     <h3>Arju Solars</h3>
     <%= link_to admin_root_path do %>Dashboard<% if overdue_count.positive? %><span class="nav-badge"><%= overdue_count %></span><% end %><% end %>
+    <%= link_to admin_my_tasks_path do %>My tasks<span class="nav-badge" id="my-tasks-badge" style="<%= 'display:none' unless new_task_count.positive? %>"><%= new_task_count %> new</span><% end %>
     <%= link_to admin_service_requests_path do %>Requests<% if new_request_count.positive? %><span class="nav-badge"><%= new_request_count %></span><% end %><% end %>
     <%= link_to "Users", admin_users_path %>
     <%= link_to "Visitors", admin_visits_path %>
@@ -46,5 +47,6 @@
   </main>
   <%= render "shared/chat_notifier", url: notifications_admin_chats_path, user_key: "admin:#{current_admin.id}" %>
   <%= render "shared/responsive" %>
+  <%= render "shared/admin_task_alert" %>
 </body>
 </html>

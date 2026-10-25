@@ -44,8 +44,9 @@
 <div class="panel">
   <%= form_with model: @setting, url: admin_payroll_settings_path, method: :patch, class: "form" do |f| %>
     <%= hidden_field_tag :month, key.(@month) %>
-    <%= f.label :half_day_hours, "Checking out before this many hours of work counts as a half day" %>
-    <%= f.number_field :half_day_hours, min: 0.5, max: 12, step: 0.5 %>
+    <%= f.label :full_day_hours, "A full day = at least this many hours between check-in and check-out. Less than that counts as a half day." %>
+    <%= f.number_field :full_day_hours, min: 1, max: 16, step: 0.5 %>
+    <p class="muted small">Changing this also updates the days employees checked in and out themselves. Days you corrected by hand stay as you set them.</p>
     <label><%= f.check_box :sunday_off %> Sunday is the weekly off (paid, not counted as a working day)</label>
     <%= f.submit "Save rules", class: "btn" %>
   <% end %>

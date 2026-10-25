@@ -20,10 +20,22 @@
 <% end %>
 
 <h2>How long each step may take</h2>
-<div class="table-wrap"><table>
-  <tr><th>Step</th><th>Allowed</th></tr>
-  <% OverdueSteps::LIMITS.each do |step, days| %><tr><td><%= step.humanize %></td><td><%= pluralize(days, "day") %></td></tr><% end %>
-  <% OverdueSteps::HOLD_LIMITS.each do |hold, days| %><tr><td><%= OverdueSteps::HOLD_LABELS[hold] %></td><td><%= pluralize(days, "day") %></td></tr><% end %>
-  <% OverdueSteps::SUBSIDY_LIMITS.each do |step, days| %><tr><td>Subsidy: <%= SubsidyApplication::LABELS[step] %></td><td><%= pluralize(days, "day") %></td></tr><% end %>
-</table></div>
-<p class="muted small">These limits are set in <code>app/models/overdue_steps.rb</code>.</p>
+<p class="muted small">A step is overdue when it takes longer than this many days. Change a number and save. It becomes high priority when it has taken twice as long.</p>
+<% limits = OverdueLimit.all_limits %>
+<%= form_with url: admin_overdue_limits_path, method: :patch do %>
+  <div class="table-wrap"><table>
+    <tr><th>Step</th><th class="right">Allowed days</th></tr>
+    <% OverdueSteps.defaults.each do |key, standard| %>
+      <tr>
+        <td><%= OverdueSteps.label_for(key) %></td>
+        <td class="right">
+          <%= number_field_tag "limits[#{key}]", limits[key], min: 1, max: 365, step: 1, style: "width:90px" %>
+          <% if limits[key] != standard %><span class="muted small">(standard: <%= standard %>)</span><% end %>
+        </td>
+      </tr>
+    <% end %>
+  </table></div>
+  <p><%= submit_tag "Save days", class: "btn go" %></p>
+<% end %>
+<%= button_to "Back to the standard days", admin_overdue_limits_path, method: :delete, class: "btn hold",
+      form: { onsubmit: "return confirm('Put every step back to the standard days?')" } %>

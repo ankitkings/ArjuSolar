@@ -1,0 +1,33 @@
+<h1>My tasks</h1>
+<p class="muted">Everything that is waiting for you: PM Surya Ghar steps, jobs on hold, leave requests to decide and parts to order. New tasks since you last looked are marked.</p>
+<% if @list.empty? %>
+  <div class="all-clear">✅ Nothing is waiting for you.</div>
+<% else %>
+  <div class="stats">
+    <div class="stat"><b><%= @list.size %></b><span>Tasks</span></div>
+    <div class="stat <%= 'alert' if @list.any?(&:fresh) %>"><b><%= @list.count(&:fresh) %></b><span>New</span></div>
+  </div>
+  <div class="table-wrap"><table>
+    <tr><th></th><th>Type</th><th>Task</th><th>What to do</th><th>Waiting</th><th></th></tr>
+    <% @list.each do |t| %>
+      <tr class="<%= 'new-request' if t.fresh %>">
+        <td><%= '<span class="badge new">NEW</span>'.html_safe if t.fresh %></td>
+        <td><%= AdminTasks::KIND_LABELS[t.kind] %></td>
+        <td><b><%= t.title %></b></td>
+        <td><%= t.detail %></td>
+        <td><%= t.kind == "order" ? "—" : time_ago_in_words(t.since) %></td>
+        <td>
+          <% if t.record.is_a?(SubsidyApplication) %>
+            <%= link_to "Open", admin_subsidy_application_path(t.record) %>
+          <% elsif t.record.is_a?(ServiceRequest) %>
+            <%= link_to "Open", admin_service_request_path(t.record) %>
+          <% elsif t.record.is_a?(LeaveRequest) %>
+            <%= link_to "Decide", admin_leave_requests_path(status: "pending") %>
+          <% else %>
+            <%= link_to "Open", admin_stock_path(tab: "order") %>
+          <% end %>
+        </td>
+      </tr>
+    <% end %>
+  </table></div>
+<% end %>

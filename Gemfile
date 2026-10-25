@@ -18,3 +18,4 @@ gem 'kamal', '~> 2.12', group: :development
 group :development do
   gem 'rubocop', require: false
 end
+gem "json", "< 3.0"
