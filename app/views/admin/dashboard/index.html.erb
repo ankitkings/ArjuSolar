@@ -45,6 +45,7 @@
   <div class="stat"><b><%= @requests_total %></b><span>Requests</span></div>
 </div>
 <div class="stats">
+  <%= link_to admin_my_tasks_path, class: "stat #{'alert' if new_task_count.positive?}" do %><b><%= admin_task_count %></b><span>My tasks<%= " (#{new_task_count} new)" if new_task_count.positive? %></span><% end %>
   <%= link_to admin_attendance_path, class: "stat" do %><b><%= @present_today %> / <%= @team_total %></b><span>Present today</span><% end %>
   <%= link_to admin_leave_requests_path(status: "pending"), class: "stat #{'alert' if pending_leave_count.positive?}" do %><b><%= pending_leave_count %></b><span>Leave requests to decide</span><% end %>
   <%= link_to admin_overdue_path, class: "stat #{'alert' if @overdue.count.positive?}" do %><b><%= @overdue.count %></b><span>Overdue steps<%= " (#{@overdue.high_count} high)" if @overdue.high_count.positive? %></span><% end %>

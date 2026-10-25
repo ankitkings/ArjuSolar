@@ -10,6 +10,7 @@
   <%= submit_tag "Show this day", class: "btn" %>
 <% end %>
 <h2><%= l @date, format: "%A, %d %B %Y" %><%= " – weekly off" if @off_day %></h2>
+<p class="muted small">Full day = at least <%= AttendanceSetting.current.full_day_hours %> hours between check-in and check-out; less counts as a half day. Change it under Payroll → Rules.</p>
 
 <% present  = @members.count { |m| %w[present half_day].include?(@records[m.id]&.status) } %>
 <% on_leave = @members.count { |m| @leaves[m.id] && !@records[m.id] } %>

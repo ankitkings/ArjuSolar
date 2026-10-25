@@ -19,6 +19,7 @@
     <p>✅ Checked in <b><%= l rec.check_in_at, format: "%I:%M %p" %></b> · checked out <b><%= l rec.check_out_at, format: "%I:%M %p" %></b> ·
       worked <b><%= rec.hours %> h</b> · <span class="badge <%= rec.status %>"><%= rec.status_label %></span></p>
   <% end %>
+  <p class="muted small">A day of at least <%= AttendanceSetting.current.full_day_hours %> hours between check-in and check-out counts as a full day. Less than that counts as a half day.</p>
 </div>
 
 <h2><%= @month.strftime("%B %Y") %></h2>

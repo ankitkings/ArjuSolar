@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 module Admin
   # Admin > Payroll: salary of every employee, worked out from attendance and approved leave
   class PayrollController < BaseController
@@ -26,7 +24,7 @@ module Admin
       if amount.blank?
         member.update_columns(monthly_salary: nil)
       elsif amount.to_d.negative?
-        return redirect_to(admin_payroll_path(month: params[:month].presence), alert: 'The salary cannot be negative.')
+        return redirect_to(admin_payroll_path(month: params[:month].presence), alert: "The salary cannot be negative.")
       else
         member.update_columns(monthly_salary: amount.to_d)
       end
@@ -35,8 +33,8 @@ module Admin
 
     def settings
       setting = AttendanceSetting.current
-      if setting.update(params.require(:attendance_setting).permit(:half_day_hours, :sunday_off))
-        redirect_to admin_payroll_path(month: params[:month].presence), notice: 'Rules saved.'
+      if setting.update(params.require(:attendance_setting).permit(:full_day_hours, :sunday_off))
+        redirect_to admin_payroll_path(month: params[:month].presence), notice: "Rules saved."
       else
         redirect_to admin_payroll_path(month: params[:month].presence), alert: setting.errors.full_messages.to_sentence
       end
@@ -45,7 +43,7 @@ module Admin
     private
 
     def parse_month(value)
-      Date.strptime(value.to_s, '%Y-%m')
+      Date.strptime(value.to_s, "%Y-%m")
     rescue ArgumentError
       Date.current.beginning_of_month
     end
