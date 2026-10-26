@@ -26,6 +26,9 @@ class Attendance < ApplicationRecord
     raise ArgumentError, "You have already checked in today." if record.check_in_at
     record.assign_attributes(status: "present", check_in_at: now, marked_by: "self")
     record.save!
+    # work that was waiting because nobody in this department was present goes to them now
+    statuses = RequestWorkflow::DEPARTMENT.select { |_status, department| department == member.department }.keys
+    ServiceRequest.where(status: statuses, team_member_id: nil, assigned_to_admin: false).find_each(&:reassign_for_stage!) if statuses.any?
     record
   end
 
