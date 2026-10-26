@@ -99,18 +99,19 @@
   <% if lines.any? %>
     <%= form_with url: order_admin_stock_path, method: :post do %>
       <div class="table-wrap"><table>
-        <tr><th>Order</th><th>Part</th><th class="right">Suggested</th><th>Quantity to order</th><th>Why</th><th class="right">Actual price</th><th class="right">Estimated cost</th></tr>
+        <tr><th>Order</th><th>Part</th><th class="right">Suggested</th><th>Quantity to order</th><th>Why</th><th class="right">Actual price (each)</th><th class="right">Price for this quantity</th></tr>
         <% lines.each do |item, qty, why| %>
-          <tr>
-            <td><%= check_box_tag "orders[#{item.id}][place]", "1", true %></td>
+          <tr data-price="<%= item.cost_price.to_f %>">
+            <td><%= check_box_tag "orders[#{item.id}][place]", "1", true, class: "place" %></td>
             <td><%= item.name %></td>
             <td class="right"><%= format("%g", qty.to_f) %> <%= item.unit %></td>
-            <td><%= number_field_tag "orders[#{item.id}][quantity]", format("%g", qty.to_f), min: 0.01, step: 0.01, style: "width:100px" %> <%= item.unit %></td>
+            <td><%= number_field_tag "orders[#{item.id}][quantity]", format("%g", qty.to_f), min: 0.01, step: 0.01, class: "qty", style: "width:100px" %> <%= item.unit %></td>
             <td><%= why %></td>
             <td class="right"><%= inr(item.cost_price) %></td>
-            <td class="right"><%= inr(item.cost_price * qty) %></td>
+            <td class="right line-total"><b><%= inr(item.cost_price * qty) %></b></td>
           </tr>
         <% end %>
+        <tr><td colspan="6" class="right"><b>Total of the ticked parts</b></td><td class="right"><b id="order-total">₹0</b></td></tr>
       </table></div>
       <div class="filters">
         <%= text_field_tag :supplier, nil, placeholder: "Supplier (optional)" %>
@@ -132,8 +133,9 @@
 
   <h3>Order any other part</h3>
   <%= form_with url: order_admin_stock_path, method: :post, class: "filters no-print" do %>
-    <%= select_tag :item_id, grouped_options_for_select(CatalogItem.stocked.order(:name).group_by(&:category_label).map { |label, items| [label, items.map { |i| ["#{i.name} – actual #{inr(i.cost_price)}", i.id] }] }), include_blank: "Choose a part…", required: true %>
+    <%= select_tag :item_id, grouped_options_for_select(CatalogItem.stocked.order(:name).group_by(&:category_label).map { |label, items| [label, items.map { |i| ["#{i.name} – actual #{inr(i.cost_price)}", i.id, { "data-price" => i.cost_price.to_f }] }] }), include_blank: "Choose a part…", required: true %>
     <%= number_field_tag :quantity, nil, min: 0.01, step: 0.01, placeholder: "How many", required: true, style: "width:110px" %>
+    <b id="other-total" class="muted"></b>
     <%= text_field_tag :supplier, nil, placeholder: "Supplier (optional)" %>
     <%= text_field_tag :note, nil, placeholder: "Note (optional)" %>
     <%= submit_tag "Order", class: "btn go" %>
@@ -144,13 +146,14 @@
     <p class="muted">Nothing is on order.</p>
   <% else %>
     <div class="table-wrap"><table>
-      <tr><th>Ordered</th><th>Part</th><th class="right">Quantity</th><th class="right">Actual price</th><th>Supplier / note</th><th>Arrived</th><th></th></tr>
+      <tr><th>Ordered</th><th>Part</th><th class="right">Quantity</th><th class="right">Actual price (each)</th><th class="right">Price of the order</th><th>Supplier / note</th><th>Arrived</th><th></th></tr>
       <% @orders.each do |o| %>
         <tr>
           <td><%= l o.ordered_on, format: :short %></td>
           <td><%= o.catalog_item.name %></td>
           <td class="right"><%= format("%g", o.quantity.to_f) %> <%= o.catalog_item.unit %></td>
           <td class="right"><%= inr(o.unit_cost || o.catalog_item.cost_price) %></td>
+          <td class="right"><b><%= inr((o.unit_cost || o.catalog_item.cost_price) * o.quantity) %></b></td>
           <td><%= [o.supplier, o.note].compact_blank.join(" · ").presence || "—" %></td>
           <td>
             <%= form_with url: receive_order_admin_stock_path(o), method: :post, class: "inline-form" do %>
@@ -162,8 +165,43 @@
                     form: { style: "display:inline", onsubmit: "return confirm('Cancel this order?')" } %></td>
         </tr>
       <% end %>
+      <tr><td colspan="4" class="right"><b>Total on order</b></td><td class="right"><b><%= inr(@orders.sum { |o| (o.unit_cost || o.catalog_item.cost_price) * o.quantity }) %></b></td><td colspan="3"></td></tr>
     </table></div>
   <% end %>
+
+  <script>
+    (function () {
+      function inr(n) { return "₹" + Number(n).toLocaleString("en-IN", { maximumFractionDigits: 2 }); }
+
+      // order list: every line shows quantity x actual price; the total counts the ticked lines
+      var rows = document.querySelectorAll("tr[data-price]");
+      var totalBox = document.getElementById("order-total");
+      function recalc() {
+        var total = 0;
+        rows.forEach(function (tr) {
+          var line = (parseFloat(tr.dataset.price) || 0) * (parseFloat(tr.querySelector(".qty").value) || 0);
+          tr.querySelector(".line-total").innerHTML = "<b>" + inr(line) + "</b>";
+          if (tr.querySelector(".place").checked) total += line;
+        });
+        if (totalBox) totalBox.textContent = inr(total);
+      }
+      rows.forEach(function (tr) {
+        tr.querySelector(".qty").addEventListener("input", recalc);
+        tr.querySelector(".place").addEventListener("change", recalc);
+      });
+      recalc();
+
+      // any other part: "15 x ₹14,500 = ₹2,17,500"
+      var part = document.getElementById("item_id"), qty = document.getElementById("quantity"), out = document.getElementById("other-total");
+      function other() {
+        var option = part && part.options[part.selectedIndex];
+        var price = option && option.dataset.price ? parseFloat(option.dataset.price) : 0;
+        var n = parseFloat(qty && qty.value) || 0;
+        if (out) out.textContent = (price && n) ? (n + " × " + inr(price) + " = " + inr(price * n)) : "";
+      }
+      if (part && qty) { part.addEventListener("change", other); qty.addEventListener("input", other); }
+    })();
+  </script>
 <% else %>
   <div class="table-wrap"><table>
     <tr><th>When</th><th>Part</th><th class="right">Change</th><th>Type</th><th>Note</th><th>Request</th></tr>

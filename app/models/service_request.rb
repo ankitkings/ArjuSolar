@@ -256,14 +256,14 @@ class ServiceRequest < ApplicationRecord
   def assign_for_status
     dept = stage_department
     return nil unless dept                                            # completed / cancelled keep the last person
-    return nil if team_member&.active? && team_member.department == dept   # already the right department
+    return nil if team_member&.active? && team_member.department == dept && !team_member.on_leave_today?   # already the right person, and present
 
     member = TeamMember.least_busy(dept)
     self.team_member = member
     if member
       "Auto-assigned to #{member.name} (#{member.department_label})"
     else
-      "No active #{TeamMember::DEPARTMENTS[dept]} member found – please assign manually"
+      "No #{TeamMember::DEPARTMENTS[dept]} member is available today (nobody active, or everyone is on leave) – please assign manually"
     end
   end
 

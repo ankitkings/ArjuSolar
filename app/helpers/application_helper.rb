@@ -22,13 +22,14 @@ module ApplicationHelper
   # active tasks, least busy first. Example: "Neha Sharma (Contact Person) (3 active tasks)"
   def team_member_options(service_request)
     counts = TeamMember.active_task_counts
+    away = Availability.unavailable_ids
     members = TeamMember.where(active: true).or(TeamMember.where(id: service_request.team_member_id)).to_a.group_by(&:department)
     groups = TeamMember::DEPARTMENTS.filter_map do |key, label|
       list = members[key]
       next if list.blank?
       options = list.sort_by { |m| [counts[m.id], m.name] }.map do |m|
         n = counts[m.id]
-        ["#{m.name} (#{label}) (#{n} active #{n == 1 ? 'task' : 'tasks'})", m.id]
+        ["#{m.name} (#{label}) (#{n} active #{n == 1 ? 'task' : 'tasks'})#{' – on leave today' if away.include?(m.id)}", m.id]
       end
       [label, options]
     end
