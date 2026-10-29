@@ -1,94 +1,372 @@
-<h1>Dashboard</h1>
-<% if @overdue.count.positive? %>
-  <div class="alert-new">
-    <h3>⚠ <%= pluralize(@overdue.count, "step") %> overdue<%= " – #{@overdue.high_count} high priority" if @overdue.high_count.positive? %></h3>
-    <div class="table-wrap"><table>
-      <tr><th>Priority</th><th>What</th><th>Overdue by</th><th>With</th><th></th></tr>
-      <% @overdue.items.first(8).each do |i| %>
-        <tr class="<%= 'new-request' if i.high? %>">
-          <td><span class="badge <%= i.priority.downcase %>"><%= i.priority %></span></td>
-          <td><%= i.title %><br><span class="muted small"><%= i.detail %></span></td>
-          <td><b><%= time_ago_in_words(i.due_at) %></b></td>
-          <td><%= i.owner %></td>
-          <td><%= link_to "Open", overdue_item_path(i) %></td>
-        </tr>
-      <% end %>
-    </table></div>
-    <p><%= link_to "See all overdue steps →", admin_overdue_path %></p>
-  </div>
-<% end %>
-<% if @new_requests.any? %>
-  <div class="alert-new">
-    <h3>🔔 <%= pluralize(@new_requests.size, "new request") %> not addressed yet</h3>
-    <p class="small">Nobody has contacted these clients yet. The oldest has been waiting <b><%= time_ago_in_words(@new_requests.first.created_at) %></b>.</p>
-    <div class="table-wrap"><table>
-      <tr><th>Client</th><th>Phone</th><th>Waiting</th><th>Assigned to</th><th></th></tr>
-      <% @new_requests.first(8).each do |r| %>
-        <tr>
-          <td><b><%= r.name %></b></td><td><%= r.phone %></td>
-          <td class="<%= 'overdue' if r.created_at < 24.hours.ago %>"><%= time_ago_in_words(r.created_at) %><%= " – overdue" if r.created_at < 24.hours.ago %></td>
-          <td><%= r.team_member&.name || "Nobody yet" %></td>
-          <td><%= link_to "Open", admin_service_request_path(r) %></td>
-        </tr>
-      <% end %>
-    </table></div>
-    <p><%= link_to "See all #{@new_requests.size} new requests →", admin_service_requests_path(status: "pending") %>
-      <%= " (showing the 8 oldest)" if @new_requests.size > 8 %></p>
-  </div>
-<% else %>
-  <div class="all-clear">✅ All new requests have been addressed.</div>
-<% end %>
-<div class="stats">
-  <div class="stat"><b><%= @visits_total %></b><span>Total visits</span></div>
-  <div class="stat"><b><%= @visits_today %></b><span>Visits today</span></div>
-  <div class="stat"><b><%= @unique_visitors %></b><span>Unique visitors (IP)</span></div>
-  <div class="stat"><b><%= @requests_total %></b><span>Requests</span></div>
-</div>
-<div class="stats">
-  <%= link_to admin_my_tasks_path, class: "stat #{'alert' if new_task_count.positive?}" do %><b><%= admin_task_count %></b><span>My tasks<%= " (#{new_task_count} new)" if new_task_count.positive? %></span><% end %>
-  <%= link_to admin_attendance_path, class: "stat" do %><b><%= @present_today %> / <%= @team_total %></b><span>Present today</span><% end %>
-  <%= link_to admin_leave_requests_path(status: "pending"), class: "stat #{'alert' if pending_leave_count.positive?}" do %><b><%= pending_leave_count %></b><span>Leave requests to decide</span><% end %>
-  <%= link_to admin_overdue_path, class: "stat #{'alert' if @overdue.count.positive?}" do %><b><%= @overdue.count %></b><span>Overdue steps<%= " (#{@overdue.high_count} high)" if @overdue.high_count.positive? %></span><% end %>
-  <%= link_to admin_service_requests_path(status: "pending"), class: "stat #{'alert' if @new_requests.any?}" do %><b><%= @new_requests.size %></b><span>New requests (not addressed)</span><% end %>
-  <%= link_to admin_service_requests_path(unassigned: 1), class: "stat" do %><b><%= @unassigned %></b><span>Unassigned requests</span><% end %>
-  <%= link_to admin_service_requests_path(with_admin: 1), class: "stat #{'alert' if @with_admin.positive?}" do %><b><%= @with_admin %></b><span>With the Admin (subsidy steps)</span><% end %>
-  <%= link_to admin_stock_path(tab: "order"), class: "stat #{'alert' if parts_short_count.positive?}" do %><b><%= parts_short_count %></b><span>Parts to order today</span><% end %>
-  <%= link_to admin_maintenance_visits_path, class: "stat" do %><b><%= @maintenance_due %></b><span>Maintenance due (7 days)</span><% end %>
-  <%= link_to admin_payments_path, class: "stat" do %><b><%= @payments_pending %></b><span>Payments pending (<%= inr(@outstanding) %> outstanding)</span><% end %>
-</div>
-<h2>PM Surya Ghar subsidy – what needs you</h2>
-<% if @subsidy_open.empty? %>
-  <div class="all-clear">✅ No subsidy application is waiting for action.</div>
-<% else %>
-  <p class="tabs">
-    <% SubsidyApplication::GROUP_STATUSES["in_progress"].each do |st| %>
-      <%= link_to admin_subsidy_applications_path(status: st), class: "tab" do %><%= SubsidyApplication::LABELS[st] %> <b><%= @subsidy_counts[st].to_i %></b><% end %>
-    <% end %>
-  </p>
-  <div class="table-wrap"><table>
-    <tr><th>Client</th><th>Status</th><th>What to do next</th><th>Documents</th><th>Waiting</th><th></th></tr>
-    <% @subsidy_open.first(8).each do |a| %>
-      <% req = a.service_request %>
-      <tr class="<%= 'new-request' if req.assigned_to_admin? %>">
-        <td><%= link_to req.name, admin_service_request_path(req) %><%= " ⏳ job on hold" if req.assigned_to_admin? %></td>
-        <td><span class="badge <%= a.status %>"><%= a.status_label %></span></td>
-        <td><%= a.next_step %></td>
-        <td><%= a.collected_documents.size %> of <%= SubsidyApplication::DOCUMENTS.size %></td>
-        <td><%= time_ago_in_words(a.updated_at) %></td>
-        <td><%= link_to "Open", admin_subsidy_application_path(a) %></td>
-      </tr>
-    <% end %>
-  </table></div>
-  <p><%= link_to "All subsidy applications →", admin_subsidy_applications_path %></p>
-<% end %>
+<%
+  hour = Time.current.hour
+  greeting = hour < 12 ? "Good morning" : (hour < 17 ? "Good afternoon" : "Good evening")
+  who = current_admin.email.to_s.split("@").first.to_s.tr("._-", " ").titleize
+  status_colors = { "pending" => "#f59e0b", "contacted" => "#60a5fa", "site_visit" => "#38bdf8", "quote_sent" => "#8b5cf6",
+                    "installation" => "#fb923c", "payment" => "#eab308", "commissioning" => "#a78bfa", "final_touch" => "#a78bfa",
+                    "completed" => "#22c55e", "cancelled" => "#ef4444" }
+  trend = lambda do |series|
+    previous = series.first(7).sum
+    current = series.last(7).sum
+    previous.zero? ? (current.zero? ? nil : 100) : ((current - previous) * 100.0 / previous).round
+  end
+  requests_trend = trend.call(@requests_series)
+  visits_trend = trend.call(@visits_series)
+  collected_percent = (@collected_total.to_f + @outstanding.to_f).positive? ? (@collected_total.to_f * 100 / (@collected_total.to_f + @outstanding.to_f)).round : 0
+%>
+<style>
+  .dash{--ink:#0f172a;--muted:#64748b;--line:#e2e8f0;--card:#fff;--shadow:0 1px 2px rgba(15,23,42,.06),0 8px 24px rgba(15,23,42,.06)}
+  .dash h2.db-title{font-size:1.05rem;margin:0 0 12px;display:flex;align-items:center;gap:8px;color:var(--ink)}
+  .dash a{text-decoration:none}
+  @keyframes db-rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  .db-card,.db-tile,.db-kpi,.db-hero{animation:db-rise .5s ease both}
+  .db-kpi:nth-child(2),.db-tile:nth-child(2){animation-delay:.05s}.db-kpi:nth-child(3),.db-tile:nth-child(3){animation-delay:.1s}.db-kpi:nth-child(4),.db-tile:nth-child(4){animation-delay:.15s}
+  @media (prefers-reduced-motion:reduce){.db-card,.db-tile,.db-kpi,.db-hero{animation:none}}
 
-<h2>Requests by status</h2>
-<div class="stats">
-  <% ServiceRequest::STATUSES.each do |s| %>
-    <%= link_to admin_service_requests_path(status: s), class: "stat small" do %>
-      <b><%= @by_status[s].to_i %></b><span><%= s.humanize %></span>
+  /* hero */
+  .db-hero{position:relative;overflow:hidden;border-radius:20px;padding:26px 28px;color:#fff;margin-bottom:18px;
+    background:linear-gradient(120deg,#0b1224 0%,#16327a 52%,#2563eb 100%);box-shadow:0 12px 30px rgba(37,99,235,.28)}
+  .db-hero::before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.07) 1px,transparent 1px);background-size:30px 30px;
+    -webkit-mask-image:linear-gradient(120deg,transparent 30%,#000 100%);mask-image:linear-gradient(120deg,transparent 30%,#000 100%)}
+  .db-hero::after{content:"";position:absolute;right:-70px;top:-80px;width:300px;height:300px;border-radius:50%;
+    background:radial-gradient(circle,#fff7c2 0%,#fbbf24 28%,rgba(245,158,11,.35) 52%,rgba(245,158,11,0) 70%)}
+  .db-hero>*{position:relative;z-index:1}
+  .db-hero h1{margin:0;font-size:1.8rem;letter-spacing:-.02em}
+  .db-hero p{margin:4px 0 0;color:#cbd5e1}
+  .db-hero-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+  .db-pill{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:99px;font-weight:700;font-size:.9rem;color:#0f172a;background:#fbbf24}
+  .db-pill.ghost{background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.28);backdrop-filter:blur(4px)}
+  .db-pill:hover{transform:translateY(-1px)}
+  .db-hero-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:20px}
+  .db-glass{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);border-radius:14px;padding:12px 14px;backdrop-filter:blur(6px);color:#fff}
+  .db-glass b{display:block;font-size:1.7rem;line-height:1.1}
+  .db-glass span{font-size:.8rem;color:#e2e8f0}
+  .db-glass.hot{background:rgba(239,68,68,.28);border-color:rgba(254,202,202,.6)}
+
+  /* kpi cards */
+  .db-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin-bottom:18px}
+  .db-kpi{background:var(--card);border-radius:18px;padding:16px 18px;box-shadow:var(--shadow);display:flex;gap:14px;align-items:center;color:var(--ink);transition:transform .2s,box-shadow .2s}
+  .db-kpi:hover{transform:translateY(-3px);box-shadow:0 14px 30px rgba(15,23,42,.12)}
+  .db-ico{flex:none;width:50px;height:50px;border-radius:15px;display:grid;place-items:center;font-size:1.5rem;color:#fff}
+  .db-kpi b{font-size:1.65rem;line-height:1.1;display:block}
+  .db-kpi span{color:var(--muted);font-size:.85rem;display:block}
+  .db-trend{font-size:.78rem;font-weight:700}.db-up{color:#16a34a}.db-down{color:#dc2626}
+
+  /* attention tiles */
+  .db-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:18px}
+  .db-tile{background:var(--card);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow);border-left:5px solid #cbd5e1;color:var(--ink);display:flex;align-items:center;gap:12px;transition:transform .2s}
+  .db-tile:hover{transform:translateY(-2px)}
+  .db-tile .n{font-size:1.7rem;font-weight:800;line-height:1}
+  .db-tile small{display:block;color:var(--muted);font-size:.8rem;margin-top:2px}
+  .db-tile.ok{border-left-color:#22c55e}.db-tile.warn{border-left-color:#f59e0b;background:#fffbeb}.db-tile.bad{border-left-color:#ef4444;background:#fef2f2}
+  .db-tile.bad .n{color:#b91c1c}.db-tile.warn .n{color:#b45309}
+  .db-tile .e{font-size:1.6rem}
+
+  /* cards + grids */
+  .db-card{background:var(--card);border-radius:18px;padding:18px 20px;box-shadow:var(--shadow);margin-bottom:18px;min-width:0}
+  .db-grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(420px,100%),1fr));gap:18px}
+  .db-grid-wide{display:grid;grid-template-columns:2fr 1fr;gap:18px}
+  .db-card .table-wrap{border:0;box-shadow:none}
+  .db-svg{width:100%;height:auto;display:block}
+  .db-val{font-size:10px;font-weight:700;fill:#334155}.db-axis{font-size:10px;fill:#94a3b8}
+  .db-sub{color:var(--muted);font-size:.82rem;margin:-6px 0 8px}
+
+  /* pipeline */
+  .db-bar{display:flex;height:22px;border-radius:99px;overflow:hidden;background:#e2e8f0;margin:10px 0 14px}
+  .db-bar a{display:block;min-width:4px;transition:filter .2s}.db-bar a:hover{filter:brightness(1.15)}
+  .db-legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+  .db-legend a{display:flex;align-items:center;gap:8px;color:var(--ink);font-size:.88rem;padding:6px 8px;border-radius:10px}
+  .db-legend a:hover{background:#f1f5f9}
+  .db-dot{width:11px;height:11px;border-radius:50%;flex:none}
+
+  /* donut */
+  .db-donut{--p:0;width:170px;height:170px;border-radius:50%;margin:6px auto 14px;display:grid;place-items:center;
+    background:conic-gradient(#22c55e calc(var(--p)*1%),#fbbf24 0)}
+  .db-donut>div{width:122px;height:122px;border-radius:50%;background:#fff;display:grid;place-items:center;text-align:center;line-height:1.1}
+  .db-donut b{font-size:1.7rem;display:block}.db-donut small{color:var(--muted)}
+  .db-money{display:grid;gap:6px;font-size:.9rem}
+  .db-money div{display:flex;justify-content:space-between;gap:10px}
+
+  /* team */
+  .db-team{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+  .db-person{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:14px;background:#f8fafc;border:1px solid var(--line)}
+  .db-person small{display:block;color:var(--muted);font-size:.76rem}
+  .db-avatar{flex:none;width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:.85rem;color:#fff;background:#94a3b8}
+  .db-present .db-avatar{background:linear-gradient(135deg,#22c55e,#15803d)}
+  .db-half_day .db-avatar{background:linear-gradient(135deg,#fbbf24,#d97706)}
+  .db-absent .db-avatar{background:linear-gradient(135deg,#f87171,#b91c1c)}
+  .db-leave .db-avatar{background:linear-gradient(135deg,#60a5fa,#1d4ed8)}
+  .db-empty{padding:18px;text-align:center;color:#166534;background:#f0fdf4;border-radius:14px}
+
+  @media(max-width:900px){.db-hero-stats{grid-template-columns:repeat(2,1fr)}.db-grid-wide{grid-template-columns:1fr}.db-hero h1{font-size:1.45rem}}
+  @media print{.db-hero{box-shadow:none}}
+</style>
+
+<div class="dash">
+
+  <%# ================= hero ================= %>
+  <div class="db-hero">
+    <h1><%= greeting %>, <%= who.presence || "Admin" %> 👋</h1>
+    <p><%= l Date.current, format: "%A, %d %B %Y" %> · here is how Arju Solars is doing right now.</p>
+    <div class="db-hero-actions">
+      <%= link_to "🔔 My tasks#{" (#{new_task_count} new)" if new_task_count.positive?}", admin_my_tasks_path, class: "db-pill" %>
+      <%= link_to "📋 All requests", admin_service_requests_path, class: "db-pill ghost" %>
+      <%= link_to "🕘 Attendance", admin_attendance_path, class: "db-pill ghost" %>
+      <%= link_to "📦 Stock", admin_stock_path, class: "db-pill ghost" %>
+    </div>
+    <div class="db-hero-stats">
+      <%= link_to admin_service_requests_path(status: "pending"), class: "db-glass #{'hot' if @new_requests.any?}" do %><b class="db-count" data-to="<%= @new_requests.size %>"><%= @new_requests.size %></b><span>New requests to address</span><% end %>
+      <%= link_to admin_overdue_path, class: "db-glass #{'hot' if @overdue.count.positive?}" do %><b class="db-count" data-to="<%= @overdue.count %>"><%= @overdue.count %></b><span>Overdue steps<%= " · #{@overdue.high_count} high" if @overdue.high_count.positive? %></span><% end %>
+      <%= link_to admin_my_tasks_path, class: "db-glass" do %><b class="db-count" data-to="<%= admin_task_count %>"><%= admin_task_count %></b><span>Tasks waiting for you</span><% end %>
+      <%= link_to admin_attendance_path, class: "db-glass" do %><b><%= @present_today %> / <%= @team_total %></b><span>Team present today</span><% end %>
+    </div>
+  </div>
+
+  <%# ================= key numbers ================= %>
+  <div class="db-kpis">
+    <div class="db-kpi">
+      <div class="db-ico" style="background:linear-gradient(135deg,#3b82f6,#1d4ed8)">📋</div>
+      <div><b class="db-count" data-to="<%= @requests_total %>"><%= @requests_total %></b><span>Requests in total</span>
+        <% if requests_trend %><span class="db-trend <%= requests_trend >= 0 ? 'db-up' : 'db-down' %>"><%= requests_trend >= 0 ? "▲" : "▼" %> <%= requests_trend.abs %>% vs last week</span><% end %></div>
+    </div>
+    <div class="db-kpi">
+      <div class="db-ico" style="background:linear-gradient(135deg,#0ea5e9,#0369a1)">👀</div>
+      <div><b class="db-count" data-to="<%= @visits_today %>"><%= @visits_today %></b><span>Website visits today</span>
+        <% if visits_trend %><span class="db-trend <%= visits_trend >= 0 ? 'db-up' : 'db-down' %>"><%= visits_trend >= 0 ? "▲" : "▼" %> <%= visits_trend.abs %>% vs last week</span><% end %></div>
+    </div>
+    <%= link_to admin_payments_path, class: "db-kpi" do %>
+      <div class="db-ico" style="background:linear-gradient(135deg,#22c55e,#15803d)">💰</div>
+      <div><b><%= inr(@collected_month) %></b><span>Collected this month</span></div>
     <% end %>
-  <% end %>
+    <%= link_to admin_payments_path, class: "db-kpi" do %>
+      <div class="db-ico" style="background:linear-gradient(135deg,#f59e0b,#b45309)">⏳</div>
+      <div><b><%= inr(@outstanding) %></b><span><%= pluralize(@payments_pending, "payment") %> still to collect</span></div>
+    <% end %>
+  </div>
+
+  <%# ================= needs attention ================= %>
+  <h2 class="db-title">🎯 Needs your attention</h2>
+  <div class="db-tiles">
+    <%= link_to admin_overdue_path, class: "db-tile #{@overdue.high_count.positive? ? 'bad' : (@overdue.count.positive? ? 'warn' : 'ok')}" do %>
+      <span class="e">⚠️</span><div><span class="n"><%= @overdue.count %></span><small>Overdue steps<%= " (#{@overdue.high_count} high)" if @overdue.high_count.positive? %></small></div>
+    <% end %>
+    <%= link_to admin_service_requests_path(status: "pending"), class: "db-tile #{@new_requests.any? ? 'warn' : 'ok'}" do %>
+      <span class="e">🔔</span><div><span class="n"><%= @new_requests.size %></span><small>New requests</small></div>
+    <% end %>
+    <%= link_to admin_my_tasks_path, class: "db-tile #{new_task_count.positive? ? 'bad' : (admin_task_count.positive? ? 'warn' : 'ok')}" do %>
+      <span class="e">✅</span><div><span class="n"><%= admin_task_count %></span><small>My tasks<%= " (#{new_task_count} new)" if new_task_count.positive? %></small></div>
+    <% end %>
+    <%= link_to admin_leave_requests_path(status: "pending"), class: "db-tile #{pending_leave_count.positive? ? 'warn' : 'ok'}" do %>
+      <span class="e">🌴</span><div><span class="n"><%= pending_leave_count %></span><small>Leave to decide</small></div>
+    <% end %>
+    <%= link_to admin_stock_path(tab: "order"), class: "db-tile #{parts_short_count.positive? ? 'warn' : 'ok'}" do %>
+      <span class="e">📦</span><div><span class="n"><%= parts_short_count %></span><small>Parts to order</small></div>
+    <% end %>
+    <%= link_to admin_service_requests_path(with_admin: 1), class: "db-tile #{@with_admin.positive? ? 'warn' : 'ok'}" do %>
+      <span class="e">🏛️</span><div><span class="n"><%= @with_admin %></span><small>With the Admin (subsidy)</small></div>
+    <% end %>
+    <%= link_to admin_service_requests_path(unassigned: 1), class: "db-tile #{@unassigned.positive? ? 'bad' : 'ok'}" do %>
+      <span class="e">🙋</span><div><span class="n"><%= @unassigned %></span><small>Unassigned requests</small></div>
+    <% end %>
+    <%= link_to admin_maintenance_visits_path, class: "db-tile #{@maintenance_due.positive? ? 'warn' : 'ok'}" do %>
+      <span class="e">🛠️</span><div><span class="n"><%= @maintenance_due %></span><small>Maintenance due (7 days)</small></div>
+    <% end %>
+  </div>
+
+  <%# ================= charts ================= %>
+  <div class="db-grid2">
+    <div class="db-card">
+      <h2 class="db-title">📈 New requests – last 14 days</h2>
+      <p class="db-sub"><%= @requests_series.sum %> in total</p>
+      <%
+        w = 560; h = 175; pad = 8; base = h - 26; chart_h = base - 22
+        series = @requests_series; top = [series.max, 1].max
+        slot = (w - pad * 2) / series.size.to_f; bar_w = slot * 0.6
+      %>
+      <svg class="db-svg" viewBox="0 0 <%= w %> <%= h %>" role="img" aria-label="New requests per day">
+        <defs><linearGradient id="dbBar" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#60a5fa"/><stop offset="100%" stop-color="#1d4ed8"/></linearGradient></defs>
+        <line x1="<%= pad %>" y1="<%= base %>" x2="<%= w - pad %>" y2="<%= base %>" stroke="#e2e8f0"/>
+        <% series.each_with_index do |value, i| %>
+          <% bar_h = value.to_f / top * chart_h %>
+          <% x = pad + i * slot + (slot - bar_w) / 2 %>
+          <% y = base - [bar_h, 3].max %>
+          <rect x="<%= x.round(1) %>" y="<%= y.round(1) %>" width="<%= bar_w.round(1) %>" height="<%= [bar_h, 3].max.round(1) %>" rx="5" fill="<%= value.zero? ? '#e2e8f0' : 'url(#dbBar)' %>"><title><%= l @days[i], format: "%d %b" %>: <%= value %></title></rect>
+          <% if value.positive? %><text x="<%= (x + bar_w / 2).round(1) %>" y="<%= (y - 5).round(1) %>" text-anchor="middle" class="db-val"><%= value %></text><% end %>
+          <% if i.even? || i == series.size - 1 %><text x="<%= (x + bar_w / 2).round(1) %>" y="<%= h - 8 %>" text-anchor="middle" class="db-axis"><%= l @days[i], format: "%d %b" %></text><% end %>
+        <% end %>
+      </svg>
+    </div>
+
+    <div class="db-card">
+      <h2 class="db-title">🌐 Website visitors – last 14 days</h2>
+      <p class="db-sub"><%= @visits_series.sum %> visits in total</p>
+      <%
+        series = @visits_series; top = [series.max, 1].max
+        step = (w - pad * 2 - 12) / [series.size - 1, 1].max.to_f
+        points = series.each_with_index.map { |value, i| [pad + 6 + i * step, base - value.to_f / top * chart_h] }
+        line = points.map { |px, py| "#{px.round(1)},#{py.round(1)}" }.join(" ")
+        area = "#{points.first[0].round(1)},#{base} #{line} #{points.last[0].round(1)},#{base}"
+      %>
+      <svg class="db-svg" viewBox="0 0 <%= w %> <%= h %>" role="img" aria-label="Website visitors per day">
+        <defs><linearGradient id="dbArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#38bdf8" stop-opacity=".55"/><stop offset="100%" stop-color="#38bdf8" stop-opacity="0"/></linearGradient></defs>
+        <line x1="<%= pad %>" y1="<%= base %>" x2="<%= w - pad %>" y2="<%= base %>" stroke="#e2e8f0"/>
+        <polygon points="<%= area %>" fill="url(#dbArea)"/>
+        <polyline points="<%= line %>" fill="none" stroke="#0284c7" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+        <% points.each_with_index do |(px, py), i| %>
+          <circle cx="<%= px.round(1) %>" cy="<%= py.round(1) %>" r="<%= i == points.size - 1 ? 5 : 3 %>" fill="#fff" stroke="#0284c7" stroke-width="2"><title><%= l @days[i], format: "%d %b" %>: <%= series[i] %></title></circle>
+          <% if i.even? || i == series.size - 1 %><text x="<%= px.round(1) %>" y="<%= h - 8 %>" text-anchor="middle" class="db-axis"><%= l @days[i], format: "%d %b" %></text><% end %>
+        <% end %>
+        <text x="<%= points.last[0].round(1) %>" y="<%= (points.last[1] - 11).round(1) %>" text-anchor="end" class="db-val"><%= series.last %> today</text>
+      </svg>
+    </div>
+  </div>
+
+  <%# ================= pipeline + money ================= %>
+  <div class="db-grid-wide">
+    <div class="db-card">
+      <h2 class="db-title">🧭 Request pipeline</h2>
+      <% total = [@by_status.values.sum, 1].max %>
+      <div class="db-bar">
+        <% ServiceRequest::STATUSES.each do |st| %>
+          <% count = @by_status[st].to_i %>
+          <% next if count.zero? %>
+          <%= link_to "", admin_service_requests_path(status: st), title: "#{st.humanize}: #{count}", style: "width:#{(count * 100.0 / total).round(2)}%;background:#{status_colors[st] || '#94a3b8'}" %>
+        <% end %>
+      </div>
+      <div class="db-legend">
+        <% ServiceRequest::STATUSES.each do |st| %>
+          <%= link_to admin_service_requests_path(status: st) do %><span class="db-dot" style="background:<%= status_colors[st] || '#94a3b8' %>"></span><span><b><%= @by_status[st].to_i %></b> <%= st.humanize %></span><% end %>
+        <% end %>
+      </div>
+    </div>
+
+    <div class="db-card">
+      <h2 class="db-title">💳 Payments</h2>
+      <div class="db-donut" style="--p:<%= collected_percent %>"><div><span><b><%= collected_percent %>%</b><small>collected</small></span></div></div>
+      <div class="db-money">
+        <div><span>🟢 Collected (all time)</span><b><%= inr(@collected_total) %></b></div>
+        <div><span>🟡 Still to collect</span><b><%= inr(@outstanding) %></b></div>
+      </div>
+      <p style="margin:10px 0 0"><%= link_to "Open payments →", admin_payments_path %></p>
+    </div>
+  </div>
+
+  <%# ================= lists ================= %>
+  <div class="db-grid2">
+    <div class="db-card">
+      <h2 class="db-title">⚠️ Overdue – act first</h2>
+      <% if @overdue.count.zero? %>
+        <div class="db-empty">✅ Nothing is overdue. Great work!</div>
+      <% else %>
+        <div class="table-wrap"><table>
+          <tr><th>Priority</th><th>What</th><th>Overdue by</th><th>With</th><th></th></tr>
+          <% @overdue.items.first(6).each do |i| %>
+            <tr class="<%= 'new-request' if i.high? %>">
+              <td><span class="badge <%= i.priority.downcase %>"><%= i.priority %></span></td>
+              <td><%= i.title %><br><span class="muted small"><%= i.detail %></span></td>
+              <td><b><%= time_ago_in_words(i.due_at) %></b></td>
+              <td><%= i.owner %></td>
+              <td><%= link_to "Open", overdue_item_path(i) %></td>
+            </tr>
+          <% end %>
+        </table></div>
+        <p><%= link_to "See all #{@overdue.count} overdue steps →", admin_overdue_path %></p>
+      <% end %>
+    </div>
+
+    <div class="db-card">
+      <h2 class="db-title">🔔 New requests – not addressed yet</h2>
+      <% if @new_requests.empty? %>
+        <div class="db-empty">✅ Every new request has been addressed.</div>
+      <% else %>
+        <p class="db-sub">The oldest has been waiting <b><%= time_ago_in_words(@new_requests.first.created_at) %></b>.</p>
+        <div class="table-wrap"><table>
+          <tr><th>Client</th><th>Phone</th><th>Waiting</th><th>With</th><th></th></tr>
+          <% @new_requests.first(6).each do |r| %>
+            <tr>
+              <td><b><%= r.name %></b></td><td><%= r.phone %></td>
+              <td class="<%= 'overdue' if r.created_at < 24.hours.ago %>"><%= time_ago_in_words(r.created_at) %><%= " – overdue" if r.created_at < 24.hours.ago %></td>
+              <td><%= r.team_member&.name || "Nobody yet" %></td>
+              <td><%= link_to "Open", admin_service_request_path(r) %></td>
+            </tr>
+          <% end %>
+        </table></div>
+        <p><%= link_to "See all #{@new_requests.size} new requests →", admin_service_requests_path(status: "pending") %></p>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="db-card">
+    <h2 class="db-title">☀️ PM Surya Ghar subsidy – what needs you</h2>
+    <% if @subsidy_open.empty? %>
+      <div class="db-empty">✅ No subsidy application is waiting for action.</div>
+    <% else %>
+      <p class="tabs">
+        <% SubsidyApplication::GROUP_STATUSES["in_progress"].each do |st| %>
+          <%= link_to admin_subsidy_applications_path(status: st), class: "tab" do %><%= SubsidyApplication::LABELS[st] %> <b><%= @subsidy_counts[st].to_i %></b><% end %>
+        <% end %>
+      </p>
+      <div class="table-wrap"><table>
+        <tr><th>Client</th><th>Status</th><th>What to do next</th><th>Documents</th><th>Waiting</th><th></th></tr>
+        <% @subsidy_open.first(6).each do |a| %>
+          <% req = a.service_request %>
+          <tr class="<%= 'new-request' if req.assigned_to_admin? %>">
+            <td><%= link_to req.name, admin_service_request_path(req) %><%= " ⏳ job on hold" if req.assigned_to_admin? %></td>
+            <td><span class="badge <%= a.status %>"><%= a.status_label %></span></td>
+            <td><%= a.next_step %></td>
+            <td><%= a.collected_documents.size %> of <%= SubsidyApplication::DOCUMENTS.size %></td>
+            <td><%= time_ago_in_words(a.updated_at) %></td>
+            <td><%= link_to "Open", admin_subsidy_application_path(a) %></td>
+          </tr>
+        <% end %>
+      </table></div>
+      <p><%= link_to "All subsidy applications →", admin_subsidy_applications_path %></p>
+    <% end %>
+  </div>
+
+  <%# ================= team today ================= %>
+  <div class="db-card">
+    <h2 class="db-title">👥 Team today</h2>
+    <% if @team_today.empty? %>
+      <div class="db-empty">No team members yet.</div>
+    <% else %>
+      <div class="db-team">
+        <% @team_today.each do |m| %>
+          <% rec = @records_today[m.id]; leave = @leaves_today[m.id] %>
+          <% state, label = rec ? [rec.status, rec.status_label] : (leave ? ["leave", "On leave"] : ["none", "Not marked yet"]) %>
+          <%= link_to admin_payroll_member_path(m.id), class: "db-person db-#{state}" do %>
+            <span class="db-avatar"><%= m.name.split.map { |word| word[0] }.first(2).join.upcase %></span>
+            <span><b><%= m.name %></b><small><%= m.department_label %> · <%= label %></small></span>
+          <% end %>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+
+  <%# ================= latest requests ================= %>
+  <div class="db-card">
+    <h2 class="db-title">🕘 Latest requests</h2>
+    <%= render "admin/service_requests/table", requests: @recent %>
+    <p><%= link_to "All requests →", admin_service_requests_path %></p>
+  </div>
 </div>
-<h2>Latest requests</h2>
-<%= render "admin/service_requests/table", requests: @recent %>
+
+<script>
+  // numbers count up when the page opens
+  (function () {
+    if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    document.querySelectorAll(".db-count").forEach(function (el) {
+      var target = parseInt(el.dataset.to, 10);
+      if (!target || target < 2) return;
+      var start = null;
+      el.textContent = "0";
+      function tick(now) {
+        if (start === null) start = now;
+        var progress = Math.min((now - start) / 700, 1);
+        el.textContent = Math.round(target * (1 - Math.pow(1 - progress, 3)));
+        if (progress < 1) requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+    });
+  })();
+</script>
