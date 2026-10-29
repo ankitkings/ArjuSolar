@@ -16,6 +16,7 @@ Rails.application.routes.draw do
   namespace :staff do
     root "tasks#index"
     get "parts", to: "parts#index"
+    get "completed", to: "completed#index"
     get "attendance", to: "attendance#show"
     post "attendance/check_in", to: "attendance#check_in", as: :attendance_check_in
     post "attendance/check_out", to: "attendance#check_out", as: :attendance_check_out
