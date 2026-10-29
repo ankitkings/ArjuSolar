@@ -119,4 +119,29 @@ module ApplicationHelper
 
   def new_task_count = admin_tasks.new_count
   def admin_task_count = admin_tasks.count
+
+  # Every page that loads the main stylesheet also gets the modern panel theme.
+  # The theme only changes pages whose <body> has the class "admin" (Admin and Staff panels).
+  def stylesheet_link_tag(*sources)
+    options = sources.last.is_a?(Hash) ? sources.pop : {}
+    names = sources.map(&:to_s)
+    return super(*sources, **options) unless names.include?("application") && !names.include?("modern")
+    safe_join([super(*sources, "modern", **options), modern_theme_script])
+  end
+
+  # marks the menu entry of the page you are on
+  def modern_theme_script
+    javascript_tag(<<~'JS')
+      document.addEventListener("DOMContentLoaded", function () {
+        if (!document.body.classList.contains("admin")) return;
+        var path = location.pathname.replace(/\/$/, "") || "/", best = null, bestLength = 0;
+        document.querySelectorAll("body.admin > aside a[href]").forEach(function (link) {
+          var target = (link.getAttribute("href") || "").split("?")[0].replace(/\/$/, "");
+          if (!target || target === "/") return;
+          if ((path === target || path.indexOf(target + "/") === 0) && target.length > bestLength) { best = link; bestLength = target.length; }
+        });
+        if (best) best.classList.add("active");
+      });
+    JS
+  end
 end
