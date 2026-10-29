@@ -1,0 +1,35 @@
+<p><%= link_to "← My tasks", staff_root_path %></p>
+<h1>My completed work</h1>
+<div class="stats">
+  <div class="stat"><b><%= @work.today %></b><span>Done today</span></div>
+  <div class="stat"><b><%= @work.this_week %></b><span>This week</span></div>
+  <div class="stat"><b><%= @work.this_month %></b><span>This month</span></div>
+  <div class="stat"><b><%= @work.total %></b><span>In total</span></div>
+</div>
+
+<p class="tabs">
+  <% months = @work.months %>
+  <% months.first(12).each do |first_day, count| %>
+    <%= link_to "#{first_day.strftime('%B %Y')} (#{count})", staff_completed_path(month: first_day.strftime("%Y-%m")), class: "tab #{'active' if first_day == @month}" %>
+  <% end %>
+  <% if months.empty? %><span class="muted">No completed work yet.</span><% end %>
+</p>
+
+<h2><%= @month.strftime("%B %Y") %> – <%= pluralize(@items.size, "item") %></h2>
+<div class="table-wrap"><table>
+  <tr><th></th><th>When</th><th>What I did</th><th>Details</th><th></th></tr>
+  <% @items.each do |item| %>
+    <tr>
+      <td><%= CompletedWork::ICONS[item.kind] %></td>
+      <td><%= l item.at.in_time_zone, format: "%d %b, %I:%M %p" %></td>
+      <td><b><%= item.title %></b></td>
+      <td><%= item.detail %></td>
+      <td>
+        <% if item.kind == "payment" %><%= link_to "Receipt", staff_receipt_path(item.record) %>
+        <% elsif item.kind == "step" && item.record && item.record.team_member_id == current_staff.id %><%= link_to "Open", staff_task_path(item.record) %>
+        <% end %>
+      </td>
+    </tr>
+  <% end %>
+  <% if @items.empty? %><tr><td colspan="5" class="muted">Nothing completed in this month.</td></tr><% end %>
+</table></div>
