@@ -59,6 +59,7 @@ Rails.application.routes.draw do
     patch "overdue/limits", to: "overdue#update_limits", as: :overdue_limits
     delete "overdue/limits", to: "overdue#reset_limits"
     get "my_tasks", to: "my_tasks#index"
+    get "attendance/:id", to: "attendance#show", as: :attendance_member
     get "my_tasks/alert", to: "my_tasks#alert", as: :my_tasks_alert
     resource :margins, only: %i[show update], controller: "margins"
     get "attendance", to: "attendance#index"
