@@ -31,6 +31,8 @@
     <tr><td><b>Balance after this receipt</b></td><td class="right"><b><%= inr(receipt.balance_after) %></b></td></tr>
   </table></div>
 
+  <%= render "shared/receipt_details", receipt: receipt %>
+
   <% if receipt.note.present? %><p><strong>Note:</strong> <%= receipt.note %></p><% end %>
   <p><strong>Received by:</strong> <%= receipt.team_member&.name || "—" %> (Cashier)</p>
   <p class="muted small">This is a computer-generated receipt.</p>

@@ -1,0 +1,19 @@
+<h1>Payment setup</h1>
+<p class="muted">Where clients pay us. The cashier sees these when a client pays by UPI (QR code) or bank transfer.</p>
+<% if @setting.errors.any? %><div class="flash alert"><%= @setting.errors.full_messages.to_sentence %></div><% end %>
+<% unless @qr_ready %>
+  <div class="flash alert">The QR picture is not switched on yet. Run <code>bundle add rqrcode</code> in the project folder and restart the server. Until then the cashier gets a payment link instead of a picture.</div>
+<% end %>
+<%= form_with model: @setting, url: admin_payment_settings_path, method: :patch, class: "form" do |f| %>
+  <h2>UPI (QR code)</h2>
+  <%= f.label :upi_id, "Our UPI id" %><%= f.text_field :upi_id, placeholder: "arjusolars@okhdfcbank" %>
+  <%= f.label :upi_name, "Name shown to the client when they pay" %><%= f.text_field :upi_name, placeholder: "Arju Solars" %>
+
+  <h2>Bank account (for NEFT / RTGS / IMPS / DBT)</h2>
+  <%= f.label :account_name, "Account name" %><%= f.text_field :account_name %>
+  <%= f.label :account_number, "Account number" %><%= f.text_field :account_number, inputmode: "numeric" %>
+  <%= f.label :ifsc, "IFSC code" %><%= f.text_field :ifsc, maxlength: 11, style: "text-transform:uppercase" %>
+  <%= f.label :bank_name, "Bank" %><%= f.text_field :bank_name %>
+  <%= f.label :branch, "Branch" %><%= f.text_field :branch %>
+  <%= f.submit "Save", class: "btn go" %>
+<% end %>

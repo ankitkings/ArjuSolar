@@ -49,7 +49,9 @@ Rails.application.routes.draw do
       end
     end
     resources :maintenance_visits, only: %i[show update]
-    resources :payments, only: %i[show update]
+    resources :payments, only: %i[show update] do
+      member { get :upi_qr }
+    end
     resources :receipts, only: :show
   end
 
@@ -59,7 +61,6 @@ Rails.application.routes.draw do
     patch "overdue/limits", to: "overdue#update_limits", as: :overdue_limits
     delete "overdue/limits", to: "overdue#reset_limits"
     get "my_tasks", to: "my_tasks#index"
-    get "attendance/:id", to: "attendance#show", as: :attendance_member
     get "my_tasks/alert", to: "my_tasks#alert", as: :my_tasks_alert
     resource :margins, only: %i[show update], controller: "margins"
     get "attendance", to: "attendance#index"
@@ -98,6 +99,7 @@ Rails.application.routes.draw do
     end
     resources :maintenance_visits, only: %i[index create update destroy]
     resources :payments, only: %i[index show update]
+    resource :payment_settings, only: %i[show update], controller: "payment_settings"
     resources :receipts, only: :show
     resources :quotes, only: :show do
       member { get :pdf }
