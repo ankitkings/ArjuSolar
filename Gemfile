@@ -19,3 +19,4 @@ group :development do
   gem 'rubocop', require: false
 end
 gem "json", "< 3.0"
+gem "rqrcode", "~> 3.2"

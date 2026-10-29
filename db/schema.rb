@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_01_19_000000) do
+ActiveRecord::Schema[7.1].define(version: 2026_01_20_000000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -204,6 +204,18 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_19_000000) do
     t.index ["solar_package_id"], name: "index_package_items_on_solar_package_id"
   end
 
+  create_table "payment_settings", force: :cascade do |t|
+    t.string "upi_id"
+    t.string "upi_name"
+    t.string "bank_name"
+    t.string "branch"
+    t.string "account_name"
+    t.string "account_number"
+    t.string "ifsc"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
   create_table "payments", force: :cascade do |t|
     t.integer "service_request_id", null: false
     t.integer "team_member_id"
@@ -275,6 +287,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_19_000000) do
     t.text "note"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.json "details"
     t.index ["number"], name: "index_receipts_on_number", unique: true
     t.index ["payment_id"], name: "index_receipts_on_payment_id"
     t.index ["team_member_id"], name: "index_receipts_on_team_member_id"

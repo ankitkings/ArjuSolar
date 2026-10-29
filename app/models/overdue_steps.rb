@@ -6,7 +6,7 @@ class OverdueSteps
 
   # days a request may stay in a step before it is overdue (twice as long = high priority)
   LIMITS = { "pending" => 1, "contacted" => 2, "site_visit" => 3, "quote_sent" => 5,
-             "installation" => 3, "payment" => 7, "final_touch" => 2 }.freeze
+             "installation" => 3, "payment" => 7, "commissioning" => 2 }.freeze
   HOLD_LIMITS = { "waiting_for_stock" => 2, "waiting_for_approval" => 10, "waiting_for_net_meter" => 7 }.freeze
   HOLD_LABELS = { "waiting_for_stock" => "Installation waiting for parts", "waiting_for_approval" => "Installation waiting for the electricity company",
                   "waiting_for_net_meter" => "Waiting for the net meter (before payment)" }.freeze
@@ -48,7 +48,7 @@ class OverdueSteps
     if request.status == "installation" && request.installation_status == "scheduled" && request.installation_scheduled_on && request.installation_scheduled_on < today
       return item("High", request, "Installation date missed", "It was planned for #{request.installation_scheduled_on.strftime('%d %b')}", request.installation_scheduled_on.end_of_day)
     end
-    if request.status == "final_touch" && request.final_touch_due_on && request.final_touch_due_on < today
+    if request.status == "commissioning" && request.final_touch_due_on && request.final_touch_due_on < today
       return item("High", request, "Panel start-up / final touch is late", "It was due on #{request.final_touch_due_on.strftime('%d %b')}", request.final_touch_due_on.end_of_day)
     end
     if request.status == "quote_sent" && (quote = request.latest_quote) && quote.expired?

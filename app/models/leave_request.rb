@@ -55,7 +55,7 @@ class LeaveRequest < ApplicationRecord
 
     # leave that includes today: this person's open tasks go to a colleague who is present
     return unless covers?(Date.current)
-    ServiceRequest.where(team_member_id: team_member_id, status: %w[pending contacted site_visit quote_sent payment final_touch]).find_each do |request|
+    ServiceRequest.where(team_member_id: team_member_id, status: %w[pending contacted site_visit quote_sent payment commissioning]).find_each do |request|
       next unless TeamMember.least_busy(request.stage_department)   # nobody else is present: keep it where it is
       request.update_columns(team_member_id: nil)
       request.reassign_for_stage!
