@@ -2,7 +2,7 @@
 # "New" = it arrived after the admin last opened Admin > My tasks.
 class AdminTasks
   Task = Struct.new(:kind, :title, :detail, :since, :record, :fresh, keyword_init: true)
-  KIND_LABELS = { "subsidy" => "PM Surya Ghar", "hold" => "Job on hold", "leave" => "Leave request", "order" => "Parts to order" }.freeze
+  KIND_LABELS = { "subsidy" => "PM Surya Ghar", "hold" => "Job on hold", "leave" => "Leave request", "order" => "Parts to order", "salary" => "Salary" }.freeze
 
   def self.for(admin)
     seen = admin.tasks_seen_at
@@ -49,6 +49,17 @@ class AdminTasks
     LeaveRequest.pending.includes(:team_member).each do |leave|
       dates = leave.from_date == leave.to_date ? leave.from_date.strftime("%d %b") : "#{leave.from_date.strftime('%d %b')} – #{leave.to_date.strftime('%d %b')}"
       list << task("leave", "#{leave.team_member.name} – #{leave.kind_label}", "#{dates} (#{leave.days} #{'day'.pluralize(leave.days)}): #{leave.reason}", leave.created_at, leave)
+    end
+
+    # the salaries of last month that are worked out but not paid yet
+    last_month = Date.current.beginning_of_month - 1.month
+    payroll = Payroll.new(last_month)
+    paid_ids = SalaryPayment.where(month: last_month).pluck(:team_member_id)
+    unpaid = TeamMember.where(active: true).where.not(monthly_salary: nil).where.not(id: paid_ids).select { |member| payroll.summary(member).earned.to_d.positive? }
+    if unpaid.any?
+      list << task("salary", "Pay the salaries of #{last_month.strftime('%B %Y')}",
+                   "#{unpaid.size} #{'employee'.pluralize(unpaid.size)} not paid yet: #{unpaid.first(3).map(&:name).to_sentence}#{' and more' if unpaid.size > 3}",
+                   Date.current.beginning_of_month.beginning_of_day, last_month)
     end
 
     lines = RequiredParts.new.order_lines

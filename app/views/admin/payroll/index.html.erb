@@ -11,7 +11,7 @@
 
 <% totals = { earned: 0, projected: 0 } %>
 <div class="table-wrap"><table>
-  <tr><th>Employee</th><th>Monthly salary</th><th class="right">Present</th><th class="right">Half</th><th class="right">Paid leave</th><th class="right">Unpaid leave</th><th class="right">Absent</th><th class="right">Payable days</th><th class="right">Salary</th><th class="right">If the rest is attended</th></tr>
+  <tr><th>Employee</th><th>Monthly salary</th><th class="right">Present</th><th class="right">Half</th><th class="right">Paid leave</th><th class="right">Unpaid leave</th><th class="right">Absent</th><th class="right">Payable days</th><th class="right">Salary</th><th class="right">If the rest is attended</th><th>Payment</th></tr>
   <% @summaries.each do |s| %>
     <% m = s.member %>
     <% totals[:earned] += s.earned.to_d; totals[:projected] += (s.projected || 0).to_d %>
@@ -32,11 +32,19 @@
       <td class="right"><b><%= format("%g", s.payable) %></b> of <%= s.working_days %></td>
       <td class="right"><b><%= s.earned ? inr(s.earned) : "no salary set" %></b></td>
       <td class="right"><%= s.complete? || !s.projected ? "—" : inr(s.projected) %></td>
+      <td>
+        <% pay = @payments[m.id] %>
+        <% if pay %>
+          <span class="badge approved">Paid <%= l pay.paid_on, format: "%d %b" %></span><br><%= link_to "Salary slip", admin_salary_payment_path(pay) %>
+        <% elsif s.earned&.positive? && @month <= Date.current.beginning_of_month %>
+          <%= link_to "Pay salary", admin_pay_salary_path(m.id, month: key.(@month)), class: "btn go" %>
+        <% else %>—<% end %>
+      </td>
     </tr>
   <% end %>
-  <% if @summaries.empty? %><tr><td colspan="10" class="muted">No team members yet.</td></tr><% end %>
+  <% if @summaries.empty? %><tr><td colspan="11" class="muted">No team members yet.</td></tr><% end %>
   <% if @summaries.any? %>
-    <tr><td colspan="8" class="right"><b>Total</b></td><td class="right"><b><%= inr(totals[:earned]) %></b></td><td class="right"><%= inr(totals[:projected]) unless @summaries.all?(&:complete?) %></td></tr>
+    <tr><td colspan="8" class="right"><b>Total</b></td><td class="right"><b><%= inr(totals[:earned]) %></b></td><td class="right"><%= inr(totals[:projected]) unless @summaries.all?(&:complete?) %></td><td><b><%= inr(@payments.values.sum(&:net_amount)) %></b><br><span class="muted small">paid</span></td></tr>
   <% end %>
 </table></div>
 

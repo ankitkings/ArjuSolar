@@ -1,0 +1,49 @@
+<% s = @summary %>
+<p><%= link_to "← Payroll", admin_payroll_path(month: @month.strftime("%Y-%m")) %></p>
+<h1>Pay salary – <%= @member.name %> <span class="muted" style="font-size:1rem">· <%= @month.strftime("%B %Y") %></span></h1>
+
+<% if s.remaining.positive? %>
+  <div class="flash alert">This month is not finished (<%= pluralize(s.remaining, "working day") %> left). The salary below is for the days worked so far. Once you pay, it is fixed for the month.</div>
+<% end %>
+
+<div class="stats">
+  <div class="stat"><b><%= format("%g", s.payable) %> / <%= s.working_days %></b><span>Payable days</span></div>
+  <div class="stat"><b><%= s.present %></b><span>Present</span></div>
+  <div class="stat"><b><%= s.half_days %></b><span>Half days</span></div>
+  <div class="stat"><b><%= s.paid_leave + s.unpaid_leave %></b><span>Leave days</span></div>
+  <div class="stat <%= 'alert' if s.absent.positive? %>"><b><%= s.absent %></b><span>Absent</span></div>
+  <div class="stat"><b><%= inr(s.earned) %></b><span>Salary for the month (of <%= inr(s.salary) %>)</span></div>
+</div>
+
+<div class="panel">
+  <% if @payment.errors.any? %><div class="flash alert"><%= @payment.errors.full_messages.to_sentence %></div><% end %>
+  <%= form_with model: @payment, url: admin_pay_salary_path(@member.id, month: @month.strftime("%Y-%m")), method: :post, scope: :salary_payment, class: "form" do |f| %>
+    <h3>Adjustments (optional)</h3>
+    <div class="filters" style="box-shadow:none;padding:0">
+      <div><%= f.label :bonus, "Bonus / allowance (₹)" %><%= f.number_field :bonus, min: 0, step: 0.01, value: format("%g", @payment.bonus.to_f), id: "bonus" %></div>
+      <div><%= f.label :bonus_note, "For" %><%= f.text_field :bonus_note, placeholder: "e.g. Diwali bonus" %></div>
+    </div>
+    <div class="filters" style="box-shadow:none;padding:0">
+      <div><%= f.label :deduction, "Deduction (₹)" %><%= f.number_field :deduction, min: 0, step: 0.01, value: format("%g", @payment.deduction.to_f), id: "deduction" %></div>
+      <div><%= f.label :deduction_note, "For" %><%= f.text_field :deduction_note, placeholder: "e.g. advance taken on 5 Oct" %></div>
+    </div>
+    <p style="font-size:1.25rem">Net salary to pay: <b id="net"><%= inr(@payment.net_amount) %></b></p>
+
+    <h3>Payment</h3>
+    <%= f.label :mode, "Paid by" %><%= f.select :mode, SalaryPayment::MODES.map { |key, label| [label, key] } %>
+    <%= f.label :reference, "Reference (UPI / transfer id, cheque no. – optional)" %><%= f.text_field :reference %>
+    <%= f.label :paid_on, "Paid on" %><%= f.date_field :paid_on, max: Date.current %>
+    <%= f.label :note, "Note (optional)" %><%= f.text_field :note %>
+    <%= f.submit "Pay & save the record", class: "btn go" %>
+  <% end %>
+</div>
+
+<script>
+  (function () {
+    var earned = <%= s.earned.to_f %>;
+    function inr(n) { return "₹" + Number(n).toLocaleString("en-IN", { maximumFractionDigits: 2 }); }
+    var bonus = document.getElementById("bonus"), deduction = document.getElementById("deduction"), net = document.getElementById("net");
+    function update() { net.textContent = inr(earned + (parseFloat(bonus.value) || 0) - (parseFloat(deduction.value) || 0)); }
+    bonus.addEventListener("input", update); deduction.addEventListener("input", update); update();
+  })();
+</script>

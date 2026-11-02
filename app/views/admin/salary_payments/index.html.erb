@@ -1,0 +1,40 @@
+<h1>Salary records</h1>
+<p class="muted">Every salary that was paid, month by month. Open a row for the salary slip, or download the list for your accountant.</p>
+
+<% if @months.any? %>
+  <div class="stats">
+    <% @months.first(4).each do |month, count, total| %>
+      <%= link_to admin_salary_payments_path(month: month.strftime("%Y-%m")), class: "stat" do %><b><%= inr(total) %></b><span><%= month.strftime("%B %Y") %> · <%= pluralize(count, "salary", "salaries") %> paid</span><% end %>
+    <% end %>
+  </div>
+<% end %>
+
+<%= form_with url: admin_salary_payments_path, method: :get, class: "filters" do %>
+  <%= month_field_tag :month, @month&.strftime("%Y-%m") %>
+  <%= select_tag :member_id, options_from_collection_for_select(@members, :id, :name, @member_id), include_blank: "All employees" %>
+  <%= submit_tag "Show", class: "btn" %>
+  <%= link_to "Clear", admin_salary_payments_path %>
+  <%= link_to "⬇ Download CSV (Excel)", admin_salary_payments_path(format: :csv, month: @month&.strftime("%Y-%m"), member_id: @member_id), class: "btn hold" %>
+<% end %>
+
+<div class="table-wrap"><table>
+  <tr><th>Month</th><th>Employee</th><th class="right">Payable days</th><th class="right">Salary</th><th class="right">Bonus</th><th class="right">Deduction</th><th class="right">Net paid</th><th>Paid by</th><th>Paid on</th><th></th></tr>
+  <% @payments.each do |p| %>
+    <tr>
+      <td><%= p.month_label %></td>
+      <td><b><%= p.member_name %></b></td>
+      <td class="right"><%= format("%g", p.payable_days) %> / <%= p.working_days %></td>
+      <td class="right"><%= inr(p.earned) %></td>
+      <td class="right"><%= p.bonus.positive? ? inr(p.bonus) : "—" %></td>
+      <td class="right"><%= p.deduction.positive? ? inr(p.deduction) : "—" %></td>
+      <td class="right"><b><%= inr(p.net_amount) %></b></td>
+      <td><%= p.mode_label %><%= "<br><span class='muted small'>#{h p.reference}</span>".html_safe if p.reference.present? %></td>
+      <td><%= l p.paid_on, format: "%d %b %Y" %></td>
+      <td><%= link_to "Salary slip", admin_salary_payment_path(p) %></td>
+    </tr>
+  <% end %>
+  <% if @payments.empty? %><tr><td colspan="10" class="muted">No salary has been paid yet. Open Payroll and press “Pay salary” next to an employee.</td></tr><% end %>
+  <% if @payments.any? %>
+    <tr><td colspan="6" class="right"><b>Total paid (shown above)</b></td><td class="right"><b><%= inr(@payments.sum(&:net_amount)) %></b></td><td colspan="3"></td></tr>
+  <% end %>
+</table></div>
