@@ -5,6 +5,22 @@ Rails.application.routes.draw do
   get "q/:token/pdf", to: "public_quotes#pdf", as: :public_quote_pdf
   get "q/:token", to: "public_quotes#show", as: :public_quote   # the client's quotation page (opened from WhatsApp)
 
+  # ----- client portal: clients log in with the e-mail they registered with -----
+  get    "portal/login", to: "portal/sessions#new", as: :portal_login
+  post   "portal/login", to: "portal/sessions#create"
+  delete "portal/logout", to: "portal/sessions#destroy", as: :portal_logout
+  get    "portal/password/forgot", to: "portal/passwords#forgot", as: :portal_forgot_password
+  post   "portal/password/forgot", to: "portal/passwords#send_reset"
+  get    "portal/password/set/:token", to: "portal/passwords#edit", as: :portal_set_password, constraints: { token: /[^\/]+/ }
+  patch  "portal/password/set/:token", to: "portal/passwords#update", constraints: { token: /[^\/]+/ }
+  get    "portal", to: "portal/dashboard#show", as: :portal_root
+  get    "portal/account", to: "portal/accounts#show", as: :portal_account
+  patch  "portal/account", to: "portal/accounts#update"
+  patch  "portal/account/password", to: "portal/accounts#change_password", as: :portal_change_password
+  resources :portal_requests, path: "portal/requests", controller: "portal/requests", only: %i[new create show] do
+    resources :issues, controller: "portal/issues", only: :create
+  end
+
   get    "admin/login",  to: "sessions#new",     as: :admin_login
   post   "admin/login",  to: "sessions#create"
   delete "admin/logout", to: "sessions#destroy", as: :admin_logout
@@ -63,6 +79,10 @@ Rails.application.routes.draw do
     delete "overdue/limits", to: "overdue#reset_limits"
     get "my_tasks", to: "my_tasks#index"
     get "my_tasks/alert", to: "my_tasks#alert", as: :my_tasks_alert
+    resources :customers, only: %i[index create edit update destroy] do
+      member { post :resend }
+      collection { patch :settings }
+    end
     resource :margins, only: %i[show update], controller: "margins"
     get "attendance", to: "attendance#index"
     post "attendance", to: "attendance#mark"
@@ -76,6 +96,9 @@ Rails.application.routes.draw do
     patch "payroll/settings", to: "payroll#settings", as: :payroll_settings
     get "payroll/:member_id", to: "payroll#show", as: :payroll_member
     patch "payroll/:member_id/salary", to: "payroll#salary", as: :payroll_salary
+    get "payroll/:member_id/pay", to: "salary_payments#new", as: :pay_salary
+    post "payroll/:member_id/pay", to: "salary_payments#create"
+    resources :salary_payments, only: %i[index show destroy]
     resources :chats, only: %i[index show new create] do
       member do
         get :poll

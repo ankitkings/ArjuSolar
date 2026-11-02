@@ -1,0 +1,46 @@
+<% p = @payment %>
+<p class="no-print"><%= link_to "← Salary records", admin_salary_payments_path %></p>
+<style>
+  .slip{max-width:760px;margin:0 auto;background:#fff;border-radius:18px;box-shadow:0 1px 2px rgba(15,23,42,.06),0 8px 24px rgba(15,23,42,.06);padding:26px 30px}
+  .slip-head{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;border-bottom:2px solid #e2e8f0;padding-bottom:12px;margin-bottom:14px}
+  .slip h2{margin:0}.slip table{width:100%;border-collapse:collapse;margin:10px 0}
+  .slip td,.slip th{padding:8px 6px;border-bottom:1px solid #f1f5f9;text-align:left}.slip .r{text-align:right}
+  .slip .net td{font-size:1.15rem;font-weight:800;border-top:2px solid #0f172a;border-bottom:0}
+  @media print{.no-print,body.admin>aside,.app-bar{display:none !important}.slip{box-shadow:none;max-width:none}}
+</style>
+<div class="slip">
+  <div class="slip-head">
+    <div><h2>Arju Solars</h2><div class="muted">Indore, Madhya Pradesh, India</div></div>
+    <div style="text-align:right"><h3 style="margin:0">SALARY SLIP</h3><div><b><%= p.month_label %></b></div></div>
+  </div>
+  <p><b>Employee:</b> <%= p.member_name %><%= " · #{p.department}" if p.department.present? %></p>
+
+  <table>
+    <tr><th>Attendance</th><th class="r">Days</th></tr>
+    <tr><td>Working days in the month</td><td class="r"><%= p.working_days %></td></tr>
+    <tr><td>Present</td><td class="r"><%= p.present_days %></td></tr>
+    <tr><td>Half days</td><td class="r"><%= p.half_days %></td></tr>
+    <tr><td>Paid leave</td><td class="r"><%= p.paid_leave_days %></td></tr>
+    <tr><td>Unpaid leave</td><td class="r"><%= p.unpaid_leave_days %></td></tr>
+    <tr><td>Absent</td><td class="r"><%= p.absent_days %></td></tr>
+    <tr><td><b>Payable days</b></td><td class="r"><b><%= format("%g", p.payable_days) %></b></td></tr>
+  </table>
+
+  <table>
+    <tr><th>Salary</th><th class="r">Amount</th></tr>
+    <tr><td>Monthly salary</td><td class="r"><%= inr(p.monthly_salary) %></td></tr>
+    <tr><td>Salary for <%= format("%g", p.payable_days) %> of <%= p.working_days %> days</td><td class="r"><%= inr(p.earned) %></td></tr>
+    <% if p.bonus.positive? %><tr><td>+ Bonus / allowance<%= " (#{p.bonus_note})" if p.bonus_note.present? %></td><td class="r"><%= inr(p.bonus) %></td></tr><% end %>
+    <% if p.deduction.positive? %><tr><td>− Deduction<%= " (#{p.deduction_note})" if p.deduction_note.present? %></td><td class="r"><%= inr(p.deduction) %></td></tr><% end %>
+    <tr class="net"><td>Net salary paid</td><td class="r"><%= inr(p.net_amount) %></td></tr>
+  </table>
+
+  <p><b>Paid on:</b> <%= l p.paid_on, format: "%d %b %Y" %> · <b>By:</b> <%= p.mode_label %><%= " · Ref: #{p.reference}" if p.reference.present? %></p>
+  <% if p.note.present? %><p><b>Note:</b> <%= p.note %></p><% end %>
+  <p class="muted small">Recorded by <%= p.paid_by || "admin" %> on <%= l p.created_at, format: "%d %b %Y" %>. This is a computer-generated salary slip.</p>
+</div>
+
+<p class="no-print" style="text-align:center;margin-top:14px">
+  <button type="button" class="btn" onclick="window.print()">Print salary slip</button>
+  <%= button_to "Undo this payment", admin_salary_payment_path(p), method: :delete, class: "btn stop", form: { style: "display:inline", onsubmit: "return confirm('Remove this payment record? The salary will show as unpaid again.')" } %>
+</p>

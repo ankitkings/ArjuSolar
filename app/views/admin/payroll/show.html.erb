@@ -14,6 +14,17 @@
   <div class="stat"><b><%= format("%g", s.payable) %> / <%= s.working_days %></b><span>Payable days</span></div>
   <div class="stat"><b><%= s.earned ? inr(s.earned) : "—" %></b><span><%= s.complete? ? "Salary" : "Salary so far" %><%= " (of #{inr(s.salary)})" if s.salary %></span></div>
 </div>
+<% pay = SalaryPayment.find_by(team_member_id: @member.id, month: @month) %>
+<div class="panel no-print">
+  <% if pay %>
+    <b>✅ Paid on <%= l pay.paid_on, format: "%d %b %Y" %></b> – <%= inr(pay.net_amount) %> by <%= pay.mode_label %> · <%= link_to "Salary slip", admin_salary_payment_path(pay) %>
+  <% elsif s.earned&.positive? && @month <= Date.current.beginning_of_month %>
+    <%= link_to "Pay the salary of #{@month.strftime('%B')}", admin_pay_salary_path(@member.id, month: @month.strftime("%Y-%m")), class: "btn go" %>
+    <span class="muted small"><%= inr(s.earned) %> before any bonus or deduction</span>
+  <% else %>
+    <span class="muted">Nothing to pay yet: set the monthly salary first, or the month has not started.</span>
+  <% end %>
+</div>
 <% if s.daily_rate %><p class="muted small">Daily rate: <%= inr(s.daily_rate.round(2)) %> (<%= inr(s.salary) %> ÷ <%= s.working_days %> working days).</p><% end %>
 
 <div class="table-wrap"><table>
@@ -29,4 +40,19 @@
       <td><%= record&.note.presence || "—" %></td>
     </tr>
   <% end %>
+</table></div>
+
+<h2>Salary payment history</h2>
+<% history = SalaryPayment.where(team_member_id: @member.id).order(month: :desc).to_a %>
+<div class="table-wrap"><table>
+  <tr><th>Month</th><th class="right">Salary</th><th class="right">Bonus</th><th class="right">Deduction</th><th class="right">Net paid</th><th>Paid by</th><th>Paid on</th><th></th></tr>
+  <% history.each do |h| %>
+    <tr>
+      <td><%= h.month_label %></td><td class="right"><%= inr(h.earned) %></td>
+      <td class="right"><%= h.bonus.positive? ? inr(h.bonus) : "—" %></td><td class="right"><%= h.deduction.positive? ? inr(h.deduction) : "—" %></td>
+      <td class="right"><b><%= inr(h.net_amount) %></b></td><td><%= h.mode_label %></td><td><%= l h.paid_on, format: "%d %b %Y" %></td>
+      <td><%= link_to "Salary slip", admin_salary_payment_path(h) %></td>
+    </tr>
+  <% end %>
+  <% if history.empty? %><tr><td colspan="8" class="muted">No salary has been paid to <%= @member.name %> yet.</td></tr><% end %>
 </table></div>

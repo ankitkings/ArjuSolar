@@ -7,6 +7,7 @@ module Admin
       @members = TeamMember.where(active: true).order(:department, :name).to_a
       @summaries = @payroll.summaries(@members)
       @setting = AttendanceSetting.current
+      @payments = SalaryPayment.where(month: @month.beginning_of_month).index_by(&:team_member_id)
     end
 
     # one employee, day by day

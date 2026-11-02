@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_01_20_000000) do
+ActiveRecord::Schema[7.1].define(version: 2026_01_23_000000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -121,6 +121,23 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_20_000000) do
     t.index ["system_key"], name: "index_chats_on_system_key", unique: true
   end
 
+  create_table "customers", force: :cascade do |t|
+    t.string "name", null: false
+    t.string "email", null: false
+    t.string "phone", null: false
+    t.string "password_digest"
+    t.datetime "password_set_at"
+    t.integer "failed_attempts", default: 0, null: false
+    t.datetime "locked_until"
+    t.datetime "last_login_at"
+    t.datetime "setup_sent_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "phone_key"
+    t.index ["email"], name: "index_customers_on_email", unique: true
+    t.index ["phone_key"], name: "index_customers_on_phone_key"
+  end
+
   create_table "installation_settings", force: :cascade do |t|
     t.integer "cutoff_hour", default: 15, null: false
     t.integer "work_end_hour", default: 19, null: false
@@ -179,6 +196,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_20_000000) do
     t.text "report"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "kind", default: "check", null: false
+    t.text "issue_details"
     t.index ["installation_id"], name: "index_maintenance_visits_on_installation_id"
     t.index ["service_request_id"], name: "index_maintenance_visits_on_service_request_id"
     t.index ["status", "due_on"], name: "index_maintenance_visits_on_status_and_due_on"
@@ -228,6 +247,12 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_20_000000) do
     t.decimal "amount_due", precision: 10, scale: 2
     t.index ["service_request_id"], name: "index_payments_on_service_request_id", unique: true
     t.index ["team_member_id"], name: "index_payments_on_team_member_id"
+  end
+
+  create_table "portal_settings", force: :cascade do |t|
+    t.integer "warranty_months", default: 60, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "quote_items", force: :cascade do |t|
@@ -307,6 +332,37 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_20_000000) do
     t.index ["team_member_id"], name: "index_request_updates_on_team_member_id"
   end
 
+  create_table "salary_payments", force: :cascade do |t|
+    t.integer "team_member_id"
+    t.string "member_name", null: false
+    t.string "department"
+    t.date "month", null: false
+    t.decimal "monthly_salary", precision: 10, scale: 2, null: false
+    t.integer "working_days", default: 0, null: false
+    t.integer "present_days", default: 0, null: false
+    t.integer "half_days", default: 0, null: false
+    t.integer "paid_leave_days", default: 0, null: false
+    t.integer "unpaid_leave_days", default: 0, null: false
+    t.integer "absent_days", default: 0, null: false
+    t.decimal "payable_days", precision: 5, scale: 1, default: "0.0", null: false
+    t.decimal "earned", precision: 10, scale: 2, null: false
+    t.decimal "bonus", precision: 10, scale: 2, default: "0.0", null: false
+    t.string "bonus_note"
+    t.decimal "deduction", precision: 10, scale: 2, default: "0.0", null: false
+    t.string "deduction_note"
+    t.decimal "net_amount", precision: 10, scale: 2, null: false
+    t.string "mode", default: "cash", null: false
+    t.string "reference"
+    t.date "paid_on", null: false
+    t.string "note"
+    t.string "paid_by"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["month"], name: "index_salary_payments_on_month"
+    t.index ["team_member_id", "month"], name: "index_salary_payments_on_team_member_id_and_month", unique: true
+    t.index ["team_member_id"], name: "index_salary_payments_on_team_member_id"
+  end
+
   create_table "service_requests", force: :cascade do |t|
     t.string "name", null: false
     t.string "phone", null: false
@@ -324,6 +380,10 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_20_000000) do
     t.string "installation_status"
     t.boolean "assigned_to_admin", default: false, null: false
     t.datetime "admin_assigned_at"
+    t.integer "customer_id"
+    t.string "phone_key"
+    t.index ["customer_id"], name: "index_service_requests_on_customer_id"
+    t.index ["phone_key"], name: "index_service_requests_on_phone_key"
     t.index ["status"], name: "index_service_requests_on_status"
     t.index ["team_member_id"], name: "index_service_requests_on_team_member_id"
   end
@@ -472,6 +532,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_20_000000) do
   add_foreign_key "request_updates", "admin_users"
   add_foreign_key "request_updates", "service_requests"
   add_foreign_key "request_updates", "team_members"
+  add_foreign_key "salary_payments", "team_members", on_delete: :nullify
+  add_foreign_key "service_requests", "customers"
   add_foreign_key "service_requests", "team_members"
   add_foreign_key "stock_movements", "catalog_items"
   add_foreign_key "stock_movements", "service_requests"
