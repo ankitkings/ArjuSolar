@@ -143,6 +143,7 @@ Rails.application.routes.draw do
     resource :subsidy, only: %i[show update], controller: "subsidy_schemes"
     resources :subsidy_applications, only: %i[index show create update]
     resources :team_members
+     get "attendance/:id", to: "attendance#show", as: :attendance_member
   end
 
   get "up" => "rails/health#show", as: :rails_health_check

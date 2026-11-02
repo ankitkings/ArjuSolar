@@ -1,5 +1,5 @@
 <% mine = message.sender_type == me.class.name && message.sender_id == me.id %>
-<div class="msg <%= 'mine' if mine %>" data-id="<%= message.id %>">
+<div class="msg <%= 'mine' if mine %> <%= 'fresh' if local_assigns[:fresh] %>" data-id="<%= message.id %>">
   <div class="bubble">
     <% unless mine %>
       <div class="who"><%= person_name(message.sender) %> <span class="muted"><%= person_subtitle(message.sender) %></span></div>
