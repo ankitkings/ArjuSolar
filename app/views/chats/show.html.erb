@@ -1,5 +1,13 @@
 <h1>Chat</h1>
 <div id="chat-open" data-chat-id="<%= @chat.id %>" hidden></div>
+<style>
+  .chat-new-divider{display:flex;align-items:center;gap:10px;margin:16px 0 10px;color:#1d4ed8;font-weight:700;font-size:.85rem}
+  .chat-new-divider::before,.chat-new-divider::after{content:"";flex:1;height:2px;border-radius:2px}
+  .chat-new-divider::before{background:linear-gradient(90deg,transparent,#3b82f6)}
+  .chat-new-divider::after{background:linear-gradient(270deg,transparent,#3b82f6)}
+  .chat-new-divider button{border:0;border-radius:99px;padding:4px 12px;background:#dbeafe;color:#1d4ed8;font-weight:700;cursor:pointer;font:inherit;font-size:.78rem}
+  .msg.fresh .bubble{box-shadow:0 0 0 2px rgba(37,99,235,.35);background:#eff6ff;transition:box-shadow .6s,background .6s}
+</style>
 <div class="chat-wrap">
   <%= render "chats/sidebar" %>
   <section class="chat-main">
@@ -16,7 +24,16 @@
     </div>
 
     <div id="messages" class="chat-messages">
-      <%= render partial: "chats/message", collection: @messages, as: :message, locals: { me: chat_user } %>
+      <% @messages.each do |message| %>
+        <% new_one = @first_unread_id && message.id >= @first_unread_id && !(message.sender_type == chat_user.class.name && message.sender_id == chat_user.id) %>
+        <% if message.id == @first_unread_id %>
+          <div class="chat-new-divider" id="first-unread">
+            <span>⬇ <%= pluralize(@unread_total, "new message") %> since you last read</span>
+            <button type="button" id="jump-latest">Jump to latest ↓</button>
+          </div>
+        <% end %>
+        <%= render partial: "chats/message", locals: { message: message, me: chat_user, fresh: new_one } %>
+      <% end %>
       <% if @messages.empty? %><p class="muted" id="empty-note">No messages yet – say hello!</p><% end %>
     </div>
 
@@ -45,7 +62,19 @@
       list.insertAdjacentHTML("beforeend", m.html);
       lastId = m.id;
     }
-    toBottom();
+
+    // open where the person stopped reading (the "new messages" line), otherwise at the latest message
+    var divider = document.getElementById("first-unread");
+    if (divider) {
+      list.scrollTop = Math.max(divider.offsetTop - list.offsetTop - 12, 0);
+      var jump = document.getElementById("jump-latest");
+      if (jump) jump.addEventListener("click", toBottom);
+      setTimeout(function () {                 // the blue highlight fades after a while; the line stays
+        document.querySelectorAll(".msg.fresh").forEach(function (el) { el.classList.remove("fresh"); });
+      }, 20000);
+    } else {
+      toBottom();
+    }
 
     // new messages from other people appear every few seconds
     setInterval(function () {
