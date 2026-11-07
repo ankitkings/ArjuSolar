@@ -7,9 +7,9 @@
 name: "Ruby on Rails CI"
 on:
   push:
-    branches: [ "arju-solar-first-phase" ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ "arju-solar-first-phase" ]
+    branches: [ "main" ]
 jobs:
   test:
     runs-on: ubuntu-latest
