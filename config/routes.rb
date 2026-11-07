@@ -89,6 +89,7 @@ Rails.application.routes.draw do
     resource :margins, only: %i[show update], controller: "margins"
     get "attendance", to: "attendance#index"
     post "attendance", to: "attendance#mark"
+    get "attendance/:id", to: "attendance#show", as: :attendance_member
     resources :leave_requests, only: :index do
       member do
         patch :approve
