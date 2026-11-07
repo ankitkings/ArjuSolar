@@ -1,0 +1,15 @@
+<% content_for(:title, "Client login") %>
+<%= render "portal/shared/styles" %>
+<div class="pt pt-narrow">
+  <div class="pt-card">
+    <h1>Client login</h1>
+    <p class="pt-muted">Log in with the e-mail address we created your account for.</p>
+    <%= form_with url: portal_login_path, method: :post, class: "form" do %>
+      <%= label_tag :email, "E-mail address" %><%= email_field_tag :email, params[:email], required: true, autocomplete: "email" %>
+      <%= label_tag :password, "Password" %><%= password_field_tag :password, nil, required: true, autocomplete: "current-password" %>
+      <%= submit_tag "Log in", class: "btn" %>
+    <% end %>
+    <p class="pt-muted"><%= link_to "Forgot password?", portal_forgot_password_path %></p>
+    <p class="pt-muted">Do not have an account yet? We create it for you when you contact us – call <%= link_to (site_phone || "our office"), (site_phone_href || contact_path) %>. You will get an e-mail with a link to choose your password.</p>
+  </div>
+</div>

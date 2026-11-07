@@ -1,0 +1,105 @@
+<% r = @service_request %>
+<% content_for(:title, "Request ##{r.id}") %>
+<%= render "portal/shared/styles" %>
+<div class="pt">
+  <%= render "portal/shared/nav" %>
+  <p><%= link_to "← My portal", portal_root_path %></p>
+  <h1>Request #<%= r.id %> <span class="pt-chip <%= r.status == 'cancelled' ? 'red' : (r.status == 'completed' ? 'green' : 'blue') %>"><%= r.status == "cancelled" ? "Closed" : PortalStatus.title(r.status) %></span></h1>
+  <p class="pt-muted">Sent on <%= l r.created_at, format: "%d %b %Y" %> · <%= r.address %></p>
+
+  <% if r.status == "cancelled" %>
+    <div class="pt-card"><h3>This request was closed</h3><p>If you would like to go ahead, please <%= link_to "send a new request", new_portal_request_path %> or phone us on <%= link_to (site_phone || "our office"), (site_phone_href || contact_path) %>.</p></div>
+  <% else %>
+    <div class="pt-card">
+      <h2>Where is my request?</h2>
+      <div class="pt-bar"><i style="width:<%= r.progress %>%"></i></div>
+      <p class="pt-muted"><%= r.progress %>% complete<%= " · your contact: #{r.team_member.name}" if r.team_member %></p>
+      <ul class="pt-steps">
+        <% track = PortalStatus.track %>
+        <% current = track.index(r.status) %>
+        <% track.each_with_index do |st, i| %>
+          <% state = current && i < current ? "done" : (i == current ? "now" : "todo") %>
+          <li class="<%= state %>">
+            <span class="pt-dot"><%= state == "done" ? "✓" : i + 1 %></span>
+            <div>
+              <b><%= PortalStatus.title(st) %></b>
+              <small><%= PortalStatus.text(st) %></small>
+              <% if @reached[st] %><small style="display:block"><%= l @reached[st], format: "%d %b %Y" %></small><% end %>
+            </div>
+          </li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <% if @quote %>
+    <div class="pt-card">
+      <h3>Your quotation</h3>
+      <p><b><%= @quote.number %></b> · <%= inr(@quote.total) %> · valid until <%= l @quote.valid_until, format: "%d %b %Y" %></p>
+      <%= link_to "Open quotation", public_quote_path(@quote.ensure_public_token!), class: "pt-btn blue", target: "_blank", rel: "noopener" %>
+    </div>
+  <% end %>
+
+  <% if r.payment && r.payment.amount_due %>
+    <div class="pt-card">
+      <h3>Payment</h3>
+      <table>
+        <tr><td>Total amount</td><td><b><%= inr(r.payment.amount_due) %></b></td></tr>
+        <tr><td>Paid so far</td><td><%= inr(r.payment.amount_paid) %></td></tr>
+        <tr><td>Balance</td><td><b><%= inr(r.payment.balance) %></b></td></tr>
+      </table>
+      <p class="pt-muted">You pay at our office or to our cashier. Please phone us for any question about payment.</p>
+    </div>
+  <% end %>
+
+  <% if @installation %>
+    <div class="pt-card">
+      <h3>Your solar system</h3>
+      <p>☀️ <b><%= format("%g", @installation.capacity_kw.to_f) %> kW</b><%= " · #{@installation.panel_count} panels" if @installation.panel_count %><%= " · #{@installation.panel_brand}" if @installation.panel_brand.present? %><%= " · inverter #{@installation.inverter_model}" if @installation.inverter_model.present? %></p>
+      <p class="pt-muted">Installed on <%= l @installation.installed_on, format: "%d %b %Y" %><%= " at #{@installation.site_address}" if @installation.site_address.present? %></p>
+      <% if Warranty.active?(@installation) %>
+        <p><span class="pt-chip green">Under warranty until <%= l Warranty.ends_on(@installation), format: "%d %b %Y" %></span> <span class="pt-muted">(<%= pluralize(Warranty.days_left(@installation), "day") %> left)</span></p>
+      <% else %>
+        <p><span class="pt-chip">Warranty ended on <%= l Warranty.ends_on(@installation), format: "%d %b %Y" %></span></p>
+      <% end %>
+    </div>
+
+    <div class="pt-card" id="issue">
+      <h3>🛠️ Is something wrong with your system?</h3>
+      <% if Warranty.active?(@installation) %>
+        <p class="pt-muted">Tell us the problem and we will send an engineer to your site to check it. This is free during the warranty.</p>
+        <% if @issues.any? { |v| %w[scheduled assigned].include?(v.status) } %>
+          <div class="pt-ok">A visit for your issue is already planned. Our team will come soon.</div>
+        <% else %>
+          <%= form_with url: portal_request_issues_path(r), method: :post, class: "form" do %>
+            <%= label_tag :details, "What is the problem?" %>
+            <%= text_area_tag :details, nil, rows: 4, required: true, minlength: 10, maxlength: 1000, placeholder: "For example: the inverter shows a red light, generation is very low since last week …" %>
+            <%= label_tag :preferred_on, "When should we visit? (we try to come on or after this day)" %>
+            <%= date_field_tag :preferred_on, Date.current + 1, min: Date.current, max: Date.current + 14 %>
+            <%= submit_tag "Ask for a site visit", class: "btn" %>
+          <% end %>
+        <% end %>
+      <% else %>
+        <p>The warranty ended on <%= l Warranty.ends_on(@installation), format: "%d %b %Y" %>. You can still phone us on <%= link_to (site_phone || "our office"), (site_phone_href || contact_path) %> for service.</p>
+      <% end %>
+
+      <% if @issues.any? %>
+        <h4>Earlier issues</h4>
+        <table>
+          <tr><th>Reported</th><th>Problem</th><th>Visit</th></tr>
+          <% @issues.each do |v| %>
+            <tr>
+              <td><%= l v.created_at, format: "%d %b %Y" %></td>
+              <td><%= v.issue_details.to_s.truncate(120) %></td>
+              <td>
+                <% if v.status == "done" %><span class="pt-chip green">Visit done</span>
+                <% elsif v.status == "assigned" %><span class="pt-chip blue">Engineer assigned<%= " – #{v.team_member.name}" if v.team_member %></span>
+                <% else %><span class="pt-chip amber">Asked for <%= l v.due_on, format: "%d %b" %></span><% end %>
+              </td>
+            </tr>
+          <% end %>
+        </table>
+      <% end %>
+    </div>
+  <% end %>
+</div>

@@ -1,51 +1,117 @@
-<section class="hero"><div class="wrap">
-  <h1>Powering Your Future</h1>
-  <p>Affordable, clean &amp; efficient solar energy solutions for homes &amp; businesses.</p>
-  <%= link_to "Get a Free Quote", contact_path, class: "btn" %>
-</div></section>
+<% installed = Installation.on_website.count %>
+<% kilowatts = Installation.on_website.sum(:capacity_kw).to_f %>
 
-<section class="wrap">
-  <h2>Why Choose Arju Solars</h2>
-  <div class="grid">
-    <div class="card"><h4>High Efficiency Panels</h4><p>We install premium-grade solar panels with proven performance and warranties.</p></div>
-    <div class="card"><h4>Professional Installation</h4><p>Certified technicians and safe, timely installations with full documentation.</p></div>
-    <div class="card"><h4>Service &amp; Support</h4><p>AMC, monitoring and fast on-site support to keep your system optimal.</p></div>
+<section class="s-hero" style="--hero: url('<%= SiteImages::HERO %>')">
+  <div class="s-wrap">
+    <% if site_setting.hero_eyebrow.present? %><span class="s-pill"><%= site_setting.hero_eyebrow %></span><% end %>
+    <h1><%= highlighted(site_setting.hero_title) %></h1>
+    <% if site_setting.hero_subtitle.present? %><p class="lead"><%= site_setting.hero_subtitle %></p><% end %>
+    <div class="s-hero-actions">
+      <%= link_to "Get a free quote", contact_path, class: "s-btn sun big" %>
+      <%= link_to "See solar systems & prices", systems_path, class: "s-btn ghost big" %>
+    </div>
+    <div class="s-hero-trust"><span>✔ Free site visit</span><span>✔ Subsidy assistance</span><span>✔ Service &amp; AMC</span><span>✔ Clear, itemised quotation</span></div>
+  </div>
+  <svg class="s-wave" viewBox="0 0 1440 70" preserveAspectRatio="none" aria-hidden="true"><path d="M0,40 C240,80 480,0 720,30 C960,60 1200,70 1440,20 L1440,70 L0,70 Z" fill="currentColor"/></svg>
+</section>
+
+<% if site_setting.show_stats %>
+<section class="s-stats">
+  <div class="s-wrap">
+    <div class="s-stats-in reveal">
+      <div class="s-stat"><b><%= installed.positive? ? installed : "Free" %></b><span><%= installed.positive? ? "Projects completed" : "Site visit & estimate" %></span></div>
+      <div class="s-stat"><b><%= kilowatts.positive? ? "#{format('%g', kilowatts.round(1))} kW" : "Subsidy" %></b><span><%= kilowatts.positive? ? "Solar capacity installed" : "PM Surya Ghar help" %></span></div>
+      <div class="s-stat"><b>AMC</b><span>Service &amp; maintenance after installation</span></div>
+      <% if site_setting.office_hours.present? %><div class="s-stat"><b>Open</b><span><%= site_setting.office_hours %></span></div><% end %>
+    </div>
   </div>
 </section>
+<% end %>
 
-<section class="wrap">
-  <h2>How it works</h2>
-  <div class="steps">
-    <div class="step"><b>1</b><h4>Free consultation</h4><p>Tell us about your home or business. Our contact person calls you.</p></div>
-    <div class="step"><b>2</b><h4>Site visit &amp; quote</h4><p>We inspect your roof and give you a clear quotation.</p></div>
-    <div class="step"><b>3</b><h4>Installation</h4><p>Our installation team fits your system safely and on time.</p></div>
-    <div class="step"><b>4</b><h4>Start-up</h4><p>After payment, our servicing team starts your panels and gives the final touch.</p></div>
-    <div class="step"><b>5</b><h4>Care</h4><p>Maintenance checks after 15 days and 2 months, and servicing whenever you need it.</p></div>
+<% if site_setting.show_why %>
+<section class="s-section">
+  <div class="s-wrap">
+    <div class="s-head center reveal"><span class="s-eyebrow">Why <%= site_setting.company_name %></span><h2>Solar done properly, from the first call</h2><p>One team looks after your system from the site visit to the years of service that follow.</p></div>
+    <div class="s-grid c4">
+      <div class="s-card reveal"><div class="s-icon sun">⚡</div><h3>High-efficiency panels</h3><p>Quality panels and inverters with proven performance and warranties.</p></div>
+      <div class="s-card reveal"><div class="s-icon">🛠️</div><h3>Professional installation</h3><p>Trained installers, safe work and clear documentation of what was fitted.</p></div>
+      <div class="s-card reveal"><div class="s-icon green">🏛️</div><h3>Subsidy made easy</h3><p>We help with the PM Surya Ghar subsidy: documents, application and follow-up.</p></div>
+      <div class="s-card reveal"><div class="s-icon">🔧</div><h3>Service you can count on</h3><p>Scheduled maintenance checks and quick support after your system is installed.</p></div>
+    </div>
   </div>
 </section>
-
-<% if @packages.any? %>
-  <section class="wrap">
-    <h2>Our Systems <%= link_to "See all systems", systems_path, class: "small-link" %></h2>
-    <div class="grid"><% @packages.each do |package| %><%= render "pages/system_card", package: package %><% end %></div>
-  </section>
 <% end %>
 
-<section class="wrap">
-  <h2>Our Services <%= link_to "See all services", services_path, class: "small-link" %></h2>
-  <%= render "pages/service_cards" %>
+<% if site_setting.show_services %>
+<section class="s-section soft">
+  <div class="s-wrap">
+    <div class="s-head reveal"><span class="s-eyebrow">What we do</span><h2>Our services</h2><p>Whatever the size of your roof or your business, we have a solar solution for it.</p></div>
+    <%= render "pages/service_cards" %>
+    <p style="margin-top:26px"><%= link_to "See all services →", services_path, class: "s-btn line" %></p>
+  </div>
 </section>
-
-<% if @projects.any? %>
-  <section class="wrap">
-    <h2>Recent Projects <%= link_to "See all projects", projects_path, class: "small-link" %></h2>
-    <div class="grid"><% @projects.each do |project| %><%= render "pages/project_card", project: project %><% end %></div>
-  </section>
 <% end %>
 
-<section class="cta"><div class="wrap">
-  <h2>Ready to go solar?</h2>
-  <p>Call us or send a WhatsApp message for a site visit &amp; free estimate.</p>
-  <%= link_to "Call ", "tel:", class: "btn" %>
-  <%= link_to "WhatsApp", "https://wa.me/", class: "btn alt", target: "_blank", rel: "noopener noreferrer" %>
-</div></section>
+<% if site_setting.show_systems && @packages.present? && @packages.any? %>
+<section class="s-section">
+  <div class="s-wrap">
+    <div class="s-head reveal"><span class="s-eyebrow">Ready-to-install systems</span><h2>Choose a solar system</h2><p>Clear package prices, with the subsidy already worked out for homes.</p></div>
+    <div class="s-grid c3"><% @packages.each do |package| %><%= render "pages/system_card", package: package %><% end %></div>
+    <p style="margin-top:26px"><%= link_to "All systems & subsidy details →", systems_path, class: "s-btn line" %></p>
+  </div>
+</section>
+<% end %>
+
+<% if site_setting.show_how %>
+<section class="s-section dark">
+  <div class="s-wrap">
+    <div class="s-head center reveal"><span class="s-eyebrow">How it works</span><h2>From enquiry to free electricity</h2><p>A simple path, with a clear quotation and a named person to call at every step.</p></div>
+    <div class="s-steps">
+      <div class="s-step reveal"><h4>Tell us</h4><p>Call, WhatsApp or send the form. We call you back and understand what you need.</p></div>
+      <div class="s-step reveal"><h4>Free site visit</h4><p>Our engineer checks your roof and electricity use, then plans the right size.</p></div>
+      <div class="s-step reveal"><h4>Clear quotation</h4><p>You get an itemised quotation with the subsidy shown, to read in peace.</p></div>
+      <div class="s-step reveal"><h4>Installation</h4><p>Your system is fitted by our installers with all parts reserved in advance.</p></div>
+      <div class="s-step reveal"><h4>Start-up &amp; care</h4><p>We start the system, give the final touch and keep checking it afterwards.</p></div>
+    </div>
+  </div>
+</section>
+<% end %>
+
+<% if site_setting.show_projects && @projects.present? && @projects.any? %>
+<section class="s-section">
+  <div class="s-wrap">
+    <div class="s-head reveal"><span class="s-eyebrow">Our work</span><h2>Recent installations</h2><p>Real systems, photographed by our installers on site.</p></div>
+    <div class="s-grid c3"><% @projects.each do |project| %><%= render "pages/project_card", project: project %><% end %></div>
+    <p style="margin-top:26px"><%= link_to "See all projects →", projects_path, class: "s-btn line" %></p>
+  </div>
+</section>
+<% end %>
+
+<% faqs = FaqItem.active.listed.to_a %>
+<% if site_setting.show_faq && faqs.any? %>
+<section class="s-section soft">
+  <div class="s-wrap">
+    <div class="s-head center reveal"><span class="s-eyebrow">Questions</span><h2>Good to know</h2></div>
+    <div class="s-faq reveal">
+      <% faqs.each do |item| %>
+        <details><summary><%= item.question %></summary><p><%= item.answer %></p></details>
+      <% end %>
+    </div>
+  </div>
+</section>
+<% end %>
+
+<section class="s-section soft">
+  <div class="s-wrap">
+    <div class="s-cta reveal">
+      <h2>Ready to go solar?</h2>
+      <p>Call us or send a WhatsApp message for a free site visit and estimate.</p>
+      <div class="s-hero-actions">
+        <% phone = site_contacts("phone").first; whatsapp = site_contacts("whatsapp").first || phone %>
+        <% if phone %><%= link_to "📞 Call #{phone.value}", phone.href, class: "s-btn sun big" %><% end %>
+        <% if whatsapp %><%= link_to "💬 WhatsApp", "https://wa.me/#{whatsapp.full_number}", class: "s-btn ghost big", target: "_blank", rel: "noopener noreferrer" %><% end %>
+        <%= link_to "Get a free quote", contact_path, class: "s-btn #{phone ? 'ghost' : 'sun'} big" %>
+      </div>
+    </div>
+  </div>
+</section>

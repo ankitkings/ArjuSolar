@@ -10,7 +10,7 @@
 </style>
 <div class="slip">
   <div class="slip-head">
-    <div><h2>Arju Solars</h2><div class="muted">Indore, Madhya Pradesh, India</div></div>
+    <div><h2><%= site_setting.company_name %></h2><% if (office = site_contacts("address").first) %><div class="muted"><%= office.value %></div><% end %></div>
     <div style="text-align:right"><h3 style="margin:0">SALARY SLIP</h3><div><b><%= p.month_label %></b></div></div>
   </div>
   <p><b>Employee:</b> <%= p.member_name %><%= " · #{p.department}" if p.department.present? %></p>

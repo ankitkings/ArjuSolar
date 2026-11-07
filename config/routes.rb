@@ -79,6 +79,9 @@ Rails.application.routes.draw do
     delete "overdue/limits", to: "overdue#reset_limits"
     get "my_tasks", to: "my_tasks#index"
     get "my_tasks/alert", to: "my_tasks#alert", as: :my_tasks_alert
+    resource :website, only: %i[show update], controller: "website"
+    resources :contact_entries, only: %i[create update destroy]
+    resources :faq_items, only: %i[create update destroy]
     resources :customers, only: %i[index create edit update destroy] do
       member { post :resend }
       collection { patch :settings }
@@ -143,7 +146,6 @@ Rails.application.routes.draw do
     resource :subsidy, only: %i[show update], controller: "subsidy_schemes"
     resources :subsidy_applications, only: %i[index show create update]
     resources :team_members
-     get "attendance/:id", to: "attendance#show", as: :attendance_member
   end
 
   get "up" => "rails/health#show", as: :rails_health_check

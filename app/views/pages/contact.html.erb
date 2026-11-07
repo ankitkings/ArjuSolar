@@ -1,27 +1,43 @@
-<section class="wrap"><h1>Contact Us</h1>
-  <p>Reach out for a site visit or free consultation.</p>
-  <div class="two-col">
-    <div>
-      <h3>Get in touch</h3>
-      <p><strong>Phone:</strong> <%= link_to "+91 7049465926", "tel:+917049465926" %></p>
-      <p><strong>Email:</strong> ankitparmar5035582@gmail.com</p>
-      <p><strong>Address:</strong> Indore, Madhya Pradesh, India</p>
-      <h4>Office Hours</h4><p>Mon - Sat: 9:00 AM - 6:00 PM</p>
-    </div>
-    <div>
-      <h3>Request a quote</h3>
-      <% if @service_request.errors.any? %>
-        <div class="flash alert"><%= @service_request.errors.full_messages.to_sentence %></div>
-      <% end %>
-      <%= form_with model: @service_request, url: service_requests_path, class: "form" do |f| %>
-        <div style="position:absolute;left:-9999px" aria-hidden="true"><%= text_field_tag :website, nil, tabindex: -1, autocomplete: "off" %></div>
-        <%= f.label :name %><%= f.text_field :name, required: true, maxlength: 100 %>
-        <%= f.label :phone %><%= f.telephone_field :phone, required: true %>
-        <%= f.label :email %><%= f.email_field :email %>
-        <%= f.label :address, "Address (where the solar system will be installed)" %><%= f.text_area :address, rows: 2, required: true, maxlength: 500 %>
-        <%= f.label :message %><%= f.text_area :message, rows: 4, maxlength: 2000 %>
-        <%= f.submit "Send Request", class: "btn" %>
-      <% end %>
+<% content_for(:title, "Contact us") %>
+<section class="s-page-hero"><div class="s-wrap"><h1>Contact Us</h1><p>Reach out for a free site visit and a clear quotation.</p></div></section>
+
+<section class="s-section">
+  <div class="s-wrap">
+    <div class="s-contact">
+      <div class="s-info reveal">
+        <% site_contacts("phone").each do |e| %>
+          <a class="item" href="<%= e.href %>"><span class="s-icon sun">📞</span><span><small><%= e.label || "Call us" %></small><b><%= e.value %></b></span></a>
+        <% end %>
+        <% site_contacts("whatsapp").each do |e| %>
+          <a class="item" href="<%= e.href %>" target="_blank" rel="noopener noreferrer"><span class="s-icon green">💬</span><span><small><%= e.label || "WhatsApp" %></small><b><%= e.value %></b></span></a>
+        <% end %>
+        <% site_contacts("email").each do |e| %>
+          <a class="item" href="<%= e.href %>"><span class="s-icon">✉️</span><span><small><%= e.label || "E-mail" %></small><b><%= e.value %></b></span></a>
+        <% end %>
+        <% site_contacts("address").each do |e| %>
+          <div class="item"><span class="s-icon">📍</span><span><small><%= e.label || "Visit us" %></small><b><%= e.value %></b></span></div>
+        <% end %>
+        <% if site_setting.office_hours.present? %>
+          <div class="item"><span class="s-icon sun">🕘</span><span><small>Office hours</small><b><%= site_setting.office_hours %></b></span></div>
+        <% end %>
+      </div>
+
+      <div class="s-card s-form-card reveal">
+        <h3>Request a free quote</h3>
+        <p>Tell us where you want solar. We will call you to plan the site visit.</p>
+        <% if @service_request.errors.any? %>
+          <div class="flash alert" style="width:auto;margin:0 0 10px"><%= @service_request.errors.full_messages.to_sentence %></div>
+        <% end %>
+        <%= form_with model: @service_request, url: service_requests_path, class: "form" do |f| %>
+          <div style="position:absolute;left:-9999px" aria-hidden="true"><%= text_field_tag :website, nil, tabindex: -1, autocomplete: "off" %></div>
+          <%= f.label :name, "Your name" %><%= f.text_field :name, required: true, maxlength: 100 %>
+          <%= f.label :phone, "Mobile number" %><%= f.telephone_field :phone, required: true %>
+          <%= f.label :email, "E-mail (optional)" %><%= f.email_field :email %>
+          <%= f.label :address, "Address (where the solar system will be installed)" %><%= f.text_area :address, rows: 2, required: true, maxlength: 500 %>
+          <%= f.label :message, "Message" %><%= f.text_area :message, rows: 4, maxlength: 2000 %>
+          <%= f.submit "Send request", class: "btn" %>
+        <% end %>
+      </div>
     </div>
   </div>
 </section>

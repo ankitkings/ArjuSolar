@@ -1,12 +1,35 @@
-<section class="wrap"><h1>About Arju Solars</h1>
-  <div class="two-col">
-    <div>
-      <p>Arju Solars provides affordable, clean and efficient solar energy solutions for homes and businesses across Central India, from our base in Indore, Madhya Pradesh.</p>
-      <p>We look after the whole journey ourselves: a free consultation, a site visit with a clear quotation, professional installation, start-up of your system, and maintenance checks afterwards.</p>
-      <h3>Our team</h3>
-      <p>Contact persons, site visitors, installers, servicing technicians and a cashier team – each department handles its own part so nothing gets lost. <%= link_to "Meet the team", team_path %>.</p>
-      <p><%= link_to "Get a free quote", contact_path, class: "btn" %></p>
+<% content_for(:title, "About us") %>
+<section class="s-page-hero"><div class="s-wrap"><h1>About <%= site_setting.company_name %></h1><p>A solar company from Indore, serving homes and businesses across Central India.</p></div></section>
+
+<section class="s-section">
+  <div class="s-wrap">
+    <div class="s-about">
+      <div class="photo reveal"><%= image_tag SiteImages::ABOUT, alt: "The #{site_setting.company_name} team at work", loading: "lazy" %></div>
+      <div class="reveal">
+        <span class="s-eyebrow">Our story</span>
+        <h2><%= site_setting.about_title.presence || "About us" %></h2>
+        <%= simple_format(h(site_setting.about_text)) %>
+        <ul class="s-checks">
+          <li>Free site visit and a clear, itemised quotation</li>
+          <li>Help with the PM Surya Ghar subsidy for homes</li>
+          <li>Installation by our own trained team</li>
+          <li>Scheduled maintenance checks and quick support</li>
+        </ul>
+        <p style="margin-top:24px"><%= link_to "Meet our team", team_path, class: "s-btn" %></p>
+      </div>
     </div>
-    <div><%= image_tag SiteImages::ABOUT, alt: "Solar panels in a solar park", loading: "lazy", style: "width:100%;border-radius:12px" %></div>
   </div>
 </section>
+
+<section class="s-section soft">
+  <div class="s-wrap">
+    <div class="s-head center reveal"><span class="s-eyebrow">What we stand for</span><h2>Our promise to you</h2></div>
+    <div class="s-grid c3">
+      <div class="s-card reveal"><div class="s-icon">🤝</div><h3>Honest advice</h3><p>We size your system to your real electricity use, not to the biggest sale.</p></div>
+      <div class="s-card reveal"><div class="s-icon sun">🔍</div><h3>Clear paperwork</h3><p>Itemised quotations, numbered receipts and a record of what was installed.</p></div>
+      <div class="s-card reveal"><div class="s-icon green">🌱</div><h3>Long-term care</h3><p>Service and maintenance are part of the job, not an afterthought.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="s-section soft"><div class="s-wrap"><div class="s-cta reveal"><h2>Let's plan your solar system</h2><p>Tell us about your home or business and we will visit for free.</p><div class="s-hero-actions"><%= link_to "Contact us", contact_path, class: "s-btn sun big" %></div></div></div></section>

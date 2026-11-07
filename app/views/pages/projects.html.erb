@@ -1,8 +1,14 @@
-<section class="wrap"><h1>Our Projects</h1>
-  <p>Real installations completed by our team, with photos taken on site.</p>
-  <% if @projects.any? %>
-    <div class="grid"><% @projects.each do |project| %><%= render "pages/project_card", project: project %><% end %></div>
-  <% else %>
-    <p class="muted">Photos of our completed installations will appear here. <%= link_to "Get your own solar system", contact_path %>.</p>
-  <% end %>
+<% content_for(:title, "Projects") %>
+<section class="s-page-hero"><div class="s-wrap"><h1>Our Projects</h1><p>Real installations by our team, with the photos our installers took on site.</p></div></section>
+
+<section class="s-section">
+  <div class="s-wrap">
+    <% if @projects.any? %>
+      <div class="s-grid c3"><% @projects.each do |project| %><%= render "pages/project_card", project: project %><% end %></div>
+    <% else %>
+      <div class="s-card"><h3>Our first projects will appear here</h3><p>Every completed installation is added with its photos. Meanwhile you are welcome to <%= link_to "ask for a free site visit", contact_path %>.</p></div>
+    <% end %>
+  </div>
 </section>
+
+<section class="s-section soft"><div class="s-wrap"><div class="s-cta reveal"><h2>Your roof could be next</h2><p>Tell us where you are and we will plan your system.</p><div class="s-hero-actions"><%= link_to "Get a free quote", contact_path, class: "s-btn sun big" %></div></div></div></section>

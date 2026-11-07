@@ -1,0 +1,25 @@
+<%# The Arju Solars logo: a sun rising over a solar panel. uid keeps the gradient names unique when it is shown twice on a page. %>
+<svg class="s-mark" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="mk-bg-<%= uid %>" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1e40af"/><stop offset="1" stop-color="#0b1224"/></linearGradient>
+    <radialGradient id="mk-sun-<%= uid %>" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#fffbe0"/><stop offset=".5" stop-color="#fbbf24"/><stop offset="1" stop-color="#f59e0b"/></radialGradient>
+    <linearGradient id="mk-panel-<%= uid %>" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#60a5fa"/><stop offset="1" stop-color="#1d4ed8"/></linearGradient>
+    <clipPath id="mk-clip-<%= uid %>"><rect width="48" height="48" rx="14"/></clipPath>
+  </defs>
+  <g clip-path="url(#mk-clip-<%= uid %>)">
+    <rect width="48" height="48" fill="url(#mk-bg-<%= uid %>)"/>
+    <circle cx="24" cy="21" r="15" fill="#fbbf24" opacity=".16"/>
+    <g class="rays" stroke="#fde68a" stroke-width="2.2" stroke-linecap="round">
+      <line x1="24" y1="4.5" x2="24" y2="8.5"/><line x1="24" y1="33.5" x2="24" y2="37.5"/>
+      <line x1="6.5" y1="21" x2="10.5" y2="21"/><line x1="37.5" y1="21" x2="41.5" y2="21"/>
+      <line x1="11.6" y1="8.6" x2="14.4" y2="11.4"/><line x1="33.6" y1="30.6" x2="36.4" y2="33.4"/>
+      <line x1="36.4" y1="8.6" x2="33.6" y2="11.4"/><line x1="14.4" y1="30.6" x2="11.6" y2="33.4"/>
+    </g>
+    <circle cx="24" cy="21" r="8.2" fill="url(#mk-sun-<%= uid %>)"/>
+    <path d="M2 48 L10 33 H38 L46 48 Z" fill="url(#mk-panel-<%= uid %>)"/>
+    <g stroke="#dbeafe" stroke-width=".9" opacity=".75" fill="none">
+      <path d="M10 33 L6.4 40.5 M38 33 L41.6 40.5 M17 33 L14.2 48 M24 33 V48 M31 33 L33.8 48"/><path d="M5 40.5 H43"/>
+    </g>
+    <path d="M10 33 H38" stroke="#fde68a" stroke-width="1.6" stroke-linecap="round"/>
+  </g>
+</svg>

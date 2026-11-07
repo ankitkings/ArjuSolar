@@ -67,7 +67,7 @@ body.admin .app-bar {
 }
 
 /* ---------- headings ---------- */
-body.admin main h1 { font-size: 1.75rem; letter-spacing: -.02em; color: var(--m-ink); }
+body.admin main h1 { font-size: 1.75rem; letter-spacing: -.02em; color: #d4a115; }
 body.admin main h1::after {
   content: ""; display: block; width: 54px; height: 4px; border-radius: 4px; margin-top: 8px;
   background: linear-gradient(90deg, #f59e0b, #fbbf24);

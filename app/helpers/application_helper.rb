@@ -131,9 +131,17 @@ module ApplicationHelper
 
   # marks the menu entry of the page you are on
   def modern_theme_script
-    javascript_tag(<<~'JS')
+    javascript_tag("window.PORTAL_LABEL = #{(session[:customer_id] ? 'My portal' : 'Client login').to_json};\n" + <<~'JS')
       document.addEventListener("DOMContentLoaded", function () {
-        if (!document.body.classList.contains("admin")) return;
+        if (!document.body.classList.contains("admin")) {
+          var nav = document.querySelector("header.site-header nav");
+          if (nav && !nav.querySelector(".portal-link")) {
+            var portal = document.createElement("a");
+            portal.href = "/portal"; portal.className = "portal-link"; portal.textContent = window.PORTAL_LABEL || "Client login";
+            nav.appendChild(portal);
+          }
+          return;
+        }
         var path = location.pathname.replace(/\/$/, "") || "/", best = null, bestLength = 0;
         document.querySelectorAll("body.admin > aside a[href]").forEach(function (link) {
           var target = (link.getAttribute("href") || "").split("?")[0].replace(/\/$/, "");
@@ -143,5 +151,22 @@ module ApplicationHelper
         if (best) best.classList.add("active");
       });
     JS
+  end
+
+  # ----- the website content the admin can change (Admin > Website) -----
+  def site_setting = (@_site_setting ||= SiteSetting.current)
+
+  # the active entries of one kind (phone / whatsapp / email / address), main one first
+  def site_contacts(kind)
+    @_site_contacts ||= ContactEntry.active.listed.to_a
+    @_site_contacts.select { |entry| entry.kind == kind }
+  end
+
+  def site_phone = site_contacts("phone").first&.value
+  def site_phone_href = site_contacts("phone").first&.href
+
+  # "Powering *your future* with the sun": the words between stars shine in gold
+  def highlighted(text)
+    ERB::Util.html_escape(text.to_s).to_str.gsub(/\*(.+?)\*/, '<em>\1</em>').html_safe
   end
 end

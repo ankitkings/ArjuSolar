@@ -1,15 +1,14 @@
-<% services = [
-  ["Residential Rooftop Solar", SiteImages::RESIDENTIAL, "Rooftop solar for homes and shops – from roof inspection and system sizing to installation. Subsidy assistance included."],
-  ["Commercial & Industrial", SiteImages::COMMERCIAL, "Scalable solar projects for businesses, with performance contracts and monitoring."],
-  ["Installation & Commissioning", SiteImages::INSTALLATION, "Certified technicians and safe, timely installations with full documentation. Our servicing team starts your system and gives the final touch."],
-  ["Maintenance & AMC", SiteImages::MAINTENANCE, "Scheduled maintenance, cleaning and performance checks to keep your system running for years."]
-] %>
-<div class="grid">
-  <% services.each do |title, image, text| %>
-    <div class="card">
-      <%= image_tag image, alt: title, loading: "lazy" %>
-      <h4><%= title %></h4>
-      <p><%= text %></p>
-    </div>
-  <% end %>
+<div class="s-grid c3">
+  <div class="s-card s-photo reveal">
+    <div class="img-wrap"><%= image_tag SiteImages::RESIDENTIAL, alt: "Rooftop solar panels on a house", loading: "lazy" %></div>
+    <div class="body"><h3>Rooftop Solar for Homes</h3><p>End-to-end rooftop solutions for homes and shops, with help for the government subsidy.</p></div>
+  </div>
+  <div class="s-card s-photo reveal">
+    <div class="img-wrap"><%= image_tag SiteImages::COMMERCIAL, alt: "Solar panels on a commercial building", loading: "lazy" %></div>
+    <div class="body"><h3>Commercial Systems</h3><p>Scalable solar for offices, factories and institutions: lower bills with monitored performance.</p></div>
+  </div>
+  <div class="s-card s-photo reveal">
+    <div class="img-wrap"><%= image_tag SiteImages::MAINTENANCE, alt: "Technician servicing solar panels", loading: "lazy" %></div>
+    <div class="body"><h3>Service &amp; Maintenance</h3><p>Scheduled checks, cleaning and quick support so your system keeps performing for years.</p></div>
+  </div>
 </div>

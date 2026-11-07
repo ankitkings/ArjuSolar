@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_01_23_000000) do
+ActiveRecord::Schema[7.1].define(version: 2026_01_24_000000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -121,6 +121,16 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_23_000000) do
     t.index ["system_key"], name: "index_chats_on_system_key", unique: true
   end
 
+  create_table "contact_entries", force: :cascade do |t|
+    t.string "kind", null: false
+    t.string "label"
+    t.string "value", null: false
+    t.integer "position", default: 0, null: false
+    t.boolean "active", default: true, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
   create_table "customers", force: :cascade do |t|
     t.string "name", null: false
     t.string "email", null: false
@@ -136,6 +146,15 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_23_000000) do
     t.string "phone_key"
     t.index ["email"], name: "index_customers_on_email", unique: true
     t.index ["phone_key"], name: "index_customers_on_phone_key"
+  end
+
+  create_table "faq_items", force: :cascade do |t|
+    t.string "question", null: false
+    t.text "answer", null: false
+    t.integer "position", default: 0, null: false
+    t.boolean "active", default: true, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "installation_settings", force: :cascade do |t|
@@ -386,6 +405,32 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_23_000000) do
     t.index ["phone_key"], name: "index_service_requests_on_phone_key"
     t.index ["status"], name: "index_service_requests_on_status"
     t.index ["team_member_id"], name: "index_service_requests_on_team_member_id"
+  end
+
+  create_table "site_settings", force: :cascade do |t|
+    t.string "company_name", default: "Arju Solars", null: false
+    t.string "tagline"
+    t.string "hero_eyebrow"
+    t.string "hero_title"
+    t.text "hero_subtitle"
+    t.string "about_title"
+    t.text "about_text"
+    t.text "footer_text"
+    t.string "office_hours"
+    t.text "meta_description"
+    t.string "facebook_url"
+    t.string "instagram_url"
+    t.string "youtube_url"
+    t.string "linkedin_url"
+    t.boolean "show_stats", default: true, null: false
+    t.boolean "show_why", default: true, null: false
+    t.boolean "show_services", default: true, null: false
+    t.boolean "show_systems", default: true, null: false
+    t.boolean "show_how", default: true, null: false
+    t.boolean "show_projects", default: true, null: false
+    t.boolean "show_faq", default: true, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "solar_packages", force: :cascade do |t|
