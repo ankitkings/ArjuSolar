@@ -1,0 +1,5 @@
+Layout/IndentationWidth:
+  Width: 2
+
+Layout/IndentationStyle:
+  EnforcedStyle: spaces

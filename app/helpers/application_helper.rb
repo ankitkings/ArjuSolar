@@ -2,4 +2,171 @@ module ApplicationHelper
   def inr(amount)
     Rupees.display(amount)
   end
+
+  # Progress bar; a cancelled deal is drawn fully red (and shows 0%)
+  def progress_bar(record, big: false)
+    classes = ["bar", ("big" if big), ("cancelled" if record.status == "cancelled")].compact.join(" ")
+    content_tag(:div, content_tag(:i, "", style: "width:#{record.progress}%"), class: classes)
+  end
+
+  # The picture the admin uploaded for a system, or a default solar photo
+  def package_image_src(package)
+    if package.image.attached? && package.image.blob.persisted?
+      url_for(package.image)
+    else
+      SiteImages::DEFAULT_SYSTEM
+    end
+  end
+
+  # <option>s for "Assigned to": grouped by department, every person with their number of
+  # active tasks, least busy first. Example: "Neha Sharma (Contact Person) (3 active tasks)"
+  def team_member_options(service_request)
+    counts = TeamMember.active_task_counts
+    away = Availability.unavailable_ids
+    members = TeamMember.where(active: true).or(TeamMember.where(id: service_request.team_member_id)).to_a.group_by(&:department)
+    groups = TeamMember::DEPARTMENTS.filter_map do |key, label|
+      list = members[key]
+      next if list.blank?
+      options = list.sort_by { |m| [counts[m.id], m.name] }.map do |m|
+        n = counts[m.id]
+        ["#{m.name} (#{label}) (#{n} active #{n == 1 ? 'task' : 'tasks'})#{' – on leave today' if away.include?(m.id)}", m.id]
+      end
+      [label, options]
+    end
+    grouped_options_for_select(groups, service_request.team_member_id)
+  end
+
+  # Requests nobody has addressed yet (still "pending"); shown as a badge for the admin
+  def new_request_count
+    @_new_request_count ||= ServiceRequest.where(status: "pending").count
+  end
+
+  # Link the client opens to see the quotation. Set PUBLIC_BASE_URL (e.g. https://www.arjusolars.com)
+  # in production; otherwise the address of the current request is used.
+  def public_quote_link(quote)
+    base = ENV["PUBLIC_BASE_URL"].to_s.chomp("/").presence || request.base_url
+    "#{base}#{public_quote_path(quote.ensure_public_token!)}"
+  end
+
+  # Direct link to the quotation PDF (opens on the client's phone)
+  def public_quote_pdf_link(quote)
+    base = ENV["PUBLIC_BASE_URL"].to_s.chomp("/").presence || request.base_url
+    "#{base}#{public_quote_pdf_path(quote.ensure_public_token!)}"
+  end
+
+  # Text of the "are you sure?" box when a request is deleted: lists what goes with it
+  def delete_request_warning(req)
+    parts = ["its timeline (#{req.updates.count} entries)"]
+    parts << pluralize(req.quotes.count, "quote") if req.quotes.any?
+    parts << "the installation record and its photos" if req.installation
+    if req.payment
+      paid = req.payment.amount_paid
+      parts << (paid.positive? ? "the payment record with #{inr(paid)} received (#{pluralize(req.payment.receipts.count, 'receipt')})" : "the payment record")
+    end
+    parts << pluralize(req.maintenance_visits.count, "maintenance visit") if req.maintenance_visits.any?
+    parts << "the subsidy application" if req.subsidy_application
+    "Delete request ##{req.id} (#{req.name})?\n\nThis also permanently deletes: #{parts.to_sentence}.\n\nThis cannot be undone."
+  end
+
+  def delete_client_warning(name, phone, requests_count)
+    "Delete the client #{name} (#{phone}) and all #{pluralize(requests_count, 'request')}?\n\n" \
+    "Everything linked to those requests goes too: quotes, installation records and photos, payments and receipts, maintenance visits and subsidy applications.\n\nThis cannot be undone."
+  end
+
+  def delete_member_warning(member)
+    @_task_counts ||= TeamMember.active_task_counts
+    open_tasks = @_task_counts[member.id]
+    "Remove #{member.name}?\n\n" \
+    "#{open_tasks.positive? ? "Their #{pluralize(open_tasks, 'open task')} will become unassigned. " : ''}" \
+    "Their login stops working and their chat messages stay as 'Former teammate'. This cannot be undone."
+  end
+
+  # Parts that have to be ordered (short for accepted installations or below their minimum level)
+  def parts_short_count
+    @_parts_short ||= RequiredParts.new.count_to_order
+  end
+
+  # "Install on" in the installer's list: the date, or what the job is waiting for
+  def installation_cell(request)
+    case request.installation_status
+    when "waiting_for_stock"    then "⚠ Waiting for parts"
+    when "waiting_for_approval" then "⏳ Waiting for DISCOM approval"
+    when "waiting_for_net_meter" then "⏳ Installed – waiting for net meter"
+    else
+      request.installation_scheduled_on && request.status == "installation" ? l(request.installation_scheduled_on, format: :short) : "—"
+    end
+  end
+
+  # Steps that are overdue (badge on the dashboard link)
+  def overdue_count
+    @_overdue_count ||= OverdueSteps.new.count
+  end
+
+  # where "Open" goes for an overdue item
+  def overdue_item_path(item)
+    item.record.is_a?(SubsidyApplication) ? admin_subsidy_application_path(item.record) : admin_service_request_path(item.record)
+  end
+
+  # Leave requests waiting for the admin's decision
+  def pending_leave_count
+    @_pending_leaves ||= LeaveRequest.where(status: "pending").count
+  end
+
+  # The admin's own to-do list (Admin > My tasks) and how many of it is new
+  def admin_tasks
+    @_admin_tasks ||= AdminTasks.for(current_admin)
+  end
+
+  def new_task_count = admin_tasks.new_count
+  def admin_task_count = admin_tasks.count
+
+  # Every page that loads the main stylesheet also gets the modern panel theme.
+  # The theme only changes pages whose <body> has the class "admin" (Admin and Staff panels).
+  def stylesheet_link_tag(*sources)
+    options = sources.last.is_a?(Hash) ? sources.pop : {}
+    names = sources.map(&:to_s)
+    return super(*sources, **options) unless names.include?("application") && !names.include?("modern")
+    safe_join([super(*sources, "modern", **options), modern_theme_script])
+  end
+
+  # marks the menu entry of the page you are on
+  def modern_theme_script
+    javascript_tag("window.PORTAL_LABEL = #{(session[:customer_id] ? 'My portal' : 'Client login').to_json};\n" + <<~'JS')
+      document.addEventListener("DOMContentLoaded", function () {
+        if (!document.body.classList.contains("admin")) {
+          var nav = document.querySelector("header.site-header nav");
+          if (nav && !nav.querySelector(".portal-link")) {
+            var portal = document.createElement("a");
+            portal.href = "/portal"; portal.className = "portal-link"; portal.textContent = window.PORTAL_LABEL || "Client login";
+            nav.appendChild(portal);
+          }
+          return;
+        }
+        var path = location.pathname.replace(/\/$/, "") || "/", best = null, bestLength = 0;
+        document.querySelectorAll("body.admin > aside a[href]").forEach(function (link) {
+          var target = (link.getAttribute("href") || "").split("?")[0].replace(/\/$/, "");
+          if (!target || target === "/") return;
+          if ((path === target || path.indexOf(target + "/") === 0) && target.length > bestLength) { best = link; bestLength = target.length; }
+        });
+        if (best) best.classList.add("active");
+      });
+    JS
+  end
+
+  # ----- the website content the admin can change (Admin > Website) -----
+  def site_setting = (@_site_setting ||= SiteSetting.current)
+
+  # the active entries of one kind (phone / whatsapp / email / address), main one first
+  def site_contacts(kind)
+    @_site_contacts ||= ContactEntry.active.listed.to_a
+    @_site_contacts.select { |entry| entry.kind == kind }
+  end
+
+  def site_phone = site_contacts("phone").first&.value
+  def site_phone_href = site_contacts("phone").first&.href
+
+  # "Powering *your future* with the sun": the words between stars shine in gold
+  def highlighted(text)
+    ERB::Util.html_escape(text.to_s).to_str.gsub(/\*(.+?)\*/, '<em>\1</em>').html_safe
+  end
 end

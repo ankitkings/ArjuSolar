@@ -1,0 +1,19 @@
+<% content_for(:title, "Your quotation #{@quote.number}") %>
+<section class="wrap">
+  <% if @quote.status == "superseded" %>
+    <div class="flash alert">A newer quotation has been prepared for you. Please contact us for the latest one.</div>
+  <% elsif @quote.status == "declined" %>
+    <div class="flash alert">This quotation is no longer active. Please contact us if you would like a new one.</div>
+  <% elsif @quote.expired? %>
+    <div class="flash alert">This quotation expired on <%= l @quote.valid_until, format: :long %>. Please contact us for an updated price.</div>
+  <% end %>
+
+  <p class="no-print">
+    <%= link_to "Download PDF", public_quote_pdf_path(@quote.public_token), class: "btn go" %>
+    <%= button_tag "Print", type: "button", class: "btn hold", onclick: "window.print()" %>
+    <%= link_to "Chat with us on WhatsApp", "https://wa.me/917049465926?text=#{ERB::Util.url_encode("Hello, about my quotation #{@quote.number}")}",
+                class: "btn", target: "_blank", rel: "noopener noreferrer" %>
+  </p>
+  <%= render "shared/quote", quote: @quote %>
+  <p class="no-print muted small">Questions? Call <%= link_to "+91 7049465926", "tel:+917049465926" %>.</p>
+</section>

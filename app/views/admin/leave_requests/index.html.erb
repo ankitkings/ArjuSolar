@@ -1,0 +1,42 @@
+<%= render "shared/hr_styles" %>
+<h1>Leave requests</h1>
+<p class="tabs">
+  <%= link_to "Waiting (#{@counts['pending'].to_i})", admin_leave_requests_path(status: "pending"), class: "tab #{'active' if @status == 'pending'}" %>
+  <%= link_to "Approved (#{@counts['approved'].to_i})", admin_leave_requests_path(status: "approved"), class: "tab #{'active' if @status == 'approved'}" %>
+  <%= link_to "Cancelled (#{@counts['cancelled'].to_i})", admin_leave_requests_path(status: "cancelled"), class: "tab #{'active' if @status == 'cancelled'}" %>
+  <%= link_to "All", admin_leave_requests_path, class: "tab #{'active' if @status.nil?}" %>
+</p>
+<div class="table-wrap"><table>
+  <tr><th>Employee</th><th>Type</th><th>Dates</th><th class="right">Days</th><th>Reason</th><th>Status</th><th>Decision</th></tr>
+  <% @leaves.each do |l| %>
+    <tr class="<%= 'new-request' if l.status == 'pending' %>">
+      <td><b><%= l.team_member.name %></b><br><span class="muted small"><%= l.team_member.department_label %></span></td>
+      <td><%= l.kind_label %></td>
+      <td><%= l.from_date == l.to_date ? l(l.from_date, format: "%a %d %b") : "#{l(l.from_date, format: '%a %d %b')} – #{l(l.to_date, format: '%a %d %b')}" %></td>
+      <td class="right"><%= l.days %></td>
+      <td><%= l.reason %></td>
+      <td>
+        <span class="badge <%= l.status %>"><%= l.status_label %></span>
+        <% if l.admin_note.present? %><br><span class="muted small"><%= l.admin_note %></span><% end %>
+      </td>
+      <td>
+        <% if l.status == "pending" %>
+          <%= form_with url: approve_admin_leave_request_path(l), method: :patch, class: "inline-form" do %>
+            <%= hidden_field_tag :back, @status %>
+            <%= select_tag :kind, options_for_select(LeaveRequest::KINDS.map { |key, label| [label, key] }, l.kind) %>
+            <%= submit_tag "Approve", class: "btn go" %>
+          <% end %>
+        <% end %>
+        <% if %w[pending approved].include?(l.status) %>
+          <%= form_with url: cancel_admin_leave_request_path(l), method: :patch, class: "inline-form" do %>
+            <%= hidden_field_tag :back, @status %>
+            <%= text_field_tag :admin_note, nil, placeholder: "Reason (optional)", style: "width:150px" %>
+            <%= submit_tag "Cancel", class: "btn stop", onclick: "return confirm('Cancel this leave?')" %>
+          <% end %>
+        <% end %>
+      </td>
+    </tr>
+  <% end %>
+  <% if @leaves.empty? %><tr><td colspan="7" class="muted">No leave requests here.</td></tr><% end %>
+</table></div>
+<p class="muted small">Approved paid and sick leave is paid; unpaid leave is not. You can change the type when you approve.</p>

@@ -1,0 +1,20 @@
+<div class="s-card s-sys reveal">
+  <div class="img-wrap">
+    <%= image_tag package_image_src(package), alt: "#{package.name} solar system", loading: "lazy" %>
+    <span class="s-kw">⚡ <%= format("%g", package.capacity_kw.to_f) %> kW</span>
+  </div>
+  <div class="body">
+    <h3><%= package.name %></h3>
+    <ul class="s-specs">
+      <li><%= package.panel_count %> solar panels</li>
+      <li><%= package.panel_brand %></li>
+      <li>Inverter: <%= package.inverter_model %></li>
+    </ul>
+    <p class="s-price"><small>Package price</small><b><%= inr(package.price) %></b></p>
+    <% if package.subsidy_amount.positive? %>
+      <p class="s-subsidy">With the PM Surya Ghar subsidy of <b><%= inr(package.subsidy_amount) %></b>:<br>
+        <b class="net"><%= inr(package.effective_cost) %></b> <span>effective cost</span></p>
+    <% end %>
+    <%= link_to "Get a quote", contact_path, class: "s-btn" %>
+  </div>
+</div>

@@ -1,11 +1,14 @@
-<h1>Users (customers)</h1>
-<p class="muted">People who have submitted a request, grouped by phone number.</p>
+<h1>Users (clients)</h1>
+<p class="muted">People who have submitted a request, grouped by phone number. Editing or deleting a client applies to all of that client's requests.</p>
 <div class="table-wrap"><table>
-  <tr><th>Name</th><th>Phone</th><th>Email</th><th>Requests</th><th>First seen</th><th>Last request</th></tr>
+  <tr><th>Name</th><th>Phone</th><th>Email</th><th>Requests</th><th>First seen</th><th>Last request</th><th></th></tr>
   <% @users.each do |u| %>
     <tr><td><%= u.name %></td><td><%= u.phone %></td><td><%= u.email.presence || "—" %></td>
         <td><%= link_to u.requests_count, admin_service_requests_path(q: u.phone) %></td>
-        <td><%= u.first_seen.to_s[0, 16] %></td><td><%= u.last_seen.to_s[0, 16] %></td></tr>
+        <td><%= u.first_seen.to_s[0, 16] %></td><td><%= u.last_seen.to_s[0, 16] %></td>
+        <td><%= link_to "Edit", edit_admin_user_path(u.client_id) %>
+            <%= button_to "Delete", admin_user_path(u.client_id), method: :delete, class: "linklike",
+                  form: { style: "display:inline", onsubmit: "return confirm(#{delete_client_warning(u.name, u.phone, u.requests_count).to_json})" } %></td></tr>
   <% end %>
-  <% if @users.empty? %><tr><td colspan="6" class="muted">No users yet.</td></tr><% end %>
+  <% if @users.empty? %><tr><td colspan="7" class="muted">No clients yet.</td></tr><% end %>
 </table></div>

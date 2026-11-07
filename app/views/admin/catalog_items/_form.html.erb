@@ -1,0 +1,13 @@
+<% if item.errors.any? %><div class="flash alert"><%= item.errors.full_messages.to_sentence %></div><% end %>
+<%= form_with model: item, url: (item.persisted? ? admin_catalog_item_path(item) : admin_catalog_items_path), class: "form" do |f| %>
+  <%= f.label :category, "Type of part" %>
+  <%= f.select :category, CatalogItem::CATEGORIES.map { |k, v| [v, k] } %>
+  <%= f.label :name, "Name (e.g. Luminous 1kW inverter)" %><%= f.text_field :name, required: true %>
+  <%= f.label :unit, "Sold per" %>
+  <%= f.select :unit, CatalogItem::UNITS %>
+  <%= f.label :unit_price, "Price per unit (₹)" %><%= f.number_field :unit_price, step: 0.01, min: 0, required: true %>
+  <%= f.label :capacity_kw, "Capacity per unit in kW (panel: watts ÷ 1000, e.g. 0.54 · inverter: its rating, e.g. 3)" %>
+  <%= f.number_field :capacity_kw, step: 0.001, min: 0.001 %>
+  <label><%= f.check_box :active %> Available for quotes</label>
+  <%= f.submit class: "btn" %>
+<% end %>

@@ -1,8 +1,10 @@
+# frozen_string_literal: true
+
 # One receipt per amount the cashier collects against a Payment
 class Receipt < ApplicationRecord
   MODES = {
-    "cash" => "Cash", "upi" => "UPI", "bank_transfer" => "Bank transfer",
-    "cheque" => "Cheque", "card" => "Card"
+    'cash' => 'Cash', 'upi' => 'UPI', 'bank_transfer' => 'Bank transfer',
+    'cheque' => 'Cheque', 'card' => 'Card'
   }.freeze
 
   belongs_to :payment
@@ -19,7 +21,7 @@ class Receipt < ApplicationRecord
 
   # Total received up to and including this receipt
   def paid_to_date
-    payment.receipts.where("receipts.id <= ?", id).sum(:amount)
+    payment.receipts.where('receipts.id <= ?', id).sum(:amount)
   end
 
   def balance_after
@@ -30,12 +32,12 @@ class Receipt < ApplicationRecord
 
   def not_more_than_balance
     balance = payment&.balance
-    if balance && amount && amount > balance
-      errors.add(:amount, "is more than the balance due (#{Rupees.display(balance)})")
-    end
+    return unless balance && amount && amount > balance
+
+    errors.add(:amount, "is more than the balance due (#{Rupees.display(balance)})")
   end
 
   def assign_number
-    update_column(:number, format("RCT-%d-%05d", created_at.year, id))
+    update_column(:number, format('RCT-%d-%05d', created_at.year, id))
   end
 end

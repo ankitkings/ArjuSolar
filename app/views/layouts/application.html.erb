@@ -1,31 +1,149 @@
+<% setting = site_setting %>
+<% phones = site_contacts("phone"); whatsapps = site_contacts("whatsapp"); emails = site_contacts("email"); addresses = site_contacts("address") %>
+<% brand = setting.company_name.to_s.split(" ", 2) %>
+<% call = phones.first; chat = whatsapps.first || phones.first %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title><%= content_for?(:title) ? "#{yield(:title)} — Arju Solars" : "Arju Solars — Powering Your Future" %></title>
+  <title><%= content_for?(:title) ? "#{yield(:title)} — #{setting.company_name}" : "#{setting.company_name}#{" — #{setting.tagline}" if setting.tagline.present?}" %></title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="<%= setting.meta_description %>">
+  <meta name="theme-color" content="#0b1224">
+  <script>document.documentElement.className += " js";</script>
   <%= csrf_meta_tags %><%= csp_meta_tag %>
   <%= stylesheet_link_tag "application" %>
+  <%= stylesheet_link_tag "site" %>
+  <%= javascript_importmap_tags if respond_to?(:javascript_importmap_tags) %>
 </head>
-<body>
-  <header class="site-header"><div class="wrap">
-    <%= link_to "Arju Solars", root_path, class: "brand" %>
-    <nav>
-      <%= link_to "Home", root_path %><%= link_to "About", about_path %><%= link_to "Services", services_path %>
-      <%= link_to "Projects", projects_path %><%= link_to "Our Team", team_path %><%= link_to "Contact", contact_path %>
-    </nav>
-  </div></header>
-  <% flash.each do |type, msg| %><div class="flash <%= type %>"><%= msg %></div><% end %>
+<body class="site">
+  <% link = ->(label, path) { link_to label, path, class: ("active" if current_page?(path)) } %>
+
+  <% if call || setting.office_hours.present? || addresses.any? %>
+    <div class="s-topbar">
+      <div class="s-wrap s-topbar-in">
+        <% if call %><span>📞 <%= link_to call.value, call.href %></span><% end %>
+        <% if setting.office_hours.present? %><span>🕘 <%= setting.office_hours %></span><% end %>
+        <span class="grow"></span>
+        <% if addresses.any? %><span>📍 <%= addresses.first.value.truncate(60) %></span><% end %>
+      </div>
+    </div>
+  <% end %>
+
+  <header class="s-header" id="s-header">
+    <div class="s-wrap s-header-in">
+      <%= link_to root_path, class: "s-brand", "aria-label": "#{setting.company_name} – home" do %>
+        <%= render "shared/brand_mark", uid: "head" %>
+        <span class="s-wordmark"><span class="name"><b><%= brand[0].to_s.upcase %></b><% if brand[1].present? %><i><%= brand[1].upcase %></i><% end %></span><% if setting.tagline.present? %><small><%= setting.tagline %></small><% end %></span>
+      <% end %>
+      <button type="button" class="s-burger" id="s-burger" aria-label="Open the menu" aria-expanded="false" aria-controls="s-nav"><span></span><span></span><span></span></button>
+      <nav class="s-nav" id="s-nav">
+        <%= link.("Home", root_path) %>
+        <%= link.("About", about_path) %>
+        <%= link.("Services", services_path) %>
+        <%= link.("Systems", systems_path) %>
+        <%= link.("Projects", projects_path) %>
+        <%= link.("Our Team", team_path) %>
+        <%= link.("Contact", contact_path) %>
+        <div class="s-login" id="s-login">
+          <button type="button" class="s-login-btn" id="s-login-btn" aria-haspopup="true" aria-expanded="false">🔐 Team login <span class="caret">▾</span></button>
+          <div class="s-login-menu" role="menu">
+            <%= link_to (current_staff ? "🛠️ Staff dashboard" : "🛠️ Staff login"), (current_staff ? staff_root_path : staff_login_path), role: "menuitem" %>
+            <%= link_to (current_admin ? "🔑 Admin panel" : "🔑 Admin login"), (current_admin ? admin_root_path : admin_login_path), role: "menuitem" %>
+          </div>
+        </div>
+        <%= link_to "Get a free quote", contact_path, class: "s-btn sun" %>
+      </nav>
+    </div>
+  </header>
+
+  <% flash.each do |type, msg| %>
+    <% next if type.to_s == "alert" && msg == "Please log in" %>   <%# an old leftover message, no longer needed %>
+    <div class="flash <%= type %>"><%= msg %></div>
+  <% end %>
   <main><%= yield %></main>
-  <footer class="site-footer"><div class="wrap">
-    <h4>Arju Solars</h4>
-    <p>Powering Central India — Installation | Service | Maintenance</p>
-    <p><strong>Phone:</strong> <%= link_to "+91 7049465926", "tel:+917049465926" %></p>
-    <p><strong>Email:</strong> ankitparmar5035582@gmail.com</p>
-    <p><strong>Address:</strong> Indore, Madhya Pradesh, India</p>
-    <p><%= link_to "WhatsApp", "https://wa.me/917049465926", target: "_blank", rel: "noopener noreferrer" %> ·
-       <%= current_admin ? link_to("Admin Panel", admin_root_path) : link_to("Admin", admin_login_path) %> ·
-       <%= link_to "Staff", (current_staff ? staff_root_path : staff_login_path) %></p>
-    <p class="small">We record anonymous visit data (IP address, browser, pages viewed) to improve our service.</p>
-  </div></footer>
+
+  <footer class="s-footer">
+    <div class="s-wrap">
+      <div class="s-footer-grid">
+        <div>
+          <div class="brand"><%= render "shared/brand_mark", uid: "foot" %><span class="s-wordmark"><span class="name"><b><%= brand[0].to_s.upcase %></b><% if brand[1].present? %><i><%= brand[1].upcase %></i><% end %></span><% if setting.tagline.present? %><small><%= setting.tagline %></small><% end %></span></div>
+          <% if setting.footer_text.present? %><p><%= setting.footer_text %></p><% end %>
+          <% if chat %><p><%= link_to "💬 WhatsApp us", "https://wa.me/#{chat.full_number}", target: "_blank", rel: "noopener noreferrer" %></p><% end %>
+          <% if setting.socials.any? %>
+            <p><% setting.socials.each do |name, url| %><%= link_to name, url, target: "_blank", rel: "noopener noreferrer", style: "margin-right:12px" %><% end %></p>
+          <% end %>
+        </div>
+        <div>
+          <h4>Explore</h4>
+          <ul>
+            <li><%= link_to "About us", about_path %></li><li><%= link_to "Services", services_path %></li>
+            <li><%= link_to "Solar systems & prices", systems_path %></li><li><%= link_to "Our projects", projects_path %></li>
+            <li><%= link_to "Our team", team_path %></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Team login</h4>
+          <ul>
+            <li><%= link_to (current_staff ? "Staff dashboard" : "Staff login"), (current_staff ? staff_root_path : staff_login_path) %></li>
+            <li><%= link_to (current_admin ? "Admin panel" : "Admin login"), (current_admin ? admin_root_path : admin_login_path) %></li>
+            <li><%= link_to "Request a free quote", contact_path %></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Contact</h4>
+          <% phones.each do |e| %><p>📞 <%= "#{e.label}: " if e.label %><%= link_to e.value, e.href %></p><% end %>
+          <% emails.each do |e| %><p>✉️ <%= "#{e.label}: " if e.label %><%= link_to e.value, e.href %></p><% end %>
+          <% addresses.each do |e| %><p>📍 <%= "#{e.label}: " if e.label %><%= e.value %></p><% end %>
+          <% if setting.office_hours.present? %><p>🕘 <%= setting.office_hours %></p><% end %>
+        </div>
+      </div>
+      <div class="s-footer-bottom">
+        <span>© <%= Date.current.year %> <%= setting.company_name %>. All rights reserved.</span>
+        <span>We record anonymous visit data (IP address, browser, pages viewed) to improve our service.</span>
+      </div>
+    </div>
+  </footer>
+
+  <% if call || chat %>
+    <div class="s-float" aria-label="Call or WhatsApp us">
+      <% if chat %><%= link_to "💬", "https://wa.me/#{chat.full_number}", class: "wa", target: "_blank", rel: "noopener noreferrer", title: "WhatsApp us" %><% end %>
+      <% if call %><%= link_to "📞", call.href, class: "call", title: "Call us" %><% end %>
+    </div>
+  <% end %>
+
+  <script>
+    (function () {
+      var header = document.getElementById("s-header"), burger = document.getElementById("s-burger"), nav = document.getElementById("s-nav");
+      function onScroll() { header.classList.toggle("scrolled", window.scrollY > 8); }
+      window.addEventListener("scroll", onScroll, { passive: true }); onScroll();
+      burger.addEventListener("click", function () {
+        var open = nav.classList.toggle("open");
+        burger.setAttribute("aria-expanded", open ? "true" : "false");
+      });
+      nav.addEventListener("click", function (e) { if (e.target.closest("a")) { nav.classList.remove("open"); burger.setAttribute("aria-expanded", "false"); } });
+
+      // the Team login menu opens on click and closes when you click elsewhere or press Esc
+      var login = document.getElementById("s-login"), loginBtn = document.getElementById("s-login-btn");
+      function closeLogin() { login.classList.remove("open"); loginBtn.setAttribute("aria-expanded", "false"); }
+      loginBtn.addEventListener("click", function (e) { e.stopPropagation(); var open = login.classList.toggle("open"); loginBtn.setAttribute("aria-expanded", open ? "true" : "false"); });
+      document.addEventListener("click", function (e) { if (!login.contains(e.target)) closeLogin(); });
+      document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeLogin(); });
+
+      // things fade in as they come into view
+      var items = document.querySelectorAll(".reveal");
+      if ("IntersectionObserver" in window) {
+        var observer = new IntersectionObserver(function (entries) {
+          entries.forEach(function (entry) { if (entry.isIntersecting) { entry.target.classList.add("in"); observer.unobserve(entry.target); } });
+        }, { threshold: 0.01, rootMargin: "0px 0px 8% 0px" });
+        items.forEach(function (el) {
+          if (el.getBoundingClientRect().top < window.innerHeight) { el.classList.add("in"); }
+          else { observer.observe(el); }
+        });
+        setTimeout(function () {
+          items.forEach(function (el) { if (el.getBoundingClientRect().top < window.innerHeight * 1.3) el.classList.add("in"); });
+        }, 1500);
+      } else { items.forEach(function (el) { el.classList.add("in"); }); }
+    })();
+  </script>
 </body>
 </html>

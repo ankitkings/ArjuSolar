@@ -1,0 +1,48 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches: [ arju-solar-first-phase ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+            
+            # Load rbenv
+            export PATH="$HOME/.rbenv/bin:$HOME/.rbenv/shims:$PATH"
+            eval "$(rbenv init - bash)"
+            
+            # Load SECRET_KEY_BASE (this is the critical part)
+            source /home/ubuntu/.rails_env
+            
+            cd /home/ubuntu/ArjuSolar
+            
+            echo ">>> Pulling latest code..."
+            git fetch origin
+            git reset --hard origin/arju-solar-first-phase
+            
+            echo ">>> Installing gems..."
+            bundle install --without development test --deployment
+            
+            echo ">>> Running migrations..."
+            RAILS_ENV=production bundle exec rake db:migrate
+            
+            # Uncomment only when needed
+            RAILS_ENV=production bundle exec rake db:seed
+            
+            echo ">>> Precompiling assets..."
+            RAILS_ENV=production bundle exec rails assets:precompile
+            
+            echo ">>> Restarting application..."
+            sudo systemctl restart arju-solar
+            
+            echo ">>> Deployment completed successfully!"

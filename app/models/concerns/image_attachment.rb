@@ -1,0 +1,40 @@
+# frozen_string_literal: true
+
+# Checks that uploaded files are normal photos (JPG / PNG / WebP, max 8 MB each)
+module ImageAttachment
+  extend ActiveSupport::Concern
+
+  ALLOWED_TYPES = %w[image/jpeg image/png image/webp].freeze
+  DOCUMENT_TYPES = (ALLOWED_TYPES + %w[application/pdf]).freeze # scanned papers may also be PDFs
+  MAX_SIZE = 8.megabytes
+
+  class_methods do
+    # a document: a photo or a PDF, max 8 MB
+    def validates_document(name)
+      validate do
+        attachment = public_send(name)
+        next unless attachment.attached?
+
+        unless DOCUMENT_TYPES.include?(attachment.blob.content_type)
+          errors.add(name,
+                     'must be a photo (JPG, PNG, WebP) or a PDF')
+        end
+        errors.add(name, 'must be smaller than 8 MB') if attachment.blob.byte_size > MAX_SIZE
+      end
+    end
+
+    # works for has_one_attached and has_many_attached
+    def validates_image(name)
+      validate do
+        attachment = public_send(name)
+        next unless attachment.attached?
+
+        blobs = attachment.respond_to?(:blobs) ? attachment.blobs : [attachment.blob]
+        errors.add(name, 'must be JPG, PNG or WebP photos') if blobs.any? do |b|
+          !ALLOWED_TYPES.include?(b.content_type)
+        end
+        errors.add(name, 'must each be smaller than 8 MB') if blobs.any? { |b| b.byte_size > MAX_SIZE }
+      end
+    end
+  end
+end

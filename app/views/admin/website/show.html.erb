@@ -1,0 +1,105 @@
+<h1>Website</h1>
+<p class="muted">Change what the public website says and shows. Everything saved here is live on the website straight away.</p>
+<p class="tabs">
+  <a class="tab" href="#texts">Texts &amp; sections</a><a class="tab" href="#contacts">Contact details</a><a class="tab" href="#faq">Questions (FAQ)</a>
+  <%= link_to "Open the website ↗", root_path, class: "tab", target: "_blank", rel: "noopener" %>
+</p>
+
+<%# ================= texts and sections ================= %>
+<div class="panel" id="texts">
+  <h2>Texts &amp; sections</h2>
+  <% if @setting.errors.any? %><div class="flash alert"><%= @setting.errors.full_messages.to_sentence %></div><% end %>
+  <%= form_with model: @setting, url: admin_website_path, method: :patch, scope: :site_setting, class: "form" do |f| %>
+    <h3>Company</h3>
+    <%= f.label :company_name, "Company name (the first word is shown big, the rest in colour)" %><%= f.text_field :company_name, maxlength: 60 %>
+    <%= f.label :tagline, "Short line under the name" %><%= f.text_field :tagline, maxlength: 80 %>
+    <%= f.label :office_hours, "Office hours" %><%= f.text_field :office_hours, maxlength: 100 %>
+    <%= f.label :footer_text, "Short text in the footer" %><%= f.text_area :footer_text, rows: 2, maxlength: 600 %>
+    <%= f.label :meta_description, "Description for Google (shown under your site name in search results)" %><%= f.text_area :meta_description, rows: 2, maxlength: 600 %>
+
+    <h3>Home page banner</h3>
+    <%= f.label :hero_eyebrow, "Small line above the headline" %><%= f.text_field :hero_eyebrow, maxlength: 120 %>
+    <%= f.label :hero_title, "Headline – put *stars* around the words that should shine in gold" %><%= f.text_field :hero_title, maxlength: 120 %>
+    <%= f.label :hero_subtitle, "Text under the headline" %><%= f.text_area :hero_subtitle, rows: 3, maxlength: 600 %>
+
+    <h3>About page</h3>
+    <%= f.label :about_title, "Heading" %><%= f.text_field :about_title, maxlength: 140 %>
+    <%= f.label :about_text, "Text (leave an empty line between paragraphs)" %><%= f.text_area :about_text, rows: 7, maxlength: 4000 %>
+
+    <h3>Social media links (leave empty to hide)</h3>
+    <%= f.label :facebook_url, "Facebook" %><%= f.url_field :facebook_url, placeholder: "https://facebook.com/…" %>
+    <%= f.label :instagram_url, "Instagram" %><%= f.url_field :instagram_url, placeholder: "https://instagram.com/…" %>
+    <%= f.label :youtube_url, "YouTube" %><%= f.url_field :youtube_url, placeholder: "https://youtube.com/…" %>
+    <%= f.label :linkedin_url, "LinkedIn" %><%= f.url_field :linkedin_url, placeholder: "https://linkedin.com/…" %>
+
+    <h3>Parts of the home page to show</h3>
+    <p class="muted small">Untick a part to hide it from the home page. (Parts that have nothing to show, such as projects before any is published, hide themselves.)</p>
+    <% SiteSetting::SECTIONS.each do |key, label| %>
+      <label style="display:block;font-weight:600"><%= f.check_box key %> <%= label %></label>
+    <% end %>
+    <%= f.submit "Save the website", class: "btn go" %>
+  <% end %>
+</div>
+
+<%# ================= contact details ================= %>
+<div class="panel" id="contacts">
+  <h2>Contact details</h2>
+  <p class="muted small">These appear in the top bar, the footer, the Contact page and on the call / WhatsApp buttons. Add as many phone numbers, e-mails and addresses as you like. The first of each kind (smallest position number) is the main one. Untick “Show” to hide an entry without deleting it.</p>
+
+  <%= form_with model: ContactEntry.new, url: admin_contact_entries_path, method: :post, class: "filters" do |f| %>
+    <%= f.select :kind, ContactEntry::KINDS.map { |key, label| [label, key] } %>
+    <%= f.text_field :label, placeholder: "Label (e.g. Sales, Support)", style: "width:170px" %>
+    <%= f.text_field :value, placeholder: "Number, e-mail or address", required: true, style: "min-width:240px" %>
+    <%= f.submit "+ Add", class: "btn go" %>
+  <% end %>
+
+  <div class="table-wrap"><table>
+    <tr><th>Type</th><th>Label</th><th>Value</th><th>Position</th><th>Show</th><th></th></tr>
+    <% @contacts.each do |entry| %>
+      <tr>
+        <td><%= entry.icon %> <%= entry.kind_label %></td>
+        <td><%= text_field_tag "contact_entry[label]", entry.label, form: "contact-#{entry.id}", style: "width:140px" %></td>
+        <td><%= text_field_tag "contact_entry[value]", entry.value, form: "contact-#{entry.id}", required: true, style: "min-width:230px;width:100%" %></td>
+        <td><%= number_field_tag "contact_entry[position]", entry.position, form: "contact-#{entry.id}", min: 0, style: "width:70px" %></td>
+        <td><%= hidden_field_tag "contact_entry[active]", "0", form: "contact-#{entry.id}", id: nil %><%= check_box_tag "contact_entry[active]", "1", entry.active, form: "contact-#{entry.id}", id: "active-#{entry.id}" %></td>
+        <td>
+          <%= submit_tag "Save", form: "contact-#{entry.id}", class: "btn hold" %>
+          <%= button_to "Delete", admin_contact_entry_path(entry), method: :delete, class: "btn stop", form: { style: "display:inline", onsubmit: "return confirm('Remove this entry from the website?')" } %>
+        </td>
+      </tr>
+    <% end %>
+    <% if @contacts.empty? %><tr><td colspan="6" class="muted">No contact details yet. Add a phone number above.</td></tr><% end %>
+  </table></div>
+  <% @contacts.each do |entry| %><%= form_with model: entry, url: admin_contact_entry_path(entry), method: :patch, id: "contact-#{entry.id}" do %><% end %><% end %>
+</div>
+
+<%# ================= faq ================= %>
+<div class="panel" id="faq">
+  <h2>Questions (FAQ)</h2>
+  <p class="muted small">Shown on the home page, in the order of the position numbers.</p>
+  <%= form_with model: FaqItem.new, url: admin_faq_items_path, method: :post, class: "form" do |f| %>
+    <%= f.text_field :question, placeholder: "Question", required: true, maxlength: 200 %>
+    <%= f.text_area :answer, rows: 2, placeholder: "Answer", required: true, maxlength: 1500 %>
+    <%= f.submit "+ Add question", class: "btn go" %>
+  <% end %>
+
+  <div class="table-wrap"><table>
+    <tr><th>Question and answer</th><th>Position</th><th>Show</th><th></th></tr>
+    <% @faqs.each do |item| %>
+      <tr>
+        <td>
+          <%= text_field_tag "faq_item[question]", item.question, form: "faq-#{item.id}", required: true, style: "width:100%;font-weight:700" %>
+          <%= text_area_tag "faq_item[answer]", item.answer, form: "faq-#{item.id}", rows: 3, required: true, style: "width:100%;margin-top:6px" %>
+        </td>
+        <td><%= number_field_tag "faq_item[position]", item.position, form: "faq-#{item.id}", min: 0, style: "width:70px" %></td>
+        <td><%= hidden_field_tag "faq_item[active]", "0", form: "faq-#{item.id}", id: nil %><%= check_box_tag "faq_item[active]", "1", item.active, form: "faq-#{item.id}", id: "faq-active-#{item.id}" %></td>
+        <td>
+          <%= submit_tag "Save", form: "faq-#{item.id}", class: "btn hold" %>
+          <%= button_to "Delete", admin_faq_item_path(item), method: :delete, class: "btn stop", form: { style: "display:inline", onsubmit: "return confirm('Remove this question?')" } %>
+        </td>
+      </tr>
+    <% end %>
+    <% if @faqs.empty? %><tr><td colspan="4" class="muted">No questions yet.</td></tr><% end %>
+  </table></div>
+  <% @faqs.each do |item| %><%= form_with model: item, url: admin_faq_item_path(item), method: :patch, id: "faq-#{item.id}" do %><% end %><% end %>
+</div>

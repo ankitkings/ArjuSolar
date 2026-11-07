@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class CreateArjuTables < ActiveRecord::Migration[7.1]
   def change
     create_table :admin_users do |t|
@@ -28,7 +30,7 @@ class CreateArjuTables < ActiveRecord::Migration[7.1]
       t.string :name, :phone, null: false
       t.string :email, :ip_address
       t.text :message
-      t.string :status, null: false, default: "pending"
+      t.string :status, null: false, default: 'pending'
       t.integer :progress, null: false, default: 0
       t.references :team_member, foreign_key: true
       t.timestamps

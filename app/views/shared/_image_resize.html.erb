@@ -1,0 +1,40 @@
+<%# Shrinks big phone photos in the browser before upload (keeps pages fast). Falls back to the original file on any problem. %>
+<script>
+  (function () {
+    var MAX = 1600, QUALITY = 0.82;
+    function shrink(file) {
+      return new Promise(function (resolve) {
+        if (!/^image\/(jpeg|png|webp)$/.test(file.type)) { resolve(file); return; }
+        var img = new Image(), url = URL.createObjectURL(file);
+        img.onload = function () {
+          var scale = Math.min(1, MAX / Math.max(img.width, img.height));
+          if (scale === 1 && file.size < 1.5 * 1024 * 1024) { URL.revokeObjectURL(url); resolve(file); return; }
+          var canvas = document.createElement("canvas");
+          canvas.width = Math.round(img.width * scale);
+          canvas.height = Math.round(img.height * scale);
+          var ctx = canvas.getContext("2d");
+          ctx.fillStyle = "#fff";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          canvas.toBlob(function (blob) {
+            URL.revokeObjectURL(url);
+            if (!blob) { resolve(file); return; }
+            resolve(new File([blob], file.name.replace(/\.\w+$/, "") + ".jpg", { type: "image/jpeg" }));
+          }, "image/jpeg", QUALITY);
+        };
+        img.onerror = function () { URL.revokeObjectURL(url); resolve(file); };
+        img.src = url;
+      });
+    }
+    document.querySelectorAll("input[type=file][data-resize]").forEach(function (input) {
+      input.addEventListener("change", function () {
+        if (!window.DataTransfer || !input.files.length) return;
+        Promise.all(Array.prototype.map.call(input.files, shrink)).then(function (files) {
+          var dt = new DataTransfer();
+          files.forEach(function (f) { dt.items.add(f); });
+          input.files = dt.files;
+        }).catch(function () {});
+      });
+    });
+  })();
+</script>

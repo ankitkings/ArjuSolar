@@ -1,0 +1,16 @@
+<% content_for(:title, "Solar systems & prices") %>
+<section class="s-page-hero"><div class="s-wrap"><h1>Our Solar Systems</h1><p>Ready-to-install packages for homes and businesses. Every system includes installation, start-up and scheduled maintenance checks.</p></div></section>
+
+<section class="s-section">
+  <div class="s-wrap">
+    <% if @packages.any? %>
+      <div class="s-grid c3"><% @packages.each do |package| %><%= render "pages/system_card", package: package %><% end %></div>
+    <% else %>
+      <div class="s-card"><p>Our system packages will be listed here soon. <%= link_to "Contact us", contact_path %> for a quotation.</p></div>
+    <% end %>
+    <div id="subsidy"><%= render "pages/subsidy_info" %></div>
+    <p class="muted small" style="margin-top:22px;color:var(--muted)">Prices are package prices; the final quotation is prepared after a free site visit.</p>
+  </div>
+</section>
+
+<section class="s-section soft"><div class="s-wrap"><div class="s-cta reveal"><h2>Want a quotation for your roof?</h2><p>We visit for free, measure your roof and send you an itemised quotation.</p><div class="s-hero-actions"><%= link_to "Get a free quote", contact_path, class: "s-btn sun big" %></div></div></div></section>

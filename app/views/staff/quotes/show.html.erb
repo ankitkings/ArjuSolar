@@ -3,4 +3,69 @@
   <span class="badge <%= @quote.status %>"><%= @quote.status.humanize %></span><%= " (expired)" if @quote.expired? %> ·
   <%= button_tag "Print quote", type: "button", class: "btn go", onclick: "window.print()" %>
 </p>
+<% if %w[sent accepted].include?(@quote.status) && !@quote.expired? %>
+  <div class="panel no-print" style="margin-bottom:16px">
+    <h3>Send this quote to the client on WhatsApp</h3>
+    <p>To: <b><%= @quote.service_request.name %></b> · <%= @quote.service_request.phone %></p>
+
+    <p><b>Option 1 – works on any phone or computer</b></p>
+    <%= button_to "Send on WhatsApp (message + PDF link)", whatsapp_staff_quote_path(@quote), method: :post, class: "btn go", form: { target: "_blank" } %>
+    <p class="muted small">WhatsApp opens with the client's number and the message ready – press send there. The client taps the link and the PDF opens on their phone, where they can save it.</p>
+
+    <p><b>Option 2 – attach the PDF file itself (phone only)</b></p>
+    <div class="actions">
+      <%= button_tag "Share the PDF file on WhatsApp", type: "button", id: "share-pdf", class: "btn hold",
+            data: { pdf_url: pdf_staff_quote_path(@quote), file_name: "Quotation-#{@quote.number}.pdf",
+                    message: @quote.whatsapp_message(public_quote_link(@quote), current_staff.name, pdf_link: public_quote_pdf_link(@quote)),
+                    logged_url: shared_staff_quote_path(@quote) } %>
+      <%= link_to "Download PDF", pdf_staff_quote_path(@quote), class: "btn hold" %>
+    </div>
+    <p class="muted small">On a phone the share sheet opens with the PDF attached – choose WhatsApp, then the client's chat. Browsers can only do this on a phone and on an https website.</p>
+
+    <% if @quote.whatsapp_sent_at %><p>✅ Sent on WhatsApp on <%= l @quote.whatsapp_sent_at, format: :short %></p><% end %>
+    <p class="small">Client link: <input type="text" readonly value="<%= public_quote_link(@quote) %>" onclick="this.select()" style="width:100%"></p>
+
+    <script>
+      (function () {
+        var btn = document.getElementById("share-pdf");
+        if (!btn) return;
+        var csrf = document.querySelector('meta[name="csrf-token"]');
+        function download(blob) {
+          var a = document.createElement("a");
+          a.href = URL.createObjectURL(blob);
+          a.download = btn.dataset.fileName;
+          document.body.appendChild(a); a.click(); a.remove();
+        }
+        btn.addEventListener("click", async function () {
+          btn.disabled = true;
+          try {
+            var res = await fetch(btn.dataset.pdfUrl, { credentials: "same-origin" });
+            var type = res.headers.get("content-type") || "";
+            if (!res.ok || type.indexOf("pdf") === -1) {
+              alert("The PDF could not be created on the server (error " + res.status + ").\nAsk the admin to run 'bundle install' and check the server log.");
+              btn.disabled = false;
+              return;
+            }
+            var blob = await res.blob();
+            var file = new File([blob], btn.dataset.fileName, { type: "application/pdf" });
+            if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+              await navigator.share({ files: [file], title: btn.dataset.fileName, text: btn.dataset.message });
+              await fetch(btn.dataset.loggedUrl, { method: "POST", credentials: "same-origin", headers: { "X-CSRF-Token": csrf ? csrf.content : "" } });
+              alert("Shared. The send is recorded on the request.");
+            } else {
+              download(blob);
+              var why = window.isSecureContext
+                ? "This browser cannot attach files to WhatsApp."
+                : "This page is not on https, so the browser blocks file sharing.";
+              alert(why + "\nThe PDF was downloaded instead.\nUse Option 1 to send the PDF as a link, or attach the downloaded file in WhatsApp (paperclip → Document).");
+            }
+          } catch (e) {
+            if (!e || e.name !== "AbortError") alert("Could not share the PDF. Use Option 1, or download the PDF and attach it in WhatsApp.");
+          }
+          btn.disabled = false;
+        });
+      })();
+    </script>
+  </div>
+<% end %>
 <%= render "shared/quote", quote: @quote %>

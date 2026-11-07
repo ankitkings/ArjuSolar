@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class AddWorkflowTables < ActiveRecord::Migration[7.1]
   def change
     create_table :installations do |t|
@@ -16,7 +18,7 @@ class AddWorkflowTables < ActiveRecord::Migration[7.1]
       t.references :team_member, foreign_key: true
       t.string :title, null: false
       t.date :due_on, null: false
-      t.string :status, null: false, default: "scheduled"
+      t.string :status, null: false, default: 'scheduled'
       t.datetime :assigned_at, :completed_at
       t.text :report
       t.timestamps
@@ -26,7 +28,7 @@ class AddWorkflowTables < ActiveRecord::Migration[7.1]
     create_table :payments do |t|
       t.references :service_request, null: false, foreign_key: true, index: { unique: true }
       t.references :team_member, foreign_key: true
-      t.string :status, null: false, default: "pending"
+      t.string :status, null: false, default: 'pending'
       t.decimal :amount, precision: 10, scale: 2
       t.date :received_on
       t.text :note

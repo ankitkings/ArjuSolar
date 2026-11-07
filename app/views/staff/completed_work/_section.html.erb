@@ -1,0 +1,36 @@
+<% items = work.latest(10) %>
+<style>
+  .cw{margin-top:28px}
+  .cw .cw-icon{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:10px;background:#dcfce7;font-size:1rem}
+  .cw .cw-empty{padding:16px;border-radius:14px;background:#f0fdf4;color:#166534;text-align:center}
+</style>
+<section class="cw" id="completed-work">
+  <h2>✅ My completed work</h2>
+  <div class="stats">
+    <div class="stat"><b><%= work.today %></b><span>Done today</span></div>
+    <div class="stat"><b><%= work.this_week %></b><span>This week</span></div>
+    <div class="stat"><b><%= work.this_month %></b><span>This month</span></div>
+    <div class="stat"><b><%= work.total %></b><span>In total</span></div>
+  </div>
+  <% if items.empty? %>
+    <div class="cw-empty">Nothing completed yet. Every step you finish, visit you complete and payment you collect will appear here.</div>
+  <% else %>
+    <div class="table-wrap"><table>
+      <tr><th></th><th>When</th><th>What I did</th><th>Details</th><th></th></tr>
+      <% items.each do |item| %>
+        <tr>
+          <td><span class="cw-icon"><%= CompletedWork::ICONS[item.kind] %></span></td>
+          <td><%= l item.at.in_time_zone, format: "%d %b, %I:%M %p" %></td>
+          <td><b><%= item.title %></b></td>
+          <td><%= item.detail %></td>
+          <td>
+            <% if item.kind == "payment" %><%= link_to "Receipt", staff_receipt_path(item.record) %>
+            <% elsif item.kind == "step" && item.record && item.record.team_member_id == current_staff.id %><%= link_to "Open", staff_task_path(item.record) %>
+            <% end %>
+          </td>
+        </tr>
+      <% end %>
+    </table></div>
+    <p><%= link_to "See everything I completed →", staff_completed_path %></p>
+  <% end %>
+</section>

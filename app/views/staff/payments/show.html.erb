@@ -1,6 +1,30 @@
 <p><%= link_to "← My tasks", staff_root_path %></p>
 <% req = @payment.service_request %>
+<% setting = PaymentSetting.current %>
+<% det = params[:details].is_a?(ActionController::Parameters) ? params[:details] : {} %>
+<% chosen = params[:mode].to_s.presence_in(Receipt::MODES.keys) || "cash" %>
 <h1>Payment — <%= req.name %></h1>
+<style>
+  .pm-options{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin:6px 0 14px}
+  .pm-option{display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 8px;border:2px solid #e2e8f0;border-radius:14px;cursor:pointer;background:#fff;font-weight:700;transition:border-color .15s,box-shadow .15s,transform .15s}
+  .pm-option input{position:absolute;opacity:0;pointer-events:none}
+  .pm-option .ico{font-size:1.6rem}
+  .pm-option.on{border-color:#2563eb;box-shadow:0 0 0 4px rgba(37,99,235,.14);transform:translateY(-1px);background:#eff6ff}
+  .pm-panel{border:1px dashed #cbd5e1;border-radius:14px;padding:14px 16px;margin:0 0 14px;background:#f8fafc}
+  .pm-panel h4{margin:0 0 8px}
+  .pm-steps{margin:0 0 10px;padding-left:20px}.pm-steps li{margin:3px 0}
+  .pm-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+  .pm-grid label{display:block;font-weight:600;font-size:.9rem}
+  .pm-grid input,.pm-grid select{width:100%}
+  .pm-total{font-size:1.15rem;font-weight:800}
+  .pm-qr{max-width:230px;margin:8px 0;background:#fff;padding:10px;border-radius:12px;border:1px solid #e2e8f0}
+  .pm-qr svg{width:100%;height:auto;display:block}
+  .pm-bank{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:10px 14px;margin-bottom:10px}
+  .pm-bank p{margin:3px 0}
+  .pm-warn{background:#fffbeb;border-left:4px solid #f59e0b;padding:8px 12px;border-radius:8px;font-size:.88rem;margin:8px 0}
+  .pm-short{color:#b91c1c;font-weight:700}.pm-ok{color:#166534;font-weight:700}
+  .pm-check{display:flex;gap:8px;align-items:flex-start;font-weight:600;margin-top:10px}
+</style>
 <div class="stats">
   <div class="stat"><b><%= inr(@payment.amount_due) %></b><span>Total due</span></div>
   <div class="stat"><b><%= inr(@payment.amount_paid) %></b><span>Received so far</span></div>
@@ -24,31 +48,257 @@
   <% else %>
     <h3>Collect payment</h3>
     <% if @error %><div class="flash alert"><%= @error %></div><% end %>
-    <%= form_with url: staff_payment_path(@payment), method: :patch, class: "form" do %>
+    <%= form_with url: staff_payment_path(@payment), method: :patch, html: { id: "pay-form" } do %>
       <% if @payment.amount_due.nil? %>
         <%= label_tag :amount_due, "Total amount due (₹) – no price was saved for this system" %>
-        <%= number_field_tag :amount_due, nil, step: 0.01, min: 1, required: true %>
+        <%= number_field_tag :amount_due, params[:amount_due], step: 0.01, min: 1, required: true %>
       <% end %>
-      <%= label_tag :amount, "Amount received now (₹)" %>
-      <%= number_field_tag :amount, @payment.balance, step: 0.01, min: 1, required: true %>
-      <%= label_tag :mode, "Payment mode" %>
-      <%= select_tag :mode, options_for_select(Receipt::MODES.map { |k, v| [v, k] }) %>
-      <%= label_tag :reference, "Reference (UPI id, cheque no., …)" %>
-      <%= text_field_tag :reference %>
-      <%= label_tag :note, "Note" %>
-      <%= text_area_tag :note, nil, rows: 2 %>
-      <%= submit_tag "Collect & generate receipt", class: "btn go" %>
+
+      <p><b>How is the client paying?</b></p>
+      <div class="pm-options">
+        <% { "cash" => ["💵", "Cash"], "upi" => ["📱", "UPI / QR"], "bank_transfer" => ["🏦", "Bank transfer"], "cheque" => ["🧾", "Cheque"], "card" => ["💳", "Card"] }.each do |key, (icon, label)| %>
+          <label class="pm-option <%= 'on' if chosen == key %>">
+            <%= radio_button_tag :mode, key, chosen == key %>
+            <span class="ico"><%= icon %></span><span><%= label %></span>
+          </label>
+        <% end %>
+      </div>
+
+      <%# ============ cash: count the notes ============ %>
+      <div class="pm-panel" data-mode-panel="cash" <%= "hidden" unless chosen == "cash" %>>
+        <h4>💵 Cash – count the notes</h4>
+        <p class="muted small">Enter how many notes of each value the client gave. The total is worked out for you. (A money counting machine can fill these numbers automatically later.)</p>
+        <div class="table-wrap"><table>
+          <tr><th>Note</th><th>How many</th><th class="right">Amount</th></tr>
+          <% PaymentMethods::NOTES.each do |value| %>
+            <tr>
+              <td><b>₹<%= value %></b></td>
+              <td><%= number_field_tag "details[notes][#{value}]", det.dig(:notes, value.to_s), min: 0, step: 1, placeholder: "0", class: "pm-note", data: { value: value }, style: "width:110px" %></td>
+              <td class="right pm-sub">₹0</td>
+            </tr>
+          <% end %>
+          <tr>
+            <td><b>Coins</b></td>
+            <td><%= number_field_tag "details[coins]", det[:coins], min: 0, step: 1, placeholder: "₹ total", class: "pm-coins", style: "width:110px" %></td>
+            <td class="right muted small">total value in ₹</td>
+          </tr>
+        </table></div>
+        <%= hidden_field_tag "details[counted_by]", "manual", id: "cash-counted-by" %>
+        <p class="pm-total">Cash counted: <span id="cash-total">₹0</span></p>
+        <p id="cash-change" class="muted"></p>
+      </div>
+
+      <%# ============ UPI: show the QR ============ %>
+      <div class="pm-panel" data-mode-panel="upi" <%= "hidden" unless chosen == "upi" %>>
+        <h4>📱 UPI – the client scans the QR code</h4>
+        <% if setting.upi_ready? %>
+          <ol class="pm-steps">
+            <li>Check the amount below, then press <b>Show QR code</b>.</li>
+            <li>The client scans it with Google Pay, PhonePe, Paytm or any UPI app and pays.</li>
+            <li>When the money shows in our bank app / SMS, enter the transaction id and tick the box.</li>
+          </ol>
+          <p>Pay to: <b><%= setting.upi_name.presence || "Arju Solars" %></b> · <code><%= setting.upi_id %></code></p>
+          <button type="button" class="btn go" id="qr-btn">Show QR code for <span id="qr-amount">₹0</span></button>
+          <div id="qr-box" class="muted" style="margin:8px 0"></div>
+        <% else %>
+          <div class="pm-warn">Our UPI id is not set yet, so no QR code can be shown. Ask the admin to add it under <b>Payment setup</b>. You can still record a UPI payment below.</div>
+        <% end %>
+        <div class="pm-grid">
+          <div><label>UPI transaction id (UTR) *</label><%= text_field_tag "details[txn_id]", det[:txn_id], placeholder: "e.g. 412345678901", autocomplete: "off" %></div>
+          <div><label>Client's UPI id (optional)</label><%= text_field_tag "details[payer_upi]", det[:payer_upi], placeholder: "name@bank" %></div>
+          <div><label>Paid with (optional)</label><%= select_tag "details[app]", options_for_select([["—", ""]] + PaymentMethods::UPI_APPS, det[:app]) %></div>
+        </div>
+        <label class="pm-check"><%= check_box_tag "details[verified]", "1", det[:verified] == "1" %> I have seen this money arrive in our account.</label>
+      </div>
+
+      <%# ============ bank transfer / DBT ============ %>
+      <div class="pm-panel" data-mode-panel="bank_transfer" <%= "hidden" unless chosen == "bank_transfer" %>>
+        <h4>🏦 Bank transfer (NEFT / RTGS / IMPS / DBT)</h4>
+        <% if setting.bank_ready? %>
+          <p class="muted small">Give the client these details to send the money to:</p>
+          <div class="pm-bank">
+            <p><b>Account name:</b> <%= setting.account_name %></p>
+            <p><b>Account number:</b> <%= setting.account_number %></p>
+            <p><b>IFSC:</b> <%= setting.ifsc %></p>
+            <p><b>Bank:</b> <%= [setting.bank_name, setting.branch].compact_blank.join(", ") %></p>
+          </div>
+        <% else %>
+          <div class="pm-warn">Our bank account is not set yet. The admin can add it under <b>Payment setup</b> so you can show it here.</div>
+        <% end %>
+        <p class="muted small">After the transfer, enter its details from the client's receipt or our bank statement:</p>
+        <div class="pm-grid">
+          <div><label>Type of transfer *</label><%= select_tag "details[transfer_type]", options_for_select(PaymentMethods::TRANSFER_TYPES, det[:transfer_type] || "NEFT") %></div>
+          <div><label>UTR / reference no. *</label><%= text_field_tag "details[utr]", det[:utr], autocomplete: "off" %></div>
+          <div><label>Transfer date *</label><%= date_field_tag "details[transfer_date]", det[:transfer_date] || Date.current, max: Date.current %></div>
+          <div><label>Client's bank *</label><%= text_field_tag "details[from_bank]", det[:from_bank], placeholder: "e.g. State Bank of India" %></div>
+          <div><label>Account holder (sender) *</label><%= text_field_tag "details[from_holder]", det[:from_holder] %></div>
+          <div><label>Account – last 4 digits</label><%= text_field_tag "details[from_last4]", det[:from_last4], maxlength: 4, inputmode: "numeric" %></div>
+        </div>
+        <label class="pm-check"><%= check_box_tag "details[verified]", "1", det[:verified] == "1" %> I have seen this money arrive in our account.</label>
+      </div>
+
+      <%# ============ cheque ============ %>
+      <div class="pm-panel" data-mode-panel="cheque" <%= "hidden" unless chosen == "cheque" %>>
+        <h4>🧾 Cheque</h4>
+        <p class="muted small">Copy the details from the cheque. Post-dated cheques and cheques older than 3 months cannot be received.</p>
+        <div class="pm-grid">
+          <div><label>Cheque number (6 digits) *</label><%= text_field_tag "details[cheque_no]", det[:cheque_no], maxlength: 6, inputmode: "numeric", autocomplete: "off" %></div>
+          <div><label>Cheque date *</label><%= date_field_tag "details[cheque_date]", det[:cheque_date] || Date.current, max: Date.current, min: Date.current - PaymentMethods::CHEQUE_MAX_AGE_DAYS %></div>
+          <div><label>Bank name *</label><%= text_field_tag "details[bank]", det[:bank] %></div>
+          <div><label>Branch</label><%= text_field_tag "details[branch]", det[:branch] %></div>
+          <div><label>IFSC (on the cheque)</label><%= text_field_tag "details[ifsc]", det[:ifsc], maxlength: 11, style: "text-transform:uppercase" %></div>
+          <div><label>Name on the cheque *</label><%= text_field_tag "details[drawer]", det[:drawer] %></div>
+        </div>
+      </div>
+
+      <%# ============ card (POS machine) ============ %>
+      <div class="pm-panel" data-mode-panel="card" <%= "hidden" unless chosen == "card" %>>
+        <h4>💳 Card – use the card machine (POS)</h4>
+        <ol class="pm-steps">
+          <li>Type the amount on the card machine: <b id="card-amount">₹0</b>.</li>
+          <li>The client taps, inserts or swipes the card and enters the PIN on the machine.</li>
+          <li>Wait for <b>APPROVED</b> and the printed slip. If it says declined, do not record anything – ask for another way to pay.</li>
+          <li>Copy the details from the slip below.</li>
+        </ol>
+        <div class="pm-warn">Never write down the full card number, expiry or CVV here – only the last 4 digits.</div>
+        <div class="pm-grid">
+          <div><label>Debit or credit *</label><%= select_tag "details[card_type]", options_for_select(PaymentMethods::CARD_TYPES, det[:card_type]) %></div>
+          <div><label>Card network *</label><%= select_tag "details[network]", options_for_select(PaymentMethods::CARD_NETWORKS, det[:network]) %></div>
+          <div><label>Last 4 digits *</label><%= text_field_tag "details[last4]", det[:last4], maxlength: 4, inputmode: "numeric", autocomplete: "off" %></div>
+          <div><label>Approval code *</label><%= text_field_tag "details[approval_code]", det[:approval_code], autocomplete: "off" %></div>
+          <div><label>RRN (on the slip)</label><%= text_field_tag "details[rrn]", det[:rrn], inputmode: "numeric" %></div>
+          <div><label>Card issuing bank</label><%= text_field_tag "details[issuer]", det[:issuer] %></div>
+        </div>
+        <label class="pm-check"><%= check_box_tag "details[approved]", "1", det[:approved] == "1" %> The card machine showed APPROVED and printed a slip.</label>
+      </div>
+
+      <div class="pm-grid" style="max-width:640px">
+        <div>
+          <%= label_tag "pay-amount", "Amount received now (₹)" %>
+          <%= number_field_tag :amount, params[:amount].presence || @payment.balance, id: "pay-amount", step: 0.01, min: 1, required: true %>
+        </div>
+        <div><%= label_tag :note, "Note (optional)" %><%= text_field_tag :note, params[:note] %></div>
+      </div>
+      <p><%= submit_tag "Collect & generate receipt", class: "btn go" %></p>
     <% end %>
   <% end %>
 </div>
 
 <h2>Receipts</h2>
 <div class="table-wrap"><table>
-  <tr><th>Receipt no.</th><th>Date</th><th>Amount</th><th>Mode</th><th>Reference</th><th></th></tr>
+  <tr><th>Receipt no.</th><th>Date</th><th>Amount</th><th>Mode</th><th>Details</th><th></th></tr>
   <% @payment.receipts.each do |r| %>
     <tr><td><%= r.number %></td><td><%= l r.received_on, format: :short %></td><td><%= inr(r.amount) %></td>
-        <td><%= r.mode_label %></td><td><%= r.reference.presence || "—" %></td>
+        <td><%= r.mode_label %></td>
+        <td><%= PaymentMethods.summary(r.mode, r.details).presence || r.reference.presence || "—" %></td>
         <td><%= link_to "View / print", staff_receipt_path(r) %></td></tr>
   <% end %>
   <% if @payment.receipts.empty? %><tr><td colspan="6" class="muted">No receipts yet.</td></tr><% end %>
 </table></div>
+
+<script>
+  (function () {
+    var form = document.getElementById("pay-form");
+    if (!form) return;
+    var amount = document.getElementById("pay-amount");
+    var balance = <%= @payment.balance.to_f %>;
+    var amountTouched = <%= params[:amount].present? %>;
+    var panels = form.querySelectorAll("[data-mode-panel]");
+    var noteInputs = form.querySelectorAll(".pm-note");
+    var coinInput = form.querySelector(".pm-coins");
+    var qrUrl = "<%= upi_qr_staff_payment_path(@payment) %>";
+
+    function inr(n) { return "₹" + Number(n).toLocaleString("en-IN", { maximumFractionDigits: 2 }); }
+    function mode() { var r = form.querySelector("input[name=mode]:checked"); return r ? r.value : "cash"; }
+
+    // ----- cash -----
+    function counted() {
+      var total = 0;
+      noteInputs.forEach(function (input) {
+        var count = parseInt(input.value, 10) || 0, value = parseInt(input.dataset.value, 10);
+        total += count * value;
+        input.closest("tr").querySelector(".pm-sub").textContent = inr(count * value);
+      });
+      return total + (coinInput ? (parseInt(coinInput.value, 10) || 0) : 0);
+    }
+    function updateCash() {
+      var total = counted();
+      document.getElementById("cash-total").textContent = inr(total);
+      if (mode() === "cash" && !amountTouched && total > 0) amount.value = balance > 0 ? Math.min(total, balance) : total;
+      var applied = parseFloat(amount.value) || 0, note = document.getElementById("cash-change");
+      if (mode() !== "cash" || total === 0) { note.textContent = ""; return; }
+      if (total < applied) { note.innerHTML = "<span class='pm-short'>Short by " + inr(applied - total) + " – count again or reduce the amount.</span>"; }
+      else if (total > applied) { note.innerHTML = "<span class='pm-ok'>Give back change: " + inr(total - applied) + "</span>"; }
+      else { note.innerHTML = "<span class='pm-ok'>Cash counted matches the amount.</span>"; }
+    }
+
+    // ----- showing only the chosen method -----
+    function show() {
+      var chosen = mode();
+      panels.forEach(function (panel) {
+        var on = panel.dataset.modePanel === chosen;
+        panel.hidden = !on;
+        panel.querySelectorAll("input, select, textarea").forEach(function (el) { el.disabled = !on; });
+      });
+      form.querySelectorAll(".pm-option").forEach(function (label) { label.classList.toggle("on", label.querySelector("input").checked); });
+      updateAmounts();
+      updateCash();
+    }
+    function updateAmounts() {
+      var value = inr(parseFloat(amount.value) || 0);
+      var qr = document.getElementById("qr-amount"), card = document.getElementById("card-amount");
+      if (qr) qr.textContent = value;
+      if (card) card.textContent = value;
+    }
+
+    form.querySelectorAll("input[name=mode]").forEach(function (r) { r.addEventListener("change", show); });
+    noteInputs.forEach(function (i) { i.addEventListener("input", updateCash); });
+    if (coinInput) coinInput.addEventListener("input", updateCash);
+    amount.addEventListener("input", function () { amountTouched = true; updateAmounts(); updateCash(); });
+
+    // ----- UPI QR code -----
+    var qrBtn = document.getElementById("qr-btn"), qrBox = document.getElementById("qr-box");
+    if (qrBtn) {
+      qrBtn.addEventListener("click", function () {
+        var value = parseFloat(amount.value) || 0;
+        if (value <= 0) { qrBox.textContent = "Enter the amount first."; return; }
+        qrBox.textContent = "Making the QR code…";
+        fetch(qrUrl + "?amount=" + encodeURIComponent(value), { headers: { "Accept": "application/json" }, credentials: "same-origin" })
+          .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+          .then(function (res) {
+            qrBox.innerHTML = "";
+            if (!res.ok) { qrBox.textContent = res.d.error || "The QR code could not be made."; return; }
+            if (res.d.svg) {
+              var wrap = document.createElement("div"); wrap.className = "pm-qr"; wrap.innerHTML = res.d.svg; qrBox.appendChild(wrap);
+            } else {
+              var warn = document.createElement("div"); warn.className = "pm-warn";
+              warn.textContent = "The QR picture needs one setup step: run  bundle add rqrcode  and restart the server. The payment link below works meanwhile.";
+              qrBox.appendChild(warn);
+            }
+            var open = document.createElement("a"); open.className = "btn hold"; open.href = res.d.link; open.textContent = "Open in a UPI app"; qrBox.appendChild(open);
+            var copy = document.createElement("button"); copy.type = "button"; copy.className = "btn hold"; copy.style.marginLeft = "8px"; copy.textContent = "Copy payment link";
+            copy.addEventListener("click", function () { navigator.clipboard.writeText(res.d.link).then(function () { copy.textContent = "Copied ✓"; }); });
+            qrBox.appendChild(copy);
+          })
+          .catch(function () { qrBox.textContent = "The QR code could not be made. Check the connection and try again."; });
+      });
+    }
+
+    // ----- for the money counting machine (future) -----
+    // A script that talks to the machine can call:  ArjuCashCounter.fill({ 500: 12, 100: 7, 10: 3, coins: 40 })
+    // or dispatch:  window.dispatchEvent(new CustomEvent("cash-count", { detail: { 500: 12, 100: 7 } }))
+    window.ArjuCashCounter = {
+      fill: function (counts) {
+        noteInputs.forEach(function (input) { input.value = counts[input.dataset.value] || ""; });
+        if (coinInput) coinInput.value = counts.coins || "";
+        document.getElementById("cash-counted-by").value = "machine";
+        var cash = form.querySelector("input[name=mode][value=cash]"); if (cash) { cash.checked = true; }
+        amountTouched = false;
+        show();
+      }
+    };
+    window.addEventListener("cash-count", function (event) { window.ArjuCashCounter.fill(event.detail || {}); });
+
+    show();
+  })();
+</script>

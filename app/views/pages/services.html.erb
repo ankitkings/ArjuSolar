@@ -1,4 +1,36 @@
-<section class="wrap"><h1>Our Services</h1>
-  <%# TODO: replace with the text from your existing services.html %>
-  <%= render "pages/service_cards" %>
+<% content_for(:title, "Services") %>
+<section class="s-page-hero"><div class="s-wrap"><h1>Our Services</h1><p>Everything you need to go solar and stay solar.</p></div></section>
+
+<section class="s-section">
+  <div class="s-wrap">
+    <div class="s-row">
+      <div class="s-row-img reveal"><%= image_tag SiteImages::RESIDENTIAL, alt: "Rooftop solar on a home", loading: "lazy" %></div>
+      <div class="reveal">
+        <span class="s-eyebrow">For homes and shops</span><h2>Rooftop solar</h2>
+        <p>A complete rooftop system sized for your family or shop, installed neatly and started properly.</p>
+        <ul class="s-checks"><li>Free site visit and shadow check</li><li>Subsidy assistance included</li><li>Net-metering support</li><li>Itemised quotation you can keep</li></ul>
+        <p style="margin-top:22px"><%= link_to "See home systems", systems_path, class: "s-btn" %></p>
+      </div>
+    </div>
+    <div class="s-row">
+      <div class="s-row-img reveal"><%= image_tag SiteImages::COMMERCIAL, alt: "Commercial solar installation", loading: "lazy" %></div>
+      <div class="reveal">
+        <span class="s-eyebrow">For businesses</span><h2>Commercial systems</h2>
+        <p>Scalable solar for offices, factories, schools and institutions to cut electricity costs.</p>
+        <ul class="s-checks"><li>Designed around your load and roof</li><li>Performance monitoring</li><li>Professional installation and documentation</li><li>Annual maintenance contracts</li></ul>
+        <p style="margin-top:22px"><%= link_to "Ask for a commercial quote", contact_path, class: "s-btn" %></p>
+      </div>
+    </div>
+    <div class="s-row">
+      <div class="s-row-img reveal"><%= image_tag SiteImages::MAINTENANCE, alt: "Solar maintenance technician", loading: "lazy" %></div>
+      <div class="reveal">
+        <span class="s-eyebrow">After installation</span><h2>Service &amp; maintenance</h2>
+        <p>Scheduled checks, cleaning and performance tests to keep your system generating for a long time.</p>
+        <ul class="s-checks"><li>Maintenance visits planned for you</li><li>Fast on-site support during the warranty</li><li>Quick response when you call for service</li><li>AMC for long-term peace of mind</li></ul>
+        <p style="margin-top:22px"><%= link_to "Contact us for service", contact_path, class: "s-btn" %></p>
+      </div>
+    </div>
+  </div>
 </section>
+
+<section class="s-section soft"><div class="s-wrap"><div class="s-cta reveal"><h2>Not sure what you need?</h2><p>Call us. We will visit, measure and recommend the right solution, free of charge.</p><div class="s-hero-actions"><%= link_to "Get a free quote", contact_path, class: "s-btn sun big" %></div></div></div></section>

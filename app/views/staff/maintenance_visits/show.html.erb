@@ -6,6 +6,7 @@
     <h3>Customer</h3>
     <p><strong>Name:</strong> <%= req.name %></p>
     <p><strong>Phone:</strong> <%= link_to req.phone, "tel:#{req.phone.gsub(/[^\d+]/, '')}" %></p>
+    <p><strong>Address:</strong> <%= req&.address %></p>
     <p><strong>Due:</strong> <%= l @visit.due_on, format: :long %> <% if @visit.overdue? %><span class="badge cancelled">Overdue</span><% end %></p>
     <p><strong>Status:</strong> <span class="badge <%= @visit.status %>"><%= @visit.status.humanize %></span></p>
   </div>

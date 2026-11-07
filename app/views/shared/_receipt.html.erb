@@ -4,9 +4,9 @@
 <div class="receipt">
   <div class="receipt-head">
     <div>
-      <h2>Arju Solars</h2>
-      <p>Indore, Madhya Pradesh, India</p>
-      <p>+91 7049465926</p>
+      <h2><%= site_setting.company_name %></h2>
+      <% if (office = site_contacts("address").first) %><p><%= office.value %></p><% end %>
+      <% if site_phone %><p><%= site_phone %></p><% end %>
     </div>
     <div class="right">
       <h3>RECEIPT</h3>
@@ -30,6 +30,8 @@
     <tr><td>Total received up to this receipt</td><td class="right"><%= inr(receipt.paid_to_date) %></td></tr>
     <tr><td><b>Balance after this receipt</b></td><td class="right"><b><%= inr(receipt.balance_after) %></b></td></tr>
   </table></div>
+
+  <%= render "shared/receipt_details", receipt: receipt %>
 
   <% if receipt.note.present? %><p><strong>Note:</strong> <%= receipt.note %></p><% end %>
   <p><strong>Received by:</strong> <%= receipt.team_member&.name || "—" %> (Cashier)</p>

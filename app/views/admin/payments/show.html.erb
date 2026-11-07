@@ -30,10 +30,12 @@
 
 <h2>Receipts</h2>
 <div class="table-wrap"><table>
-  <tr><th>Receipt no.</th><th>Date</th><th>Amount</th><th>Mode</th><th>Reference</th><th>Received by</th><th></th></tr>
+  <tr><th>Receipt no.</th><th>Date</th><th>Amount</th><th>Mode</th><th>Details</th><th>Received by</th><th></th></tr>
   <% @payment.receipts.each do |r| %>
     <tr><td><%= r.number %></td><td><%= l r.received_on, format: :short %></td><td><%= inr(r.amount) %></td>
-        <td><%= r.mode_label %></td><td><%= r.reference.presence || "—" %></td><td><%= r.team_member&.name || "—" %></td>
+        <td><%= r.mode_label %></td>
+        <td><%= PaymentMethods.summary(r.mode, r.details).presence || r.reference.presence || "—" %></td>
+        <td><%= r.team_member&.name || "—" %></td>
         <td><%= link_to "View / print", admin_receipt_path(r) %></td></tr>
   <% end %>
   <% if @payment.receipts.empty? %><tr><td colspan="7" class="muted">Nothing collected yet.</td></tr><% end %>

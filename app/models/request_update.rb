@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class RequestUpdate < ApplicationRecord
   belongs_to :service_request
   belongs_to :admin_user, optional: true

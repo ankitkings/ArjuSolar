@@ -1,4 +1,6 @@
 <% actions = RequestWorkflow.actions_for(@task.status) %>
+<% docs_pending = @task.status == "quote_sent" && @task.subsidy_documents_pending? %>
+<% actions = actions.reject { |a| a[:to] == "installation" } if docs_pending %>
 <p><%= link_to "← My tasks", staff_root_path %></p>
 <h1>Task #<%= @task.id %> — <%= @task.name %></h1>
 <div class="two-col">
@@ -10,21 +12,35 @@
     <p><strong>Received:</strong> <%= l @task.created_at, format: :long %></p>
     <p><strong>Message:</strong><br><%= simple_format(h(@task.message)) %></p>
   </div>
-  <div class="panel">
+  <div class="panel <%= 'cancelled' if @task.status == 'cancelled' %>">
     <h3>Current stage</h3>
-    <div class="bar big"><i style="width:<%= @task.progress %>%"></i></div>
-    <p><span class="badge <%= @task.status %>"><%= @task.status_label %></span> <%= @task.progress %>% complete</p>
+    <%= progress_bar(@task, big: true) %>
+    <p class="<%= 'cancel-text' if @task.status == 'cancelled' %>"><span class="badge <%= @task.status %>"><%= @task.status_label %></span> <%= @task.progress %>%<%= @task.status == "cancelled" ? " – deal cancelled" : " complete" %></p>
     <% if actions.any? %>
       <% if @task.status == "site_visit" %>
         <p class="muted small">After the site visit, create the quote below. Use this button only if the client drops out.</p>
+      <% elsif @task.status == "commissioning" %>
+        <p class="muted small">Payment is received. Start the panels and give the final touch<%= " – due #{l @task.final_touch_due_on, format: :long} (same day or next day)" if @task.final_touch_due_on %>. Then mark it complete – the request reaches 100%.</p>
       <% else %>
         <p class="muted small">After you speak to the client, choose the result. The request is handed to the next team automatically.</p>
       <% end %>
       <%= render "shared/stage_actions", actions: actions, url: advance_staff_task_path(@task) %>
+      <% if docs_pending %>
+        <div class="flash alert" style="margin-top:10px">
+          <b>Before handing over to installation</b>, collect the PM Surya Ghar documents below.
+          Still missing: <%= @task.missing_subsidy_documents.to_sentence %>.
+        </div>
+        <%= button_to "Hand over to installation without the documents", advance_staff_task_path(@task),
+              params: { to: "installation", without_documents: "1" }, class: "btn hold",
+              form: { onsubmit: "return confirm('The documents are still missing. The admin will have to collect them later. Hand over anyway?')" } %>
+      <% end %>
     <% elsif @task.status == "installation" %>
-      <p class="muted">When the installation is finished, fill in the system details below. The request is completed and the payment and maintenance tasks are created automatically.</p>
+      <p class="muted">When the installation is finished, fill in the system details and add photos of the site below. The request then goes to the cashier for payment, and the maintenance checks are scheduled automatically.</p>
+    <% elsif @task.status == "payment" %>
+      <p class="muted">Installation is done. Collect the payment – when it is received in full, the request moves to Daily Servicing (95%).</p>
+      <% if @task.payment %><p><%= link_to "Open payment & collect", staff_payment_path(@task.payment), class: "btn go" %></p><% end %>
     <% elsif @task.status == "cancelled" %>
-      <p class="muted">This request was cancelled.</p>
+      <p class="muted cancel-text">This deal was cancelled (0%).</p>
     <% else %>
       <p class="muted">This request is completed.</p>
     <% end %>
@@ -35,8 +51,9 @@
 <% if @task.status == "site_visit" || (@task.status == "quote_sent" && quotes.empty?) %>
   <div class="panel" style="margin-top:16px">
     <h3>Site visit done? Create the quote</h3>
-    <p class="muted small">Pick the system from the price list – the price is filled in automatically. Creating the quote moves the request to "Quote sent".</p>
-    <%= render "shared/quote_form", quote: (@quote || Quote.new), url: staff_task_quotes_path(@task) %>
+    <p class="muted small">Pick a ready-made system – the price is filled in automatically. Creating the quote moves the request to "Quote sent".</p>
+    <p><%= link_to "Client wants a different combination? Arrange the parts yourself →", new_staff_task_quote_path(@task), class: "btn hold" %></p>
+    <%= render "shared/quote_form", quote: (@quote || Quote.new(subsidy_applies: true)), url: staff_task_quotes_path(@task) %>
   </div>
 <% end %>
 <% if quotes.any? %>
@@ -47,25 +64,34 @@
       <tr><td><%= q.number %></td><td><%= q.system_name %></td><td><b><%= inr(q.total) %></b></td>
           <td><%= l q.valid_until, format: :short %></td>
           <td><span class="badge <%= q.status %>"><%= q.status.humanize %></span></td>
-          <td><%= link_to "View / print", staff_quote_path(q) %></td></tr>
+          <td><%= link_to "View / print", staff_quote_path(q) %>
+            <% if q.status == "sent" && !q.expired? %>
+              <%= button_to "WhatsApp", whatsapp_staff_quote_path(q), method: :post, class: "btn go", form: { target: "_blank", style: "display:inline" } %>
+            <% end %>
+            <%= "✅ sent" if q.whatsapp_sent_at %></td></tr>
     <% end %>
   </table></div>
   <% if @task.status == "quote_sent" %>
     <details style="margin-top:12px">
       <summary><b>Revise the quote</b> (creates a new quote that replaces the old one)</summary>
-      <div class="panel" style="margin-top:8px"><%= render "shared/quote_form", quote: (@quote || Quote.new), url: staff_task_quotes_path(@task) %></div>
+      <p style="margin-top:8px"><%= link_to "Or arrange the parts yourself (custom quote) →", new_staff_task_quote_path(@task), class: "btn hold" %></p>
+      <div class="panel" style="margin-top:8px"><%= render "shared/quote_form", quote: (@quote || Quote.new(subsidy_applies: true)), url: staff_task_quotes_path(@task) %></div>
     </details>
   <% end %>
 <% end %>
 
-<% if @task.status == "installation" %>
+<%= render "staff/subsidy_documents/panel", task: @task %>
+
+<%= render "shared/installation_schedule", req: @task %>
+
+<% if @task.status == "installation" && !@task.installation_waiting? %>
   <div class="panel" style="margin-top:16px">
     <h3>Installation done? Enter the system details</h3>
     <%= render "shared/installation_form", installation: @installation, url: complete_staff_task_path(@task) %>
   </div>
 <% end %>
 
-<% if @task.installation %>
+<% if @task.installation&.persisted? %>
   <div class="panel" style="margin-top:16px"><%= render "shared/installation_summary", installation: @task.installation %></div>
 <% end %>
 

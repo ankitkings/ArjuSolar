@@ -1,0 +1,10 @@
+<p><%= link_to "← All clients", admin_users_path %></p>
+<h1>Edit client — <%= @sample.name %></h1>
+<p class="muted">Changes apply to all <%= pluralize(@requests.count, "request") %> of this client.</p>
+<% if @error %><div class="flash alert"><%= @error %></div><% end %>
+<%= form_with url: admin_user_path(@sample), method: :patch, scope: :client, class: "form" do |f| %>
+  <%= f.label :name, "Name" %><%= f.text_field :name, value: (params.dig(:client, :name) || @sample.name), required: true, maxlength: 100 %>
+  <%= f.label :phone, "Phone" %><%= f.telephone_field :phone, value: (params.dig(:client, :phone) || @sample.phone), required: true %>
+  <%= f.label :email, "Email" %><%= f.email_field :email, value: (params.dig(:client, :email) || @sample.email) %>
+  <%= f.submit "Save", class: "btn go" %>
+<% end %>

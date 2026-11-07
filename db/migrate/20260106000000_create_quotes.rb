@@ -1,11 +1,13 @@
+# frozen_string_literal: true
+
 class CreateQuotes < ActiveRecord::Migration[7.1]
   def change
     create_table :quotes do |t|
       t.references :service_request, null: false, foreign_key: true
       t.references :solar_package, foreign_key: true
-      t.references :team_member, foreign_key: true   # the site visitor who made it
+      t.references :team_member, foreign_key: true # the site visitor who made it
       t.string :number
-      t.string :status, null: false, default: "sent"   # sent / accepted / declined / superseded
+      t.string :status, null: false, default: 'sent' # sent / accepted / declined / superseded
       t.string :system_name, :panel_brand, :inverter_model
       t.decimal :capacity_kw, precision: 6, scale: 2
       t.integer :panel_count
