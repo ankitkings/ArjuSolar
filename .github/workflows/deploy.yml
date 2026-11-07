@@ -2,7 +2,7 @@ name: Deploy to EC2
 
 on:
   push:
-    branches: [ arju-solar-first-phase ]
+    branches: [ main ]
 
 jobs:
   deploy:
