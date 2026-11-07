@@ -28,7 +28,7 @@ jobs:
             
             echo ">>> Pulling latest code..."
             git fetch origin
-            git reset --hard origin/arju-solar-first-phase
+            git reset --hard origin/main
             
             echo ">>> Installing gems..."
             bundle install --without development test --deployment
