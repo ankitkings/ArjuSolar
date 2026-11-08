@@ -10,7 +10,11 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
+<<<<<<< Updated upstream
 ActiveRecord::Schema[7.1].define(version: 2026_01_24_000000) do
+=======
+ActiveRecord::Schema[7.1].define(version: 2026_01_26_000000) do
+>>>>>>> Stashed changes
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -144,6 +148,10 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_24_000000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "phone_key"
+<<<<<<< Updated upstream
+=======
+    t.boolean "auto_created", default: false, null: false
+>>>>>>> Stashed changes
     t.index ["email"], name: "index_customers_on_email", unique: true
     t.index ["phone_key"], name: "index_customers_on_phone_key"
   end
@@ -157,6 +165,19 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_24_000000) do
     t.datetime "updated_at", null: false
   end
 
+<<<<<<< Updated upstream
+=======
+  create_table "holidays", force: :cascade do |t|
+    t.date "date", null: false
+    t.string "name", null: false
+    t.string "kind", default: "festival", null: false
+    t.string "note"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["date"], name: "index_holidays_on_date", unique: true
+  end
+
+>>>>>>> Stashed changes
   create_table "installation_settings", force: :cascade do |t|
     t.integer "cutoff_hour", default: 15, null: false
     t.integer "work_end_hour", default: 19, null: false

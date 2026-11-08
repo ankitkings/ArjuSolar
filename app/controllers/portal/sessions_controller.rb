@@ -13,9 +13,13 @@ module Portal
         render :new, status: :too_many_requests
       elsif customer&.password_set? && customer.authenticate(params[:password].to_s)
         customer.sign_in!
+<<<<<<< Updated upstream
         others = session.to_h.slice("admin_id", "staff_id")      # keep an admin / staff login of the same browser
         reset_session
         others.each { |key, value| session[key] = value }
+=======
+        reset_session
+>>>>>>> Stashed changes
         session[:customer_id] = customer.id
         redirect_to portal_root_path, notice: "Welcome back, #{customer.first_name}!"
       else
@@ -26,7 +30,11 @@ module Portal
     end
 
     def destroy
+<<<<<<< Updated upstream
       session.delete(:customer_id)
+=======
+      reset_session
+>>>>>>> Stashed changes
       redirect_to root_path, notice: "You are logged out."
     end
   end

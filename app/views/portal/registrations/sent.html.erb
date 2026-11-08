@@ -1,0 +1,11 @@
+<% content_for(:title, "Check your e-mail") %>
+<%= render "portal/shared/styles" %>
+<div class="pt pt-narrow">
+  <div class="pt-card">
+    <h1>📧 Check your e-mail</h1>
+    <p>If the address is correct, we have sent a link to <b><%= @customer&.email || "your e-mail" %></b>. Open it to choose your password. The link works for 3 days.</p>
+    <p class="pt-muted">It can take a minute to arrive. Please look in the spam folder too.</p>
+    <% if @hint.present? %><div class="pt-ok"><%= @hint %></div><% end %>
+    <p><%= link_to "Go to login", portal_login_path %></p>
+  </div>
+</div>

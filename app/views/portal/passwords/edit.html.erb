@@ -1,0 +1,14 @@
+<% content_for(:title, "Choose your password") %>
+<%= render "portal/shared/styles" %>
+<div class="pt pt-narrow">
+  <div class="pt-card">
+    <h1>Choose your password</h1>
+    <p class="pt-muted">For <b><%= @customer.email %></b>. Use at least 8 characters.</p>
+    <% if @error %><div class="pt-error"><%= @error %></div><% end %>
+    <%= form_with url: portal_set_password_path(params[:token]), method: :patch, class: "form" do %>
+      <%= label_tag :password, "New password" %><%= password_field_tag :password, nil, required: true, minlength: 8, maxlength: 72, autocomplete: "new-password" %>
+      <%= label_tag :password_confirmation, "Type it again" %><%= password_field_tag :password_confirmation, nil, required: true, minlength: 8, maxlength: 72, autocomplete: "new-password" %>
+      <%= submit_tag "Save password", class: "btn" %>
+    <% end %>
+  </div>
+</div>

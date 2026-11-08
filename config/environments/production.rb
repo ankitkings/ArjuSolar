@@ -19,4 +19,25 @@ Rails.application.configure do
   config.active_support.report_deprecations = false
   config.active_record.dump_schema_after_migration = false
   # SECRET_KEY_BASE must be set as an environment variable in production
+
+  config.action_mailer.delivery_method = :smtp
+
+  config.action_mailer.smtp_settings = {
+    address: ENV.fetch("SMTP_ADDRESS"),
+    port: ENV.fetch("SMTP_PORT", 587).to_i,
+    domain: ENV.fetch("MAILER_HOST"),
+    user_name: ENV.fetch("SMTP_USERNAME"),
+    password: ENV.fetch("SMTP_PASSWORD"),
+    authentication: :plain,
+    enable_starttls_auto: true
+  }
+
+  config.action_mailer.default_options = {
+    from: ENV.fetch("MAILER_SENDER")
+  }
+
+  config.action_mailer.default_url_options = {
+    host: ENV.fetch("MAILER_HOST"),
+    protocol: "https"
+  }
 end

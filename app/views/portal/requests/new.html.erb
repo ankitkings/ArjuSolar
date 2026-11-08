@@ -1,0 +1,21 @@
+<% content_for(:title, "Request an installation") %>
+<%= render "portal/shared/styles" %>
+<div class="pt">
+  <%= render "portal/shared/nav" %>
+  <div class="pt-card" style="max-width:640px">
+    <h1>Request a solar installation</h1>
+    <p class="pt-muted">We will call <b><%= current_customer.phone %></b> to plan the site visit. Your name and e-mail are taken from your account.</p>
+    <% if @service_request.errors.any? %><div class="pt-error"><%= @service_request.errors.full_messages.to_sentence %></div><% end %>
+    <%= form_with model: @service_request, url: portal_requests_path, method: :post, class: "form" do |f| %>
+      <%= f.label :address, "Address where the system will be installed" %>
+      <%= f.text_area :address, rows: 3, required: true, maxlength: 500, placeholder: "House / shop no., area, city" %>
+      <% if @packages.any? %>
+        <%= label_tag :solar_package_id, "System you are interested in (optional)" %>
+        <%= select_tag :solar_package_id, options_for_select(@packages.map { |p| [p.label, p.id] }, params[:solar_package_id]), include_blank: "Not sure yet – advise me" %>
+      <% end %>
+      <%= f.label :message, "Anything else we should know? (optional)" %>
+      <%= f.text_area :message, rows: 3, maxlength: 1500, placeholder: "Monthly electricity bill, roof type, home or business …" %>
+      <%= f.submit "Send my request", class: "btn" %>
+    <% end %>
+  </div>
+</div>

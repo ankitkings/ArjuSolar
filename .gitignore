@@ -10,4 +10,4 @@
 /public/assets
 .env
 *.sqlite3*
-.byebug_history
+.byebug_history.env

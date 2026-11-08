@@ -10,6 +10,7 @@ class ServiceRequest < ApplicationRecord
   }.freeze
 
   belongs_to :team_member, optional: true
+  belongs_to :customer, optional: true   # the registered client who sent it (client portal)
   has_many :updates, -> { order(created_at: :desc) }, class_name: "RequestUpdate", dependent: :destroy
   has_many :quotes, -> { order(:created_at, :id) }, dependent: :destroy
   has_one :installation, dependent: :destroy
@@ -27,7 +28,10 @@ class ServiceRequest < ApplicationRecord
   validates :status, inclusion: { in: STATUSES }
   validates :progress, numericality: { in: 0..100 }
 
+  before_validation { self.phone_key = Customer.phone_key_for(phone) }
+  before_save :link_to_client_profile, if: -> { customer_id.nil? && (new_record? || will_save_change_to_email? || will_save_change_to_phone?) }
   before_create :assign_initial_owner
+  after_create :create_client_profile, if: -> { customer_id.nil? && email.present? }   # a first-time person gets a profile automatically
   before_save :sync_progress_with_status
   before_save :clear_admin_assignment
 
@@ -194,6 +198,20 @@ class ServiceRequest < ApplicationRecord
   end
 
   private
+
+  # The client profile the admin made for this person: found by the same e-mail or the same phone number
+  # first-time person: the profile is made from the details of this request (a failure must never stop a request)
+  def create_client_profile
+    profile = Customer.ensure_for_request(self)
+    update_column(:customer_id, profile.id) if profile
+  rescue StandardError => e
+    Rails.logger.warn("Client profile not created for request ##{id}: #{e.class}: #{e.message}")
+  end
+
+  def link_to_client_profile
+    match = Customer.match_for(email: email, phone: phone)
+    self.customer = match if match
+  end
 
   # Keeps the quote in step with the request: accepted when installation starts,
   # declined when the request is cancelled at the quote stage.

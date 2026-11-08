@@ -1,0 +1,75 @@
+<h1>Clients</h1>
+<p class="muted">You create a profile for each client. The client gets an e-mail to choose a password, then logs in to the website with that e-mail to request an installation, follow its status and ask for a visit during the warranty. Every request, from the contact form or the portal, joins the client with the <b>same e-mail or phone number</b> automatically.</p>
+<% unless @mail_ready %>
+  <div class="flash alert">E-mail is not set up, so no set-password link is really sent (the e-mails are only saved as files in <code>tmp/mails</code>). Start the server with <code>bash start_server.sh</code> after filling in your Gmail details.</div>
+<% end %>
+
+<% if @no_email.positive? %>
+  <div class="flash notice"><%= pluralize(@no_email, "request") %> <%= @no_email == 1 ? "has" : "have" %> no e-mail address, so no profile could be made automatically. See the list below, or add the e-mail to the request.</div>
+<% end %>
+
+<div class="panel" id="new-client">
+  <h3>Add a client</h3>
+  <% if @customer.errors.any? %><div class="flash alert"><%= @customer.errors.full_messages.to_sentence %></div><% end %>
+  <%= form_with model: @customer, url: admin_customers_path, method: :post, class: "form" do |f| %>
+    <%= f.label :name, "Name" %><%= f.text_field :name, required: true, maxlength: 100 %>
+    <%= f.label :email, "E-mail address (the client logs in with this)" %><%= f.email_field :email, required: true %>
+    <%= f.label :phone, "Mobile number" %><%= f.telephone_field :phone, required: true %>
+    <label><%= check_box_tag :send_link, "1", true %> E-mail the client a link to set a password now</label>
+    <%= f.submit "Create profile", class: "btn go" %>
+  <% end %>
+</div>
+
+<% if @unlinked.any? %>
+  <div class="panel">
+    <h3>Requests without a client profile</h3>
+    <p class="muted small">These requests came in from people who have no profile yet. Press “Create profile” to fill in the form above with their details.</p>
+    <div class="table-wrap"><table>
+      <tr><th>Request</th><th>Name</th><th>E-mail</th><th>Phone</th><th>Received</th><th></th></tr>
+      <% @unlinked.each do |r| %>
+        <tr>
+          <td><%= link_to "##{r.id}", admin_service_request_path(r) %></td>
+          <td><%= r.name %></td><td><%= r.email.presence || "—" %></td><td><%= r.phone %></td>
+          <td><%= l r.created_at, format: "%d %b %Y" %></td>
+          <td><%= link_to "Create profile", admin_customers_path(name: r.name, email: r.email, phone: r.phone, anchor: "new-client") %></td>
+        </tr>
+      <% end %>
+    </table></div>
+  </div>
+<% end %>
+
+<div class="panel">
+  <h3>Warranty period</h3>
+  <p class="muted small">A client can ask for a visit about an issue until this many months after the installation date.</p>
+  <%= form_with model: @setting, url: settings_admin_customers_path, method: :patch, class: "filters" do |f| %>
+    <%= f.number_field :warranty_months, min: 1, max: 360, step: 1, style: "width:100px" %> months
+    <%= f.submit "Save", class: "btn" %>
+  <% end %>
+</div>
+
+<h2>All clients</h2>
+<%= form_with url: admin_customers_path, method: :get, class: "filters" do %>
+  <%= text_field_tag :q, params[:q], placeholder: "Search name, e-mail or phone" %>
+  <%= submit_tag "Search", class: "btn" %>
+<% end %>
+
+<div class="table-wrap"><table>
+  <tr><th>Name</th><th>E-mail</th><th>Phone</th><th>Created</th><th>Password</th><th>Last login</th><th class="right">Requests</th><th></th></tr>
+  <% @customers.each do |c| %>
+    <tr>
+      <td><b><%= c.name %></b><%= ' <span class="badge pending" title="Made automatically from a request">auto</span>'.html_safe if c.auto_created %></td>
+      <td><%= c.email %></td>
+      <td><%= c.phone %></td>
+      <td><%= l c.created_at, format: "%d %b %Y" %></td>
+      <td><%= c.password_set? ? "✅ set" : "⏳ not set yet" %><%= " · 🔒 locked" if c.locked? %></td>
+      <td><%= c.last_login_at ? l(c.last_login_at, format: "%d %b %Y") : "—" %></td>
+      <td class="right"><%= @request_counts[c.id].to_i %></td>
+      <td>
+        <%= link_to "Edit", edit_admin_customer_path(c) %>
+        <%= button_to (c.password_set? ? "E-mail reset link" : "E-mail set-password link"), resend_admin_customer_path(c), method: :post, class: "btn hold" %>
+        <%= button_to "Remove", admin_customer_path(c), method: :delete, class: "btn stop", form: { onsubmit: "return confirm('Remove the profile of #{j c.name}? Their requests stay in the system.')" } %>
+      </td>
+    </tr>
+  <% end %>
+  <% if @customers.empty? %><tr><td colspan="8" class="muted">No client profile yet. Add the first one above.</td></tr><% end %>
+</table></div>
