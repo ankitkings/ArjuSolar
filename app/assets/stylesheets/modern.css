@@ -186,3 +186,6 @@ body.admin *::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
   body.admin { background: #fff !important; }
   body.admin .panel, body.admin .table-wrap, body.admin .stat { box-shadow: none; }
 }
+
+/* the "Client login" link in the website menu */
+.site-header nav a.portal-link { background: #fbbf24; color: #0f172a !important; border-radius: 99px; padding: 6px 14px; font-weight: 700; }

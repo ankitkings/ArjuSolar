@@ -8,7 +8,11 @@ module Portal
 
     def create
       if current_customer.service_requests.where("created_at > ?", 1.day.ago).count >= 3
+<<<<<<< Updated upstream
         return redirect_to(portal_root_path, alert: "You have already sent three requests today. Please wait for our call, or phone us on #{SiteSetting.current.primary_phone || 'our office'}.")
+=======
+        return redirect_to(portal_root_path, alert: "You have already sent three requests today. Please wait for our call, or phone us on +91 7049465926.")
+>>>>>>> Stashed changes
       end
 
       permitted = params.require(:service_request).permit(:address, :message)

@@ -1,0 +1,59 @@
+<% content_for(:title, "My portal") %>
+<%= render "portal/shared/styles" %>
+<div class="pt">
+  <%= render "portal/shared/nav" %>
+  <div class="pt-hero">
+    <h1>Hello, <%= current_customer.first_name %> 👋</h1>
+    <p>Welcome to your Arju Solars portal. Follow your requests here, and ask for help during the warranty.</p>
+    <%= link_to "☀️ Request a new installation", new_portal_request_path, class: "pt-btn" %>
+  </div>
+
+  <% if @requests.empty? %>
+    <div class="pt-card">
+      <h2>No request yet</h2>
+      <p>Tell us where you want solar and we will call you to plan it.</p>
+      <%= link_to "Request an installation", new_portal_request_path, class: "pt-btn blue" %>
+    </div>
+  <% else %>
+    <h2>My requests</h2>
+    <div class="pt-grid">
+      <% @requests.each do |r| %>
+        <% inst = r.installation %>
+        <div class="pt-card">
+          <p class="pt-muted" style="margin:0">Request #<%= r.id %> · <%= l r.created_at, format: "%d %b %Y" %></p>
+          <h3 style="margin:4px 0 6px"><%= r.status == "cancelled" ? "Request closed" : PortalStatus.title(r.status) %></h3>
+          <span class="pt-chip <%= r.status == 'cancelled' ? 'red' : (r.status == 'completed' ? 'green' : 'blue') %>"><%= r.status == "cancelled" ? "Closed" : "#{r.progress}% done" %></span>
+          <div class="pt-bar"><i style="width:<%= r.progress %>%"></i></div>
+          <p class="pt-muted"><%= r.status == "cancelled" ? "This request was closed. Please contact us if you would like to start again." : PortalStatus.text(r.status) %></p>
+          <% if inst %>
+            <p class="pt-muted">
+              ☀️ <%= format("%g", inst.capacity_kw.to_f) %> kW installed on <%= l inst.installed_on, format: "%d %b %Y" %>.
+              <% if Warranty.active?(inst) %><span class="pt-chip green">Warranty until <%= l Warranty.ends_on(inst), format: "%d %b %Y" %></span>
+              <% else %><span class="pt-chip">Warranty ended</span><% end %>
+            </p>
+          <% end %>
+          <%= link_to "View status →", portal_request_path(r), class: "pt-btn blue" %>
+          <% if inst && Warranty.active?(inst) %> <%= link_to "Report an issue", portal_request_path(r, anchor: "issue") %><% end %>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+
+  <% if @issues.any? %>
+    <h2>Issues I reported</h2>
+    <div class="pt-card"><table>
+      <tr><th>Reported</th><th>Problem</th><th>Visit</th></tr>
+      <% @issues.each do |v| %>
+        <tr>
+          <td><%= l v.created_at, format: "%d %b %Y" %></td>
+          <td><%= v.issue_details.to_s.truncate(110) %></td>
+          <td>
+            <% if v.status == "done" %><span class="pt-chip green">Visit done<%= " on #{l v.completed_at, format: '%d %b'}" if v.completed_at %></span>
+            <% elsif v.status == "assigned" %><span class="pt-chip blue">Engineer assigned<%= " – #{v.team_member.name}" if v.team_member %></span>
+            <% else %><span class="pt-chip amber">Asked for <%= l v.due_on, format: "%d %b" %></span><% end %>
+          </td>
+        </tr>
+      <% end %>
+    </table></div>
+  <% end %>
+</div>

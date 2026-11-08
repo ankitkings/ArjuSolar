@@ -9,7 +9,11 @@ module Portal
 
       return redirect_to(back, alert: "There is no installation on this request yet.") unless installation
       unless Warranty.active?(installation)
+<<<<<<< Updated upstream
         return redirect_to(back, alert: "The warranty of this system ended on #{Warranty.ends_on(installation).strftime('%d %b %Y')}. Please phone us on #{SiteSetting.current.primary_phone || 'our office'} and we will help you.")
+=======
+        return redirect_to(back, alert: "The warranty of this system ended on #{Warranty.ends_on(installation).strftime('%d %b %Y')}. Please phone us on +91 7049465926 and we will help you.")
+>>>>>>> Stashed changes
       end
 
       details = params[:details].to_s.strip

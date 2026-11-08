@@ -2,6 +2,7 @@
 
 source 'https://rubygems.org'
 ruby '>= 3.1.0'
+gem "rails", "~> 7.1.0"
 
 gem 'bcrypt', '~> 3.1.7'
 gem 'prawn', '~> 2.5' # builds the quotation PDF
@@ -20,3 +21,5 @@ group :development do
 end
 gem "json", "< 3.0"
 gem "rqrcode", "~> 3.2"
+
+gem "dotenv-rails", groups: [:development, :test]

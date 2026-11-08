@@ -1,0 +1,29 @@
+<% content_for(:title, "My account") %>
+<%= render "portal/shared/styles" %>
+<div class="pt">
+  <%= render "portal/shared/nav" %>
+  <h1>My account</h1>
+  <div class="pt-grid">
+    <div class="pt-card">
+      <h3>My details</h3>
+      <% if current_customer.errors.any? %><div class="pt-error"><%= current_customer.errors.full_messages.to_sentence %></div><% end %>
+      <%= form_with model: current_customer, url: portal_account_path, method: :patch, class: "form" do |f| %>
+        <label>E-mail (your login – it cannot be changed here)</label><input type="text" value="<%= current_customer.email %>" disabled>
+        <%= f.label :name, "Name" %><%= f.text_field :name, required: true %>
+        <%= f.label :phone, "Mobile number" %><%= f.telephone_field :phone, required: true %>
+        <%= f.submit "Save", class: "btn" %>
+      <% end %>
+    </div>
+    <div class="pt-card">
+      <h3>Change my password</h3>
+      <% if @password_error %><div class="pt-error"><%= @password_error %></div><% end %>
+      <%= form_with url: portal_change_password_path, method: :patch, class: "form" do %>
+        <%= label_tag :current_password, "Current password" %><%= password_field_tag :current_password, nil, required: true, autocomplete: "current-password" %>
+        <%= label_tag :new_password, "New password (at least 8 characters)" %><%= password_field_tag :new_password, nil, required: true, minlength: 8, maxlength: 72, autocomplete: "new-password" %>
+        <%= label_tag :new_password_confirmation, "Type the new password again" %><%= password_field_tag :new_password_confirmation, nil, required: true, minlength: 8, maxlength: 72, autocomplete: "new-password" %>
+        <%= submit_tag "Change password", class: "btn" %>
+      <% end %>
+      <p class="pt-muted">Forgot it? Log out and use “Forgot password” on the login page.</p>
+    </div>
+  </div>
+</div>

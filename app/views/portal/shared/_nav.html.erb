@@ -1,0 +1,7 @@
+<nav class="pt-nav">
+  <%= link_to "🏠 My portal", portal_root_path %>
+  <%= link_to "☀️ New request", new_portal_request_path %>
+  <%= link_to "👤 My account", portal_account_path %>
+  <span class="spacer"></span>
+  <%= button_to "Log out", portal_logout_path, method: :delete %>
+</nav>

@@ -95,6 +95,9 @@ GEM
     crass (1.0.7)
     date (3.5.1)
     dotenv (3.2.0)
+    dotenv-rails (3.2.0)
+      dotenv (= 3.2.0)
+      railties (>= 6.1)
     drb (2.2.3)
     ed25519 (1.4.0)
     erb (6.0.7)
@@ -283,6 +286,7 @@ PLATFORMS
 DEPENDENCIES
   bcrypt (~> 3.1.7)
   byebug (~> 11.1)
+  dotenv-rails
   json (< 3.0)
   kamal (~> 2.12)
   prawn (~> 2.5)
