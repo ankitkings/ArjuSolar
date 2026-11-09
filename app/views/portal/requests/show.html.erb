@@ -8,11 +8,7 @@
   <p class="pt-muted">Sent on <%= l r.created_at, format: "%d %b %Y" %> · <%= r.address %></p>
 
   <% if r.status == "cancelled" %>
-<<<<<<< Updated upstream
     <div class="pt-card"><h3>This request was closed</h3><p>If you would like to go ahead, please <%= link_to "send a new request", new_portal_request_path %> or phone us on <%= link_to (site_phone || "our office"), (site_phone_href || contact_path) %>.</p></div>
-=======
-    <div class="pt-card"><h3>This request was closed</h3><p>If you would like to go ahead, please <%= link_to "send a new request", new_portal_request_path %> or phone us on <%= link_to "+91 7049465926", "tel:+917049465926" %>.</p></div>
->>>>>>> Stashed changes
   <% else %>
     <div class="pt-card">
       <h2>Where is my request?</h2>
@@ -84,11 +80,7 @@
           <% end %>
         <% end %>
       <% else %>
-<<<<<<< Updated upstream
         <p>The warranty ended on <%= l Warranty.ends_on(@installation), format: "%d %b %Y" %>. You can still phone us on <%= link_to (site_phone || "our office"), (site_phone_href || contact_path) %> for service.</p>
-=======
-        <p>The warranty ended on <%= l Warranty.ends_on(@installation), format: "%d %b %Y" %>. You can still phone us on <%= link_to "+91 7049465926", "tel:+917049465926" %> for service.</p>
->>>>>>> Stashed changes
       <% end %>
 
       <% if @issues.any? %>
