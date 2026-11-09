@@ -6,11 +6,8 @@ Rails.application.routes.draw do
   get "q/:token", to: "public_quotes#show", as: :public_quote   # the client's quotation page (opened from WhatsApp)
 
   # ----- client portal: clients log in with the e-mail they registered with -----
-<<<<<<< Updated upstream
-=======
   get    "portal/register", to: "portal/registrations#new", as: :portal_register
   post   "portal/register", to: "portal/registrations#create"
->>>>>>> Stashed changes
   get    "portal/login", to: "portal/sessions#new", as: :portal_login
   post   "portal/login", to: "portal/sessions#create"
   delete "portal/logout", to: "portal/sessions#destroy", as: :portal_logout
@@ -84,16 +81,17 @@ Rails.application.routes.draw do
     delete "overdue/limits", to: "overdue#reset_limits"
     get "my_tasks", to: "my_tasks#index"
     get "my_tasks/alert", to: "my_tasks#alert", as: :my_tasks_alert
-<<<<<<< Updated upstream
     resource :website, only: %i[show update], controller: "website"
     resources :contact_entries, only: %i[create update destroy]
     resources :faq_items, only: %i[create update destroy]
     resources :customers, only: %i[index create edit update destroy] do
-=======
-    resources :customers do
->>>>>>> Stashed changes
-      member { post :resend }
-      collection { patch :settings }
+      member do
+        post :resend
+      end
+
+      collection do
+        patch :settings
+      end
     end
     resource :margins, only: %i[show update], controller: "margins"
     get "attendance", to: "attendance#index"
