@@ -169,4 +169,11 @@ module ApplicationHelper
   def highlighted(text)
     ERB::Util.html_escape(text.to_s).to_str.gsub(/\*(.+?)\*/, '<em>\1</em>').html_safe
   end
+
+  # small tag next to a cheque: waiting for the bank / received in the bank / not received
+  def receipt_clearing_chip(receipt)
+    return "".html_safe unless receipt.mode == "cheque" && receipt.clearing_status.present?
+    css = { "pending" => "pending", "cleared" => "completed", "bounced" => "cancelled" }[receipt.clearing_status]
+    content_tag(:span, receipt.clearing_label, class: "badge #{css}")
+  end
 end

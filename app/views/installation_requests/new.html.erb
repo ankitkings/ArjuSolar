@@ -1,0 +1,50 @@
+<% content_for(:title, "Request an installation") %>
+<section class="s-page-hero"><div class="s-wrap"><h1>Request a solar installation</h1><p>Tell us about your place. We call you back and plan a free site visit. No login needed.</p></div></section>
+
+<section class="s-section">
+  <div class="s-wrap">
+    <div class="s-contact">
+      <div class="s-info reveal">
+        <div class="s-card">
+          <h3>What happens next</h3>
+          <ul class="s-checks">
+            <li>We call you to understand what you need</li>
+            <li>Our engineer visits your site, free of charge</li>
+            <li>You get an itemised quotation, with the subsidy shown for homes</li>
+            <li>After you accept, we plan and install your system</li>
+          </ul>
+        </div>
+        <% call = site_contacts("phone").first %>
+        <% if call %><a class="item" href="<%= call.href %>"><span class="s-icon sun">📞</span><span><small>Prefer to talk? Call us</small><b><%= call.value %></b></span></a><% end %>
+        <% if site_setting.office_hours.present? %><div class="item"><span class="s-icon">🕘</span><span><small>Office hours</small><b><%= site_setting.office_hours %></b></span></div><% end %>
+      </div>
+
+      <div class="s-card s-form-card reveal">
+        <h3>Your details</h3>
+        <% if @service_request.errors.any? %>
+          <div class="flash alert" style="width:auto;margin:0 0 10px"><%= @service_request.errors.full_messages.to_sentence %></div>
+        <% end %>
+        <%= form_with model: @service_request, url: installation_requests_path, class: "form" do |f| %>
+          <div style="position:absolute;left:-9999px" aria-hidden="true"><%= text_field_tag :website, nil, tabindex: -1, autocomplete: "off" %></div>
+          <div class="s-form-grid">
+            <div><%= f.label :name, "Your name *" %><%= f.text_field :name, required: true, maxlength: 100 %></div>
+            <div><%= f.label :phone, "Mobile number *" %><%= f.telephone_field :phone, required: true %></div>
+            <div class="full"><%= f.label :email, "E-mail (optional)" %><%= f.email_field :email %></div>
+            <div class="full"><%= f.label :address, "Address where the solar system will be installed *" %><%= f.text_area :address, rows: 2, required: true, maxlength: 500 %></div>
+            <div><%= label_tag :property, "Type of place" %><%= select_tag :property, options_for_select(InstallationRequestsController::PROPERTY_TYPES, params[:property]), include_blank: "Select…" %></div>
+            <div><%= label_tag :bill, "Monthly electricity bill" %><%= select_tag :bill, options_for_select(InstallationRequestsController::BILLS, params[:bill]), include_blank: "Select…" %></div>
+            <div><%= label_tag :roof, "Roof type" %><%= select_tag :roof, options_for_select(InstallationRequestsController::ROOFS, params[:roof]), include_blank: "Select…" %></div>
+            <div><%= label_tag :visit_on, "Preferred day for the site visit" %><%= date_field_tag :visit_on, params[:visit_on], min: Date.current, max: Date.current + 60 %></div>
+            <% if @packages.any? %>
+              <div class="full"><%= label_tag :package_id, "System you are interested in (optional)" %>
+                <%= select_tag :package_id, options_for_select(@packages.map { |p| [p.label, p.id] }, @chosen_package), include_blank: "Not sure – advise me" %></div>
+            <% end %>
+            <div class="full"><%= label_tag :notes, "Anything else we should know? (optional)" %><%= text_area_tag :notes, params[:notes], rows: 3, maxlength: 1000 %></div>
+          </div>
+          <%= f.submit "Send my installation request", class: "btn" %>
+        <% end %>
+        <p class="muted small" style="color:var(--muted);margin-top:12px">We use your details only to contact you about your solar installation.</p>
+      </div>
+    </div>
+  </div>
+</section>

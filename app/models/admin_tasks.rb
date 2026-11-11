@@ -2,7 +2,7 @@
 # "New" = it arrived after the admin last opened Admin > My tasks.
 class AdminTasks
   Task = Struct.new(:kind, :title, :detail, :since, :record, :fresh, keyword_init: true)
-  KIND_LABELS = { "subsidy" => "PM Surya Ghar", "hold" => "Job on hold", "leave" => "Leave request", "order" => "Parts to order", "salary" => "Salary" }.freeze
+  KIND_LABELS = { "subsidy" => "PM Surya Ghar", "hold" => "Job on hold", "leave" => "Leave request", "order" => "Parts to order", "salary" => "Salary", "cheque" => "Cheque" }.freeze
 
   def self.for(admin)
     seen = admin.tasks_seen_at
@@ -60,6 +60,13 @@ class AdminTasks
       list << task("salary", "Pay the salaries of #{last_month.strftime('%B %Y')}",
                    "#{unpaid.size} #{'employee'.pluralize(unpaid.size)} not paid yet: #{unpaid.first(3).map(&:name).to_sentence}#{' and more' if unpaid.size > 3}",
                    Date.current.beginning_of_month.beginning_of_day, last_month)
+    end
+
+    # cheques taken from clients that the bank has not confirmed yet
+    waiting = Receipt.waiting_for_bank.includes(:payment).order(:id).to_a
+    if waiting.any?
+      list << task("cheque", "#{waiting.size} #{'cheque'.pluralize(waiting.size)} waiting for the bank",
+                   "Confirm whether the bank received #{waiting.size == 1 ? 'it' : 'them'}: #{Rupees.display(waiting.sum(&:amount))} in total", waiting.first.created_at, waiting.first.payment)
     end
 
     lines = RequiredParts.new.order_lines

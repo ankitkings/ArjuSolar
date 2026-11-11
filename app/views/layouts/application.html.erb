@@ -51,7 +51,7 @@
             <%= link_to (current_admin ? "🔑 Admin panel" : "🔑 Admin login"), (current_admin ? admin_root_path : admin_login_path), role: "menuitem" %>
           </div>
         </div>
-        <%= link_to "Get a free quote", contact_path, class: "s-btn sun" %>
+        <%= link_to "Request installation", new_installation_request_path, class: "s-btn sun" %>
       </nav>
     </div>
   </header>
@@ -86,7 +86,7 @@
           <ul>
             <li><%= link_to (current_staff ? "Staff dashboard" : "Staff login"), (current_staff ? staff_root_path : staff_login_path) %></li>
             <li><%= link_to (current_admin ? "Admin panel" : "Admin login"), (current_admin ? admin_root_path : admin_login_path) %></li>
-            <li><%= link_to "Request a free quote", contact_path %></li>
+            <li><%= link_to "Request an installation", new_installation_request_path %></li>
           </ul>
         </div>
         <div>

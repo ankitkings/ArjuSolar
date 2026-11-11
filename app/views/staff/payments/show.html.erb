@@ -30,6 +30,8 @@
   <div class="stat"><b><%= inr(@payment.amount_paid) %></b><span>Received so far</span></div>
   <div class="stat"><b><%= inr(@payment.balance) %></b><span>Balance</span></div>
 </div>
+<p class="no-print"><%= link_to "🧾 View the bill", staff_payment_bill_path(@payment), class: "btn hold" %></p>
+<%= render "shared/cheque_clearance", payment: @payment, area: "staff" %>
 <div class="two-col">
   <div class="panel">
     <h3>Client</h3>
@@ -189,7 +191,7 @@
   <tr><th>Receipt no.</th><th>Date</th><th>Amount</th><th>Mode</th><th>Details</th><th></th></tr>
   <% @payment.receipts.each do |r| %>
     <tr><td><%= r.number %></td><td><%= l r.received_on, format: :short %></td><td><%= inr(r.amount) %></td>
-        <td><%= r.mode_label %></td>
+        <td><%= r.mode_label %> <%= receipt_clearing_chip(r) %></td>
         <td><%= PaymentMethods.summary(r.mode, r.details).presence || r.reference.presence || "—" %></td>
         <td><%= link_to "View / print", staff_receipt_path(r) %></td></tr>
   <% end %>

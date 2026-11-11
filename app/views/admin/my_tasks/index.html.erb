@@ -23,6 +23,8 @@
             <%= link_to "Open", admin_service_request_path(t.record) %>
           <% elsif t.record.is_a?(LeaveRequest) %>
             <%= link_to "Decide", admin_leave_requests_path(status: "pending") %>
+          <% elsif t.record.is_a?(Payment) %>
+            <%= link_to "Open", admin_payment_path(t.record) %>
           <% elsif t.record.is_a?(Date) %>
             <%= link_to "Pay", admin_payroll_path(month: t.record.strftime("%Y-%m")) %>
           <% else %>

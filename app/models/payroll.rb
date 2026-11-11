@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 # Attendance, leave and salary of one month.
 # Salary = monthly salary / working days of the month x payable days.
 # Payable day: present = 1, half day = 0.5, paid leave = 1. Unpaid leave and absent = 0. Weekly offs are paid.
@@ -15,9 +13,10 @@ class Payroll
     @first_day = month.beginning_of_month
     @last_day = month.end_of_month
     @setting = AttendanceSetting.current
+    @holidays = Holiday.where(date: @first_day..@last_day).index_by(&:date)
   end
 
-  def off_day?(date) = @setting.sunday_off && date.sunday?
+  def off_day?(date) = (@setting.sunday_off && date.sunday?) || @holidays.key?(date)   # weekly off or a holiday: paid, not a working day
   def working_dates = (@first_day..@last_day).reject { |date| off_day?(date) }
   def summaries(members) = members.map { |member| summary(member) }
 
@@ -28,12 +27,9 @@ class Payroll
     working.each do |date|
       kind = day_status(member, date).first
       case kind
-      when :present then result.present += 1
-                         result.payable += 1
-      when :half_day then result.half_days += 1
-                          result.payable += 0.5
-      when :paid_leave then result.paid_leave += 1
-                            result.payable += 1
+      when :present      then result.present += 1;      result.payable += 1
+      when :half_day     then result.half_days += 1;    result.payable += 0.5
+      when :paid_leave   then result.paid_leave += 1;   result.payable += 1
       when :unpaid_leave then result.unpaid_leave += 1
       when :absent       then result.absent += 1
       when :future, :today then result.remaining += 1
@@ -55,26 +51,23 @@ class Payroll
   private
 
   def attendances
-    @attendances ||= Attendance.where(date: @first_day..@last_day).group_by(&:team_member_id).transform_values do |list|
-      list.index_by(&:date)
-    end
+    @attendances ||= Attendance.where(date: @first_day..@last_day).group_by(&:team_member_id).transform_values { |list| list.index_by(&:date) }
   end
 
   def leaves
-    @leaves ||= LeaveRequest.approved.where('from_date <= ? AND to_date >= ?', @last_day,
-                                            @first_day).group_by(&:team_member_id)
+    @leaves ||= LeaveRequest.approved.where("from_date <= ? AND to_date >= ?", @last_day, @first_day).group_by(&:team_member_id)
   end
 
   def day_status(member, date)
-    return [:off, 'Weekly off', nil, nil] if off_day?(date)
-
+    if (holiday = @holidays[date])
+      return [:holiday, holiday.name, nil, nil]
+    end
+    return [:off, "Weekly off", nil, nil] if off_day?(date)
     leave = (leaves[member.id] || []).find { |l| l.covers?(date) }
     return [leave.paid? ? :paid_leave : :unpaid_leave, leave.kind_label, (leave.paid? ? 1.0 : 0.0), nil] if leave
-    return [:future, '', nil, nil] if date > Date.current
-
+    return [:future, "", nil, nil] if date > Date.current
     record = attendances.dig(member.id, date)
     return [record.status.to_sym, record.status_label, record.counted_days, record] if record
-
-    date == Date.current ? [:today, 'Not marked yet', nil, nil] : [:absent, 'Absent (not marked)', 0.0, nil]
+    date == Date.current ? [:today, "Not marked yet", nil, nil] : [:absent, "Absent (not marked)", 0.0, nil]
   end
 end

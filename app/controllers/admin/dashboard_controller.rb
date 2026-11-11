@@ -36,6 +36,7 @@ module Admin
       @collected_total = Receipt.sum(:amount)
 
       # ---- the team today ----
+      @holiday_today = Holiday.on(Date.current)
       @team_today = TeamMember.where(active: true).order(:name).to_a
       @records_today = Attendance.where(date: Date.current).index_by(&:team_member_id)
       @leaves_today = LeaveRequest.approved.where("from_date <= ? AND to_date >= ?", Date.current, Date.current).index_by(&:team_member_id)

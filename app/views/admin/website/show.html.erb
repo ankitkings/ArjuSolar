@@ -14,6 +14,9 @@
     <%= f.label :company_name, "Company name (the first word is shown big, the rest in colour)" %><%= f.text_field :company_name, maxlength: 60 %>
     <%= f.label :tagline, "Short line under the name" %><%= f.text_field :tagline, maxlength: 80 %>
     <%= f.label :office_hours, "Office hours" %><%= f.text_field :office_hours, maxlength: 100 %>
+    <%= f.label :legal_name, "Name on the bills (if different from the company name)" %><%= f.text_field :legal_name, maxlength: 100 %>
+    <%= f.label :gstin, "GST number (GSTIN) – printed at the top of every bill" %><%= f.text_field :gstin, maxlength: 20, placeholder: "e.g. 23ABCDE1234F1Z5", style: "text-transform:uppercase" %>
+    <%= f.label :gst_rate, "GST rate in % (0 = no GST breakdown on the bill; the prices are taken as including GST)" %><%= f.number_field :gst_rate, min: 0, max: 50, step: 0.01 %>
     <%= f.label :footer_text, "Short text in the footer" %><%= f.text_area :footer_text, rows: 2, maxlength: 600 %>
     <%= f.label :meta_description, "Description for Google (shown under your site name in search results)" %><%= f.text_area :meta_description, rows: 2, maxlength: 600 %>
 

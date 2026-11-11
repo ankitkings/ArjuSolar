@@ -333,7 +333,7 @@
       <div class="db-team">
         <% @team_today.each do |m| %>
           <% rec = @records_today[m.id]; leave = @leaves_today[m.id] %>
-          <% state, label = rec ? [rec.status, rec.status_label] : (leave ? ["leave", "On leave"] : ["none", "Not marked yet"]) %>
+          <% state, label = rec ? [rec.status, rec.status_label] : (leave ? ["leave", "On leave"] : (@holiday_today ? ["off", "Holiday: #{@holiday_today.name}"] : ["none", "Not marked yet"])) %>
           <%= link_to admin_payroll_member_path(m.id), class: "db-person db-#{state}" do %>
             <span class="db-avatar"><%= m.name.split.map { |word| word[0] }.first(2).join.upcase %></span>
             <span><b><%= m.name %></b><small><%= m.department_label %> · <%= label %></small></span>

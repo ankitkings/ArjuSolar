@@ -1,0 +1,26 @@
+<%# Cheques that were taken but are not confirmed by the bank yet %>
+<% waiting = payment.cheques_waiting.order(:id).to_a %>
+<% if waiting.any? %>
+  <div class="panel no-print" style="border-left:5px solid #f59e0b;margin:16px 0">
+    <h3>🧾 Cheque waiting for the bank</h3>
+    <p class="muted small">A cheque counts as paid only after the bank has received it. When the money is in the bank, press <b>Received in bank</b>: if the payment is then complete, the request moves to <b>commissioning</b>. If the bank did <b>not</b> receive it, press <b>Not received</b>: the amount is due again and the payment process starts once more.</p>
+    <div class="table-wrap"><table>
+      <tr><th>Receipt</th><th>Date</th><th class="right">Amount</th><th>Cheque</th><th>Did the bank receive it?</th></tr>
+      <% waiting.each do |r| %>
+        <% clear_path = area == "admin" ? admin_clear_cheque_path(r) : staff_clear_cheque_path(r) %>
+        <% bounce_path = area == "admin" ? admin_bounce_cheque_path(r) : staff_bounce_cheque_path(r) %>
+        <tr>
+          <td><%= r.number %></td><td><%= l r.received_on, format: :short %></td><td class="right"><b><%= inr(r.amount) %></b></td>
+          <td><small><%= PaymentMethods.rows("cheque", r.details).map { |label, value| "#{label}: #{value}" }.join(" · ") %></small></td>
+          <td>
+            <%= button_to "✔ Received in bank", clear_path, method: :post, class: "btn go", form: { style: "display:inline" } %>
+            <%= form_with url: bounce_path, method: :post, class: "inline-form" do %>
+              <%= text_field_tag :reason, nil, placeholder: "Why? (e.g. insufficient funds)", style: "width:200px" %>
+              <%= submit_tag "✖ Not received", class: "btn stop", onclick: "return confirm('The bank did not receive this cheque? The payment will be due again.')" %>
+            <% end %>
+          </td>
+        </tr>
+      <% end %>
+    </table></div>
+  </div>
+<% end %>

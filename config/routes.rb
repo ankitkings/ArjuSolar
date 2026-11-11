@@ -5,9 +5,11 @@ Rails.application.routes.draw do
   get "q/:token/pdf", to: "public_quotes#pdf", as: :public_quote_pdf
   get "q/:token", to: "public_quotes#show", as: :public_quote   # the client's quotation page (opened from WhatsApp)
 
+  # ----- any visitor can ask for an installation (no login) -----
+  get  "request-installation", to: "installation_requests#new", as: :new_installation_request
+  post "request-installation", to: "installation_requests#create", as: :installation_requests
+
   # ----- client portal: clients log in with the e-mail they registered with -----
-  get    "portal/register", to: "portal/registrations#new", as: :portal_register
-  post   "portal/register", to: "portal/registrations#create"
   get    "portal/login", to: "portal/sessions#new", as: :portal_login
   post   "portal/login", to: "portal/sessions#create"
   delete "portal/logout", to: "portal/sessions#destroy", as: :portal_logout
@@ -71,6 +73,10 @@ Rails.application.routes.draw do
     resources :payments, only: %i[show update] do
       member { get :upi_qr }
     end
+    get "payments/:payment_id/bill", to: "bills#show", as: :payment_bill
+    post "cheques/:receipt_id/clear", to: "cheque_clearances#clear", as: :clear_cheque
+    post "cheques/:receipt_id/bounce", to: "cheque_clearances#bounce", as: :bounce_cheque
+    resources :receipts, only: :show
     resources :receipts, only: :show
   end
 
@@ -85,18 +91,16 @@ Rails.application.routes.draw do
     resources :contact_entries, only: %i[create update destroy]
     resources :faq_items, only: %i[create update destroy]
     resources :customers, only: %i[index create edit update destroy] do
-      member do
-        post :resend
-      end
-
-      collection do
-        patch :settings
-      end
+      member { post :resend }
+      collection { patch :settings }
     end
     resource :margins, only: %i[show update], controller: "margins"
     get "attendance", to: "attendance#index"
     post "attendance", to: "attendance#mark"
     get "attendance/:id", to: "attendance#show", as: :attendance_member
+    resources :holidays, only: %i[index create destroy] do
+      collection { post :national }
+    end
     resources :leave_requests, only: :index do
       member do
         patch :approve
