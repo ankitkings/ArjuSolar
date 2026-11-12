@@ -1,0 +1,30 @@
+<p><%= link_to "← My tasks", staff_root_path %></p>
+<h1>Create a request</h1>
+<p class="muted">For a client you meet in the field. The request is saved with their details, and you can start the site visit right away.</p>
+<div class="panel" style="max-width:760px">
+  <% if @service_request.errors.any? %><div class="flash alert"><%= @service_request.errors.full_messages.to_sentence %></div><% end %>
+  <%= form_with model: @service_request, url: staff_requests_path, method: :post, class: "form" do |f| %>
+    <h3>Client</h3>
+    <%= f.label :name, "Name *" %><%= f.text_field :name, required: true, maxlength: 100 %>
+    <%= f.label :phone, "Mobile number *" %><%= f.telephone_field :phone, required: true %>
+    <%= f.label :email, "E-mail (optional – needed if the client should get an account later)" %><%= f.email_field :email %>
+    <%= f.label :address, "Address of the site *" %><%= f.text_area :address, rows: 2, required: true, maxlength: 500 %>
+
+    <h3>Details (optional)</h3>
+    <%= label_tag :property, "Type of place" %><%= select_tag :property, options_for_select(RequestDetails::PROPERTY_TYPES, params[:property]), include_blank: "Select…" %>
+    <%= label_tag :bill, "Monthly electricity bill" %><%= select_tag :bill, options_for_select(RequestDetails::BILLS, params[:bill]), include_blank: "Select…" %>
+    <%= label_tag :roof, "Roof type" %><%= select_tag :roof, options_for_select(RequestDetails::ROOFS, params[:roof]), include_blank: "Select…" %>
+    <% if @packages.any? %>
+      <%= label_tag :package_id, "System the client likes" %><%= select_tag :package_id, options_for_select(@packages.map { |p| [p.label, p.id] }, params[:package_id]), include_blank: "Not decided" %>
+    <% end %>
+    <%= label_tag :notes, "Notes" %><%= text_area_tag :notes, params[:notes], rows: 3, maxlength: 1000 %>
+
+    <h3>Where does it start?</h3>
+    <label style="display:block;font-weight:600"><%= check_box_tag :start_on_site, "1", params[:start_on_site].nil? || params[:start_on_site] == "1" %> I am at the client's site now: start at <b>Site visit</b> and assign it to me</label>
+    <p class="muted small">Untick this if the client has not been met yet. The request then starts normally and the office calls the client first.</p>
+    <% if @duplicate %>
+      <label style="display:block;font-weight:600"><%= check_box_tag :force, "1", false %> Create it anyway (it is a different request)</label>
+    <% end %>
+    <%= f.submit "Create request", class: "btn go" %>
+  <% end %>
+</div>

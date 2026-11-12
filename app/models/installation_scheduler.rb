@@ -58,7 +58,12 @@ class InstallationScheduler
       return [date, nil] if installers.empty?
       away = Availability.unavailable_ids(date)   # on approved leave that day (or absent today)
       free = installers.select { |m| !away.include?(m.id) && jobs_on(m, date) < @setting.jobs_per_installer_per_day }
-      return [date, free.min_by { |m| [jobs_on(m, date), m.id] }] if free.any?
+      if free.any?
+        fewest_jobs = free.map { |m| jobs_on(m, date) }.min
+        tied = free.select { |m| jobs_on(m, date) == fewest_jobs }
+        # the same number of jobs that day: the installer who has completed the fewest tasks gets it
+        return [date, tied.one? ? tied.first : tied.min_by { |m| [CompletedWork.new(m).total, m.id] }]
+      end
     end
     [start + 31, nil]
   end
