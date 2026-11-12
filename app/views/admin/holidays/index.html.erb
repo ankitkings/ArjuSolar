@@ -1,0 +1,89 @@
+<h1>Holidays</h1>
+<p class="muted">Days off for the whole team: national holidays, festivals, company holidays. A holiday is <b>paid</b>, is not counted as a working day, nobody has to mark attendance and no installation is booked on it.</p>
+<% key = ->(date) { date.strftime("%Y-%m") } %>
+<style>
+  .cal{background:#fff;border-radius:18px;box-shadow:0 1px 2px rgba(15,23,42,.06),0 8px 24px rgba(15,23,42,.06);overflow:hidden;margin-bottom:18px}
+  .cal-row{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
+  .cal-dow div{padding:10px 8px;text-align:center;font-size:.75rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#64748b;background:#f8fafc;border-bottom:1px solid #e2e8f0}
+  .cal-day{min-height:92px;padding:6px 7px;border-right:1px solid #f1f5f9;border-bottom:1px solid #f1f5f9;cursor:pointer;transition:background .15s}
+  .cal-day:hover{background:#f0f6ff}
+  .cal-day:nth-child(7n){border-right:0}
+  .cal-day .n{display:inline-grid;place-items:center;min-width:26px;height:26px;border-radius:50%;font-weight:700;font-size:.85rem}
+  .cal-day.sun{background:#fafbfd}.cal-day.sun .n{color:#b91c1c}
+  .cal-day.other{opacity:.38}
+  .cal-day.today .n{background:#2563eb;color:#fff}
+  .cal-day.picked{box-shadow:inset 0 0 0 2px #2563eb}
+  .hol{display:block;margin-top:5px;padding:3px 7px;border-radius:8px;font-size:.74rem;font-weight:700;line-height:1.25;overflow:hidden;text-overflow:ellipsis}
+  .hol.national{background:#dbeafe;color:#1e40af}.hol.festival{background:#fef3c7;color:#92400e}.hol.company{background:#dcfce7;color:#166534}.hol.other{background:#ede9fe;color:#5b21b6}
+  @media(max-width:700px){.cal-day{min-height:64px;padding:4px}.hol{font-size:.62rem;padding:2px 4px}}
+</style>
+
+<p class="tabs">
+  <%= link_to "← #{(@month - 1.month).strftime('%B')}", admin_holidays_path(month: key.(@month - 1.month)), class: "tab" %>
+  <%= link_to "This month", admin_holidays_path, class: "tab #{'active' if @month == Date.current.beginning_of_month}" %>
+  <%= link_to "#{(@month + 1.month).strftime('%B')} →", admin_holidays_path(month: key.(@month + 1.month)), class: "tab" %>
+</p>
+<h2><%= @month.strftime("%B %Y") %></h2>
+
+<div class="cal">
+  <div class="cal-row cal-dow"><% %w[Mon Tue Wed Thu Fri Sat Sun].each do |d| %><div><%= d %></div><% end %></div>
+  <% (@month.beginning_of_week(:monday)..@month.end_of_month.end_of_week(:monday)).each_slice(7) do |week| %>
+    <div class="cal-row">
+      <% week.each do |day| %>
+        <% holiday = @holidays[day] %>
+        <div class="cal-day <%= 'sun' if day.sunday? %> <%= 'other' if day.month != @month.month %> <%= 'today' if day == Date.current %>" data-date="<%= day.iso8601 %>" title="Click to add a holiday on this day">
+          <span class="n"><%= day.day %></span>
+          <% if holiday %><span class="hol <%= holiday.kind %>"><%= holiday.name %></span><% end %>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+</div>
+
+<div class="panel" id="add-holiday">
+  <h3>Add a holiday</h3>
+  <p class="muted small">Click a day in the calendar to fill the date, or choose it below. For a holiday of several days, set the last day too.</p>
+  <%= form_with model: Holiday.new, url: admin_holidays_path, method: :post, class: "form" do |f| %>
+    <div class="filters" style="box-shadow:none;padding:0">
+      <div><label>From</label><%= date_field_tag "holiday[from_date]", nil, required: true, id: "from-date" %></div>
+      <div><label>Until (optional)</label><%= date_field_tag "holiday[to_date]", nil, id: "to-date" %></div>
+      <div><label>Name</label><%= f.text_field :name, required: true, maxlength: 80, placeholder: "e.g. Diwali" %></div>
+      <div><label>Type</label><%= f.select :kind, Holiday::KINDS.map { |k, label| [label, k] }, selected: "festival" %></div>
+    </div>
+    <%= f.label :note, "Note for the team (optional)" %><%= f.text_field :note, maxlength: 200 %>
+    <%= f.submit "Add to the calendar", class: "btn go" %>
+  <% end %>
+  <p style="margin-top:14px">
+    <%= button_to "+ Add the national holidays of #{@month.year}", national_admin_holidays_path(year: @month.year), method: :post, class: "btn hold" %>
+    <span class="muted small">Republic Day (26 Jan), Independence Day (15 Aug) and Gandhi Jayanti (2 Oct). Festival dates change every year, so add those yourself.</span>
+  </p>
+</div>
+
+<h2>All holidays in <%= @month.year %></h2>
+<div class="table-wrap"><table>
+  <tr><th>Date</th><th>Day</th><th>Holiday</th><th>Type</th><th>Note</th><th></th></tr>
+  <% @year_list.each do |h| %>
+    <tr>
+      <td><%= l h.date, format: "%d %b %Y" %></td><td><%= l h.date, format: "%A" %></td>
+      <td><b><%= h.name %></b></td><td><span class="hol <%= h.kind %>" style="display:inline-block"><%= h.kind_label %></span></td>
+      <td><%= h.note.presence || "—" %></td>
+      <td><%= button_to "Remove", admin_holiday_path(h), method: :delete, class: "btn stop", form: { style: "display:inline", onsubmit: "return confirm('Remove this holiday?')" } %></td>
+    </tr>
+  <% end %>
+  <% if @year_list.empty? %><tr><td colspan="6" class="muted">No holiday in <%= @month.year %> yet.</td></tr><% end %>
+</table></div>
+
+<script>
+  (function () {
+    var days = document.querySelectorAll(".cal-day"), from = document.getElementById("from-date");
+    days.forEach(function (cell) {
+      cell.addEventListener("click", function () {
+        days.forEach(function (c) { c.classList.remove("picked"); });
+        cell.classList.add("picked");
+        from.value = cell.dataset.date;
+        document.getElementById("add-holiday").scrollIntoView({ behavior: "smooth", block: "nearest" });
+        document.getElementById("holiday_name").focus({ preventScroll: true });
+      });
+    });
+  })();
+</script>

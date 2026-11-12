@@ -1,0 +1,28 @@
+<% content_for(:title, "Request received") %>
+<section class="s-page-hero"><div class="s-wrap"><h1>Thank you<%= ", #{@service_request.name.split.first}" if @service_request&.name.present? %>! 🎉</h1><p>We have received your installation request.</p></div></section>
+
+<section class="s-section">
+  <div class="s-wrap">
+    <div class="s-grid c2">
+      <div class="s-card reveal">
+        <% if @service_request&.persisted? %><span class="s-eyebrow">Request number #<%= @service_request.id %></span><% end %>
+        <h3>What happens next</h3>
+        <ul class="s-checks">
+          <li>Our team will call you on <b><%= @service_request&.phone || "your number" %></b> to plan the free site visit.</li>
+          <li>The engineer checks your roof and electricity use.</li>
+          <li>You receive an itemised quotation to read in peace.</li>
+        </ul>
+      </div>
+      <div class="s-card reveal">
+        <h3>Need us sooner?</h3>
+        <p>Call or message us and quote your name.</p>
+        <% call = site_contacts("phone").first; chat = site_contacts("whatsapp").first || call %>
+        <p style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
+          <% if call %><%= link_to "📞 #{call.value}", call.href, class: "s-btn" %><% end %>
+          <% if chat %><%= link_to "💬 WhatsApp", "https://wa.me/#{chat.full_number}", class: "s-btn line", target: "_blank", rel: "noopener noreferrer" %><% end %>
+        </p>
+        <p style="margin-top:18px"><%= link_to "← Back to the website", root_path %></p>
+      </div>
+    </div>
+  </div>
+</section>

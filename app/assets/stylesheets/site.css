@@ -395,3 +395,10 @@ body.site .subsidy-box { background: linear-gradient(135deg, #f0fdf4, #e0f7fa); 
   .s-section.soft::after { opacity: .07; }
   .s-section::before { background-size: auto, auto, 22px 22px; }
 }
+
+/* ---------- the installation request form ---------- */
+.s-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+.s-form-grid .full { grid-column: 1 / -1; }
+.s-form-grid select { width: 100%; }
+@media (max-width: 640px) { .s-form-grid { grid-template-columns: 1fr; } }
+body.site .form select, body.site .form input[type=date] { width: 100%; padding: 13px 15px; font: inherit; border: 1.5px solid var(--line); border-radius: 14px; background: #fff; }

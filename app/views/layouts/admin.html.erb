@@ -38,6 +38,7 @@
     <%= link_to "Clients", admin_customers_path %>
     <%= link_to "Team", admin_team_members_path %>
     <%= link_to "Attendance", admin_attendance_path %>
+    <%= link_to "Holidays", admin_holidays_path %>
     <%= link_to admin_leave_requests_path(status: "pending") do %>Leaves<% if pending_leave_count.positive? %><span class="nav-badge"><%= pending_leave_count %></span><% end %><% end %>
     <%= link_to "Payroll", admin_payroll_path %>
     <%= link_to "Salary records", admin_salary_payments_path %>

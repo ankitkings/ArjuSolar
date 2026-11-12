@@ -6,7 +6,7 @@
   <% if @on_leave %>
     <p>You are on <b>approved leave</b> today (<%= @on_leave.kind_label %>). You do not need to check in.</p>
   <% elsif @off_day %>
-    <p>Today is your weekly off.</p>
+    <p><%= @holiday ? "🎉 Today is a holiday: #{@holiday.name}. No need to check in – it is a paid day off." : "Today is your weekly off." %></p>
   <% elsif rec.nil? || rec.check_in_at.nil? %>
     <% if rec %><p class="muted">The admin marked you <b><%= rec.status_label.downcase %></b> for today. Checking in will replace that.</p><% end %>
     <p class="muted">You have not checked in yet.</p>
@@ -38,7 +38,7 @@
 <div class="table-wrap"><table>
   <tr><th>Date</th><th>Day</th><th>Status</th><th>Check in</th><th>Check out</th><th class="right">Hours</th></tr>
   <% @days.each do |date, kind, label, _counted, record| %>
-    <tr class="<%= 'day-off' if %i[off future].include?(kind) %>">
+    <tr class="<%= 'day-off' if %i[off holiday future].include?(kind) %>">
       <td><%= l date, format: "%d %b" %></td>
       <td><%= l date, format: "%a" %></td>
       <td><span class="badge <%= kind %>"><%= label.presence || "—" %></span></td>
@@ -48,3 +48,12 @@
     </tr>
   <% end %>
 </table></div>
+
+<% upcoming = Holiday.upcoming(6).to_a %>
+<% if upcoming.any? %>
+  <h2>Upcoming holidays</h2>
+  <div class="table-wrap"><table>
+    <tr><th>Date</th><th>Day</th><th>Holiday</th></tr>
+    <% upcoming.each do |h| %><tr><td><%= l h.date, format: "%d %b %Y" %></td><td><%= l h.date, format: "%A" %></td><td><b><%= h.name %></b> <span class="muted small"><%= h.kind_label %></span></td></tr><% end %>
+  </table></div>
+<% end %>

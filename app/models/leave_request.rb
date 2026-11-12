@@ -28,7 +28,8 @@ class LeaveRequest < ApplicationRecord
   def days
     return 0 unless from_date && to_date && from_date <= to_date
     off = AttendanceSetting.current.sunday_off
-    (from_date..to_date).count { |date| !(off && date.sunday?) }
+    holidays = Holiday.where(date: from_date..to_date).pluck(:date)
+    (from_date..to_date).count { |date| !(off && date.sunday?) && !holidays.include?(date) }
   end
 
   # the admin may change the type when approving (e.g. paid -> unpaid)

@@ -1,0 +1,114 @@
+<% setting = site_setting %>
+<% pay = bill.payment; req = bill.service_request; inst = bill.installation %>
+<style>
+  .bill{max-width:880px;margin:0 auto;background:#fff;border-radius:14px;box-shadow:0 1px 2px rgba(15,23,42,.06),0 8px 24px rgba(15,23,42,.08);overflow:hidden;color:#0f172a}
+  .bill-top{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;padding:14px 26px;background:#0b1224;color:#fff}
+  .bill-top .gst{font-size:1.15rem;letter-spacing:.04em}.bill-top .gst b{font-size:1.3rem;color:#fde68a}
+  .bill-top .doc{font-weight:800;letter-spacing:.14em;font-size:1.05rem}
+  .bill-top .doc.final{color:#86efac}
+  .bill-body{padding:22px 26px 26px;position:relative}
+  .bill-head{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:16px}
+  .bill-head h2{margin:0 0 4px}.bill-head p{margin:2px 0;color:#475569}
+  .bill-meta{text-align:right}.bill-meta p{margin:2px 0}
+  .bill table{width:100%;border-collapse:collapse;margin:10px 0}
+  .bill th{background:#f1f5f9;text-align:left;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:#475569;padding:8px}
+  .bill td{padding:8px;border-bottom:1px solid #eef2f7;vertical-align:top}.bill .r{text-align:right}
+  .bill .totals td{border-bottom:0;padding:4px 8px}.bill .totals .grand td{border-top:2px solid #0f172a;font-size:1.1rem;font-weight:800;padding-top:8px}
+  .bill small.fine{display:block;font-size:.72rem;line-height:1.35;color:#64748b}
+  .bill .stamp{position:absolute;right:30px;top:96px;transform:rotate(-9deg);border:4px solid #16a34a;color:#16a34a;font-weight:900;letter-spacing:.12em;font-size:1.5rem;padding:4px 14px;border-radius:10px;opacity:.85}
+  .bill .stamp.part{border-color:#f59e0b;color:#d97706;font-size:1.05rem}
+  .bill .note{background:#fffbeb;border-left:4px solid #f59e0b;padding:8px 12px;border-radius:8px;font-size:.88rem;margin:10px 0}
+  @media print{.no-print,body.admin>aside,.app-bar,.s-header,.s-topbar,.s-footer,.s-float{display:none !important}.bill{box-shadow:none;max-width:none}}
+</style>
+
+<div class="bill">
+  <div class="bill-top">
+    <div class="gst"><% if setting.gstin.present? %>GSTIN: <b><%= setting.gstin %></b><% else %><span class="no-print" style="color:#fca5a5">GST number not set – add it in Admin → Website</span><% end %></div>
+    <div class="doc <%= 'final' if bill.final? %>"><%= bill.final? ? "FINAL BILL" : "BILL" %></div>
+  </div>
+
+  <div class="bill-body">
+    <div class="stamp <%= 'part' unless bill.final? %>"><%= bill.final? ? "PAID IN FULL" : "PART PAYMENT" %></div>
+
+    <div class="bill-head">
+      <div>
+        <h2><%= setting.legal_name.presence || setting.company_name %></h2>
+        <% if (office = site_contacts("address").first) %><p><%= office.value %></p><% end %>
+        <% phone = site_contacts("phone").first; mail = site_contacts("email").first %>
+        <% if phone || mail %><p><%= [phone&.value, mail&.value].compact.join(" · ") %></p><% end %>
+      </div>
+      <div class="bill-meta">
+        <p><b>Bill no.</b> <%= bill.number %></p>
+        <p><b>Date</b> <%= l(bill.final? ? (bill.fully_paid_on || Date.current) : Date.current, format: "%d %b %Y") %></p>
+        <p><b>Request</b> #<%= req.id %></p>
+      </div>
+    </div>
+
+    <p><b>Billed to:</b> <%= req.name %> · <%= req.phone %><%= " · #{req.email}" if req.email.present? %><br>
+       <span style="color:#475569"><%= req.address.presence %></span></p>
+    <% if inst %><p style="color:#475569"><b>Installed system:</b> <%= inst.summary %><%= " · inverter #{inst.inverter_model}" if inst.inverter_model.present? %> · installed on <%= l inst.installed_on, format: "%d %b %Y" %><%= " · #{inst.site_address}" if inst.site_address.present? %></p><% end %>
+
+    <table>
+      <tr><th>#</th><th>Installed item</th><th class="r">Qty</th><th class="r">Rate</th><th class="r">Amount</th></tr>
+      <% bill.lines.each_with_index do |line, i| %>
+        <tr><td><%= i + 1 %></td><td><%= line.description %></td><td class="r"><%= format("%g", line.quantity.to_f) %> <%= line.unit %></td><td class="r"><%= inr(line.unit_price) %></td><td class="r"><%= inr(line.amount) %></td></tr>
+      <% end %>
+    </table>
+    <table class="totals" style="width:60%;margin-left:auto">
+      <tr><td>Items total</td><td class="r"><%= inr(bill.subtotal) %></td></tr>
+      <% if bill.discount.positive? %><tr><td>Discount</td><td class="r">− <%= inr(bill.discount) %></td></tr><% end %>
+      <% unless bill.adjustment.zero? %><tr><td>Adjustment</td><td class="r"><%= bill.adjustment.positive? ? "+" : "−" %> <%= inr(bill.adjustment.abs) %></td></tr><% end %>
+      <tr class="grand"><td>Total amount</td><td class="r"><%= inr(bill.total) %></td></tr>
+      <% if bill.gst? %>
+        <tr><td><small class="fine">Taxable value</small></td><td class="r"><small class="fine"><%= inr(bill.taxable_value) %></small></td></tr>
+        <tr><td><small class="fine">CGST @ <%= format("%g", bill.gst_rate / 2) %>%</small></td><td class="r"><small class="fine"><%= inr(bill.half_gst) %></small></td></tr>
+        <tr><td><small class="fine">SGST @ <%= format("%g", bill.gst_rate / 2) %>%</small></td><td class="r"><small class="fine"><%= inr(bill.gst_amount - bill.half_gst) %></small></td></tr>
+        <tr><td colspan="2"><small class="fine">GST is included in the total amount.</small></td></tr>
+      <% end %>
+    </table>
+
+    <h4 style="margin:18px 0 4px">Payments</h4>
+    <table>
+      <tr><th>Receipt</th><th>Date</th><th>Paid by</th><th class="r">Amount</th></tr>
+      <% bill.receipts.each do |r| %>
+        <tr>
+          <td><%= r.number %></td><td><%= l r.received_on, format: "%d %b %Y" %></td>
+          <td>
+            <%= r.mode_label %>
+            <% if r.mode == "cheque" %>
+              <small class="fine"><%= PaymentMethods.rows("cheque", r.details).map { |label, value| "#{label}: #{value}" }.join(" · ") %></small>
+              <small class="fine">
+                <% if r.waiting_for_bank? %>Waiting for the bank: not counted yet.
+                <% elsif r.bounced? %>Not received in the bank<%= " on #{l r.bounced_on, format: '%d %b %Y'}" if r.bounced_on %><%= " (#{r.clearing_note})" if r.clearing_note.present? %>: not counted.
+                <% elsif r.clearing_status == "cleared" %>Received in the bank<%= " on #{l r.cleared_on, format: '%d %b %Y'}" if r.cleared_on %>.<% end %>
+              </small>
+            <% elsif r.reference.present? %>
+              <small class="fine">Ref: <%= r.reference %></small>
+            <% end %>
+          </td>
+          <td class="r"><%= inr(r.amount) %></td>
+        </tr>
+      <% end %>
+    </table>
+    <table class="totals" style="width:60%;margin-left:auto">
+      <tr><td>Paid so far (counted)</td><td class="r"><%= inr(bill.paid) %></td></tr>
+      <tr class="grand"><td><%= bill.final? ? "Balance" : "Balance due" %></td><td class="r"><%= inr(bill.balance) %></td></tr>
+    </table>
+
+    <% if bill.waiting_cheques.any? %>
+      <div class="note"><%= pluralize(bill.waiting_cheques.size, "cheque") %> (<%= inr(bill.waiting_cheques.sum(&:amount)) %>) <%= bill.waiting_cheques.size == 1 ? "is" : "are" %> waiting for the bank. <%= bill.final? ? "" : "This becomes the final bill once the bank has received it." %></div>
+    <% end %>
+    <% if bill.final? %>
+      <p style="margin-top:14px"><b>This is the final bill.</b> The payment of <%= inr(bill.total) %> was received in full<%= " on #{l bill.fully_paid_on, format: '%d %b %Y'}" if bill.fully_paid_on %>. Thank you!</p>
+      <% if inst %><p class="fine" style="color:#64748b;font-size:.85rem">Warranty: <%= Warranty.months %> months from the installation date, until <%= l Warranty.ends_on(inst), format: "%d %b %Y" %>.</p><% end %>
+    <% end %>
+    <p style="color:#94a3b8;font-size:.8rem;margin-top:14px">This is a computer-generated bill.</p>
+  </div>
+</div>
+
+<p class="no-print" style="text-align:center;margin-top:14px">
+  <button type="button" class="btn" onclick="window.print()">Print the bill</button>
+  <% bill.receipts.each do |r| %>
+    <%= link_to "Receipt #{r.number}", (area == "admin" ? admin_receipt_path(r) : staff_receipt_path(r)), class: "btn hold" %>
+  <% end %>
+</p>

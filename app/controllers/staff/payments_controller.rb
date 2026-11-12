@@ -18,6 +18,11 @@ module Staff
       built = PaymentMethods.build(mode, params[:details], amount: amount)
       return fail_with(built.errors.to_sentence) if built.errors.any?
 
+      waiting = @payment.cheques_waiting.sum(:amount)
+      if @payment.balance && waiting.positive? && waiting >= @payment.balance
+        return fail_with("A cheque of #{Rupees.display(waiting)} is waiting for the bank. Press “Received in bank” or “Not received” on it first, then collect again if needed.")
+      end
+
       receipt = nil
       Payment.transaction do
         if @payment.amount_due.nil?   # older payments without a price: the cashier enters the total once
@@ -33,7 +38,9 @@ module Staff
       if req.status == "commissioning"
         msg += " Paid in full – the request moved to 95% and was assigned to #{req.team_member&.name || 'Daily Servicing (nobody available – admin must assign)'}."
       end
-      redirect_to staff_receipt_path(receipt), notice: msg
+      msg = "Cheque recorded. It counts as paid only after the bank has received it – confirm it below." if mode == "cheque"
+      @payment.issue_bill_number!
+      redirect_to staff_payment_bill_path(@payment), notice: "#{msg} The bill is ready. Receipt #{receipt.number} can be printed from the buttons below the bill."
     rescue ActiveRecord::RecordInvalid => e
       fail_with(e.record.errors.full_messages.to_sentence.presence || "Enter the total amount due.")
     end

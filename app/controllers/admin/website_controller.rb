@@ -25,7 +25,7 @@ module Admin
 
     def setting_params
       params.require(:site_setting).permit(:company_name, :tagline, :hero_eyebrow, :hero_title, :hero_subtitle, :about_title, :about_text,
-                                           :footer_text, :office_hours, :meta_description, :facebook_url, :instagram_url, :youtube_url,
+                                           :footer_text, :office_hours, :legal_name, :gstin, :gst_rate, :meta_description, :facebook_url, :instagram_url, :youtube_url,
                                            :linkedin_url, *SiteSetting::SECTIONS.keys)
     end
   end

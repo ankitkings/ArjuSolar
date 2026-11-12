@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_01_26_000000) do
+ActiveRecord::Schema[7.1].define(version: 2026_01_27_000000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -275,6 +275,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_26_000000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.decimal "amount_due", precision: 10, scale: 2
+    t.string "bill_number"
+    t.date "bill_issued_on"
     t.index ["service_request_id"], name: "index_payments_on_service_request_id", unique: true
     t.index ["team_member_id"], name: "index_payments_on_team_member_id"
   end
@@ -343,6 +345,11 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_26_000000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.json "details"
+    t.string "clearing_status"
+    t.date "cleared_on"
+    t.date "bounced_on"
+    t.string "clearing_note"
+    t.index ["clearing_status"], name: "index_receipts_on_clearing_status"
     t.index ["number"], name: "index_receipts_on_number", unique: true
     t.index ["payment_id"], name: "index_receipts_on_payment_id"
     t.index ["team_member_id"], name: "index_receipts_on_team_member_id"
@@ -442,6 +449,9 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_26_000000) do
     t.boolean "show_faq", default: true, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "legal_name"
+    t.string "gstin"
+    t.decimal "gst_rate", precision: 5, scale: 2, default: "0.0", null: false
   end
 
   create_table "solar_packages", force: :cascade do |t|

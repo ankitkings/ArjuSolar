@@ -30,7 +30,7 @@
 <div class="table-wrap"><table>
   <tr><th>Date</th><th>Day</th><th>Status</th><th>Check in</th><th>Check out</th><th class="right">Hours</th><th>Note</th></tr>
   <% @days.each do |date, kind, label, _counted, record| %>
-    <tr class="<%= 'day-off' if %i[off future].include?(kind) %>">
+    <tr class="<%= 'day-off' if %i[off holiday future].include?(kind) %>">
       <td><%= l date, format: "%d %b" %></td>
       <td><%= l date, format: "%a" %></td>
       <td><span class="badge <%= kind %>"><%= label.presence || "—" %></span></td>

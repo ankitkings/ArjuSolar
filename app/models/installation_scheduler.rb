@@ -51,9 +51,10 @@ class InstallationScheduler
   def earliest_slot
     start = @now.hour < @setting.cutoff_hour ? @now.to_date : @now.to_date + 1
     installers = TeamMember.where(department: "installation", active: true).order(:id).to_a
+    holidays = Holiday.where(date: start..(start + 31)).pluck(:date)
     (0..30).each do |offset|
       date = start + offset
-      next if @setting.sunday_off && date.sunday?
+      next if (@setting.sunday_off && date.sunday?) || holidays.include?(date)
       return [date, nil] if installers.empty?
       away = Availability.unavailable_ids(date)   # on approved leave that day (or absent today)
       free = installers.select { |m| !away.include?(m.id) && jobs_on(m, date) < @setting.jobs_per_installer_per_day }

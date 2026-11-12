@@ -35,5 +35,10 @@
 
   <% if receipt.note.present? %><p><strong>Note:</strong> <%= receipt.note %></p><% end %>
   <p><strong>Received by:</strong> <%= receipt.team_member&.name || "—" %> (Cashier)</p>
+  <% if receipt.mode == "cheque" && receipt.clearing_status.present? %>
+    <p class="small"><b>Cheque status:</b> <%= receipt.clearing_label %><%= " on #{l receipt.cleared_on, format: '%d %b %Y'}" if receipt.cleared_on %><%= " (#{receipt.clearing_note})" if receipt.clearing_note.present? %>.
+      <%= "This amount counts as paid only after the bank has received the cheque." if receipt.waiting_for_bank? %></p>
+  <% end %>
+  <p class="no-print"><%= link_to "🧾 View the bill", (controller_path.start_with?("admin") ? admin_payment_bill_path(pay) : staff_payment_bill_path(pay)) %></p>
   <p class="muted small">This is a computer-generated receipt.</p>
 </div>

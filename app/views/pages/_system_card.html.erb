@@ -15,6 +15,6 @@
       <p class="s-subsidy">With the PM Surya Ghar subsidy of <b><%= inr(package.subsidy_amount) %></b>:<br>
         <b class="net"><%= inr(package.effective_cost) %></b> <span>effective cost</span></p>
     <% end %>
-    <%= link_to "Get a quote", contact_path, class: "s-btn" %>
+    <%= link_to "Request this system", new_installation_request_path(package: package.id), class: "s-btn" %>
   </div>
 </div>

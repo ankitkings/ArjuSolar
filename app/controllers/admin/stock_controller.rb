@@ -60,7 +60,7 @@ module Admin
       planned = InstallationScheduler.process_waiting!
       msg = "#{order.catalog_item.name}: #{format('%g', order.quantity_received)} added to the stock."
       msg += " #{planned} waiting installation#{'s' if planned != 1} could be scheduled now." if planned.positive?
-      redirect_to admin_stock_path(tab: "order"), notice: msg
+      redirect_to (params[:back] == "dashboard" ? admin_root_path : admin_stock_path(tab: "order")), notice: msg
     end
 
     def cancel_order

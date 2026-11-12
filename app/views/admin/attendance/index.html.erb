@@ -9,7 +9,7 @@
   <%= date_field_tag :date, @date, max: Date.current %>
   <%= submit_tag "Show this day", class: "btn" %>
 <% end %>
-<h2><%= l @date, format: "%A, %d %B %Y" %><%= " – weekly off" if @off_day %></h2>
+<h2><%= l @date, format: "%A, %d %B %Y" %><%= @holiday ? " – Holiday: #{@holiday.name}" : (" – weekly off" if @off_day) %></h2>
 <p class="muted small">Full day = at least <%= AttendanceSetting.current.full_day_hours %> hours between check-in and check-out; less counts as a half day. Change it under Payroll → Rules.</p>
 
 <% present  = @members.count { |m| %w[present half_day].include?(@records[m.id]&.status) } %>
@@ -37,7 +37,7 @@
         <% elsif leave %>
           <span class="badge paid_leave">On leave</span> <span class="muted small"><%= leave.kind_label %></span>
         <% elsif @off_day %>
-          <span class="badge off">Weekly off</span>
+          <span class="badge <%= @holiday ? "holiday" : "off" %>"><%= @holiday ? "Holiday" : "Weekly off" %></span>
         <% elsif @date > Date.current %>—
         <% else %>
           <span class="badge today">Not marked</span>

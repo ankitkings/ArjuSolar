@@ -35,10 +35,14 @@ class SiteSetting < ApplicationRecord
   validates :about_title, length: { maximum: 140 }
   validates :about_text, length: { maximum: 4000 }
   validates :office_hours, length: { maximum: 100 }
+  validates :legal_name, length: { maximum: 100 }
+  validates :gstin, format: { with: /\A\d{2}[A-Z]{5}\d{4}[A-Z][A-Z\d]Z[A-Z\d]\z/, message: "is not a valid 15-character GST number" }, allow_nil: true
+  validates :gst_rate, numericality: { greater_than_or_equal_to: 0, less_than_or_equal_to: 50 }
   validates :facebook_url, :instagram_url, :youtube_url, :linkedin_url, format: { with: URL_FORMAT, message: "must start with http:// or https://" }, allow_blank: true
 
   before_validation do
-    %i[facebook_url instagram_url youtube_url linkedin_url].each { |field| self[field] = self[field].to_s.strip.presence }
+    %i[facebook_url instagram_url youtube_url linkedin_url legal_name].each { |field| self[field] = self[field].to_s.strip.presence }
+    self.gstin = gstin.to_s.gsub(/\s+/, "").upcase.presence
   end
 
   # the one and only row; on the very first use it is filled with today's website details

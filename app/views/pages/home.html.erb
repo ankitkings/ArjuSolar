@@ -7,7 +7,7 @@
     <h1><%= highlighted(site_setting.hero_title) %></h1>
     <% if site_setting.hero_subtitle.present? %><p class="lead"><%= site_setting.hero_subtitle %></p><% end %>
     <div class="s-hero-actions">
-      <%= link_to "Get a free quote", contact_path, class: "s-btn sun big" %>
+      <%= link_to "Request installation", new_installation_request_path, class: "s-btn sun big" %>
       <%= link_to "See solar systems & prices", systems_path, class: "s-btn ghost big" %>
     </div>
     <div class="s-hero-trust"><span>✔ Free site visit</span><span>✔ Subsidy assistance</span><span>✔ Service &amp; AMC</span><span>✔ Clear, itemised quotation</span></div>
@@ -110,7 +110,7 @@
         <% phone = site_contacts("phone").first; whatsapp = site_contacts("whatsapp").first || phone %>
         <% if phone %><%= link_to "📞 Call #{phone.value}", phone.href, class: "s-btn sun big" %><% end %>
         <% if whatsapp %><%= link_to "💬 WhatsApp", "https://wa.me/#{whatsapp.full_number}", class: "s-btn ghost big", target: "_blank", rel: "noopener noreferrer" %><% end %>
-        <%= link_to "Get a free quote", contact_path, class: "s-btn #{phone ? 'ghost' : 'sun'} big" %>
+        <%= link_to "Request installation", new_installation_request_path, class: "s-btn #{phone ? 'ghost' : 'sun'} big" %>
       </div>
     </div>
   </div>
