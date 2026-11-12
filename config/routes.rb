@@ -37,6 +37,8 @@ Rails.application.routes.draw do
     root "tasks#index"
     get "parts", to: "parts#index"
     get "completed", to: "completed#index"
+    get "requests/new", to: "requests#new", as: :new_request
+    post "requests", to: "requests#create", as: :requests
     get "attendance", to: "attendance#show"
     post "attendance/check_in", to: "attendance#check_in", as: :attendance_check_in
     post "attendance/check_out", to: "attendance#check_out", as: :attendance_check_out
@@ -73,10 +75,6 @@ Rails.application.routes.draw do
     resources :payments, only: %i[show update] do
       member { get :upi_qr }
     end
-    get "payments/:payment_id/bill", to: "bills#show", as: :payment_bill
-    post "cheques/:receipt_id/clear", to: "cheque_clearances#clear", as: :clear_cheque
-    post "cheques/:receipt_id/bounce", to: "cheque_clearances#bounce", as: :bounce_cheque
-    resources :receipts, only: :show
     resources :receipts, only: :show
   end
 
@@ -97,7 +95,6 @@ Rails.application.routes.draw do
     resource :margins, only: %i[show update], controller: "margins"
     get "attendance", to: "attendance#index"
     post "attendance", to: "attendance#mark"
-    get "attendance/:id", to: "attendance#show", as: :attendance_member
     resources :holidays, only: %i[index create destroy] do
       collection { post :national }
     end
