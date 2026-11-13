@@ -149,6 +149,10 @@ module ApplicationHelper
           if ((path === target || path.indexOf(target + "/") === 0) && target.length > bestLength) { best = link; bestLength = target.length; }
         });
         if (best) best.classList.add("active");
+        // the Requests search box also finds the requests of a team member
+        document.querySelectorAll('body.admin input[name="q"]').forEach(function (box) {
+          if (/^Search name \/ phone \/ email\s*$/i.test(box.getAttribute("placeholder") || "")) box.setAttribute("placeholder", "Search name / phone / email / assigned member");
+        });
       });
     JS
   end
