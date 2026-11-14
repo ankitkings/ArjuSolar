@@ -75,6 +75,9 @@ Rails.application.routes.draw do
     resources :payments, only: %i[show update] do
       member { get :upi_qr }
     end
+    get "payments/:payment_id/bill", to: "bills#show", as: :payment_bill
+    post "cheques/:receipt_id/clear", to: "cheque_clearances#clear", as: :clear_cheque
+    post "cheques/:receipt_id/bounce", to: "cheque_clearances#bounce", as: :bounce_cheque
     resources :receipts, only: :show
   end
 
@@ -95,6 +98,7 @@ Rails.application.routes.draw do
     resource :margins, only: %i[show update], controller: "margins"
     get "attendance", to: "attendance#index"
     post "attendance", to: "attendance#mark"
+    get "attendance/:id", to: "attendance#show", as: :attendance_member
     resources :holidays, only: %i[index create destroy] do
       collection { post :national }
     end
@@ -134,6 +138,9 @@ Rails.application.routes.draw do
       end
     end
     resources :maintenance_visits, only: %i[index create update destroy]
+    get "payments/:payment_id/bill", to: "bills#show", as: :payment_bill
+    post "cheques/:receipt_id/clear", to: "cheque_clearances#clear", as: :clear_cheque
+    post "cheques/:receipt_id/bounce", to: "cheque_clearances#bounce", as: :bounce_cheque
     resources :payments, only: %i[index show update]
     resource :payment_settings, only: %i[show update], controller: "payment_settings"
     resources :receipts, only: :show

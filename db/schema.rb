@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_01_27_000000) do
+ActiveRecord::Schema[7.1].define(version: 2026_01_28_000000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -232,6 +232,16 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_27_000000) do
     t.index ["service_request_id"], name: "index_maintenance_visits_on_service_request_id"
     t.index ["status", "due_on"], name: "index_maintenance_visits_on_status_and_due_on"
     t.index ["team_member_id"], name: "index_maintenance_visits_on_team_member_id"
+  end
+
+  create_table "module_seens", force: :cascade do |t|
+    t.integer "admin_user_id", null: false
+    t.string "module_key", null: false
+    t.datetime "seen_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["admin_user_id", "module_key"], name: "index_module_seens_on_admin_user_id_and_module_key", unique: true
+    t.index ["admin_user_id"], name: "index_module_seens_on_admin_user_id"
   end
 
   create_table "overdue_limits", force: :cascade do |t|
@@ -584,6 +594,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_27_000000) do
   add_foreign_key "maintenance_visits", "installations"
   add_foreign_key "maintenance_visits", "service_requests"
   add_foreign_key "maintenance_visits", "team_members"
+  add_foreign_key "module_seens", "admin_users", on_delete: :cascade
   add_foreign_key "package_items", "catalog_items"
   add_foreign_key "package_items", "solar_packages"
   add_foreign_key "payments", "service_requests"

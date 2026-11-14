@@ -40,6 +40,13 @@
         .then(function (d) {
           if (!d) return;
           if (badge) { badge.textContent = d.new_count + " new"; badge.style.display = d.new_count > 0 ? "inline" : "none"; }
+          if (d.modules) {                                   // the "N new" next to the other menu items
+            Object.keys(d.modules).forEach(function (key) {
+              document.querySelectorAll('[data-module-badge="' + key + '"]').forEach(function (el) {
+                el.textContent = d.modules[key] + " new"; el.style.display = d.modules[key] > 0 ? "" : "none";
+              });
+            });
+          }
           if (d.newest && d.newest.at > (localStorage.getItem(KEY) || "")) {   // only once per new task
             localStorage.setItem(KEY, d.newest.at);
             toast(d.newest);
