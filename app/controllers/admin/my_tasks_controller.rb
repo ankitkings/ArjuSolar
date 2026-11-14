@@ -11,7 +11,7 @@ module Admin
     def alert
       tasks = AdminTasks.for(current_admin)
       newest = tasks.tasks.select(&:fresh).max_by(&:since)
-      render json: { count: tasks.count, new_count: tasks.new_count,
+      render json: { count: tasks.count, new_count: tasks.new_count, modules: ModuleSeen.counts_for(current_admin),
                      newest: (newest && { at: newest.since.iso8601, title: newest.title, detail: newest.detail }) }
     end
   end

@@ -180,4 +180,12 @@ module ApplicationHelper
     css = { "pending" => "pending", "cleared" => "completed", "bounced" => "cancelled" }[receipt.clearing_status]
     content_tag(:span, receipt.clearing_label, class: "badge #{css}")
   end
+
+  # ----- "N new" next to the menu items of the admin panel -----
+  def module_counts = (@_module_counts ||= (current_admin ? ModuleSeen.counts_for(current_admin) : {}))
+
+  def module_badge(key)
+    count = module_counts[key].to_i
+    content_tag(:span, "#{count} new", class: "nav-badge", data: { module_badge: key }, title: "New since you last opened this page", style: ("display:none" unless count.positive?))
+  end
 end

@@ -23,25 +23,25 @@
     <h3>Arju Solars</h3>
     <%= link_to admin_root_path do %>Dashboard<% if overdue_count.positive? %><span class="nav-badge"><%= overdue_count %></span><% end %><% end %>
     <%= link_to admin_my_tasks_path do %>My tasks<span class="nav-badge" id="my-tasks-badge" style="<%= 'display:none' unless new_task_count.positive? %>"><%= new_task_count %> new</span><% end %>
-    <%= link_to admin_service_requests_path do %>Requests<% if new_request_count.positive? %><span class="nav-badge"><%= new_request_count %></span><% end %><% end %>
-    <%= link_to "Users", admin_users_path %>
-    <%= link_to "Visitors", admin_visits_path %>
-    <%= link_to "Payments", admin_payments_path %>
+    <%= link_to admin_service_requests_path do %>Requests<%= module_badge("requests") %><% end %>
+    <%= link_to admin_users_path do %>Users<%= module_badge("users") %><% end %>
+    <%= link_to admin_visits_path do %>Visitors<%= module_badge("visitors") %><% end %>
+    <%= link_to admin_payments_path do %>Payments<%= module_badge("payments") %><% end %>
     <%= link_to "Payment setup", admin_payment_settings_path %>
-    <%= link_to "Maintenance", admin_maintenance_visits_path %>
-    <%= link_to "Systems", admin_solar_packages_path %>
-    <%= link_to "Parts", admin_catalog_items_path %>
+    <%= link_to admin_maintenance_visits_path do %>Maintenance<%= module_badge("maintenance") %><% end %>
+    <%= link_to admin_solar_packages_path do %>Systems<%= module_badge("systems") %><% end %>
+    <%= link_to admin_catalog_items_path do %>Parts<%= module_badge("parts") %><% end %>
     <%= link_to "Margins", admin_margins_path %>
     <%= link_to admin_stock_path do %>Stock<% if parts_short_count.positive? %><span class="nav-badge"><%= parts_short_count %></span><% end %><% end %>
-    <%= link_to "Subsidy", admin_subsidy_applications_path %>
+    <%= link_to admin_subsidy_applications_path do %>Subsidy<%= module_badge("subsidy") %><% end %>
     <%= link_to "Website", admin_website_path %>
-    <%= link_to "Clients", admin_customers_path %>
-    <%= link_to "Team", admin_team_members_path %>
-    <%= link_to "Attendance", admin_attendance_path %>
+    <%= link_to admin_customers_path do %>Clients<%= module_badge("clients") %><% end %>
+    <%= link_to admin_team_members_path do %>Team<%= module_badge("team") %><% end %>
+    <%= link_to admin_attendance_path do %>Attendance<%= module_badge("attendance") %><% end %>
     <%= link_to "Holidays", admin_holidays_path %>
     <%= link_to admin_leave_requests_path(status: "pending") do %>Leaves<% if pending_leave_count.positive? %><span class="nav-badge"><%= pending_leave_count %></span><% end %><% end %>
     <%= link_to "Payroll", admin_payroll_path %>
-    <%= link_to "Salary records", admin_salary_payments_path %>
+    <%= link_to admin_salary_payments_path do %>Salary records<%= module_badge("salary") %><% end %>
     <%= link_to admin_chats_path do %>Chat<span class="nav-badge" id="chat-badge" style="<%= 'display:none' unless chat_unread_count(current_admin).positive? %>"><%= chat_unread_count(current_admin) %></span><% end %>
     <%= link_to "View site", root_path %>
     <%= button_to "Log out", admin_logout_path, method: :delete, class: "linklike" %>
