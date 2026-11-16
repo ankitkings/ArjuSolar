@@ -39,7 +39,7 @@ class OverdueSteps
     requests = ServiceRequest.where(status: LIMITS.keys).includes(:team_member).to_a
     entered = RequestUpdate.where(service_request_id: requests.map(&:id)).group(:service_request_id, :status).minimum(:created_at)
     list = requests.filter_map { |r| request_item(r, entered[[r.id, r.status]] || r.created_at, now) }
-    list + maintenance_items(now) + subsidy_items(now)
+    list + maintenance_items(now) + (SubsidySwitch.on? ? subsidy_items(now) : [])
   end
 
   # at most one item per request: the most serious thing that is late

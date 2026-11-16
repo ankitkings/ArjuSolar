@@ -30,7 +30,7 @@ class AdminTasks
     list = []
 
     # PM Surya Ghar applications that are not finished: the admin makes / follows each step on the portal
-    applications = SubsidyApplication.in_group("in_progress").includes(:service_request).to_a
+    applications = SubsidySwitch.on? ? SubsidyApplication.in_group("in_progress").includes(:service_request).to_a : []
     applications.each do |application|
       request = application.service_request
       held = request.assigned_to_admin?
@@ -41,7 +41,7 @@ class AdminTasks
     end
 
     # requests handed to the admin that have no subsidy application to show them
-    ServiceRequest.where(assigned_to_admin: true).where.not(id: applications.map(&:service_request_id)).each do |request|
+    (SubsidySwitch.on? ? ServiceRequest.where(assigned_to_admin: true).where.not(id: applications.map(&:service_request_id)).to_a : []).each do |request|
       reason = request.installation_status == "waiting_for_net_meter" ? "Installation done – waiting for the net meter step" : "Waiting for the subsidy approval"
       list << task("hold", "#{request.name} – job on hold", reason, request.admin_assigned_at || request.updated_at, request)
     end
