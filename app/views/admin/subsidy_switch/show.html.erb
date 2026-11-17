@@ -1,0 +1,44 @@
+<h1>Subsidy switch</h1>
+<p class="muted">One switch for the government solar subsidy (PM Surya Ghar). If the scheme ends, switch it off and your business carries on exactly as before, without any subsidy step.</p>
+
+<div class="panel" style="border-left:6px solid <%= SubsidySwitch.on? ? '#16a34a' : '#ef4444' %>">
+  <h2>The subsidy is <b style="color:<%= SubsidySwitch.on? ? '#16a34a' : '#dc2626' %>"><%= SubsidySwitch.on? ? "ON" : "OFF" %></b></h2>
+  <% if SubsidySwitch.on? %>
+    <%= button_to "Switch the subsidy OFF", admin_subsidy_switch_path(state: "off"), method: :patch, class: "btn stop",
+          form: { onsubmit: "return confirm('Switch the subsidy OFF? Jobs waiting for DISCOM approval or the net meter will be let go on, and new quotations will carry no subsidy.')" } %>
+  <% else %>
+    <%= button_to "Switch the subsidy ON", admin_subsidy_switch_path(state: "on"), method: :patch, class: "btn go" %>
+  <% end %>
+  <% if @held_for_discom.positive? || @held_for_meter.positive? %>
+    <p class="muted small" style="margin-top:12px">Right now <%= @held_for_discom %> <%= 'job'.pluralize(@held_for_discom) %> wait for DISCOM approval and <%= @held_for_meter %> for the net meter step.<%= " Switching off lets them go on." if SubsidySwitch.on? %></p>
+  <% end %>
+</div>
+
+<div class="stats" style="margin-top:6px">
+  <div class="stat"><b><%= @open_applications %></b><span>Subsidy applications in progress</span></div>
+  <div class="stat"><b><%= @held_for_discom + @held_for_meter %></b><span>Jobs waiting for DISCOM / net meter</span></div>
+</div>
+
+<div class="two-col">
+  <div class="panel">
+    <h3>✅ When it is ON</h3>
+    <ul>
+      <li>Home quotations can carry the subsidy and show the cost after subsidy.</li>
+      <li>System prices show the subsidy and the effective cost.</li>
+      <li>The website explains the subsidy and offers help with it.</li>
+      <li>A subsidy job waits for DISCOM approval before installation, and for the net meter step before payment.</li>
+      <li>The subsidy tracker, document collection and the admin to-do list work.</li>
+    </ul>
+  </div>
+  <div class="panel">
+    <h3>⛔ When it is OFF</h3>
+    <ul>
+      <li>No quotation carries a subsidy, and the checkbox is hidden.</li>
+      <li>System prices and the website do not mention it.</li>
+      <li>No job waits for DISCOM or the net meter. Jobs already waiting are let go on.</li>
+      <li>The subsidy menu, dashboard section, tasks and overdue alerts disappear.</li>
+      <li>Everything else, such as installation, payment, bills and service, works as before.</li>
+    </ul>
+    <p class="muted small">Nothing is deleted. Old subsidy records stay, and switching ON again brings the subsidy back for new quotations. The text of the home page <b>FAQ</b> that you wrote yourself is not changed: hide it in Admin → Website if you want.</p>
+  </div>
+</div>

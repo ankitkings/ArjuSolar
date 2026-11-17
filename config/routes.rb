@@ -89,6 +89,7 @@ Rails.application.routes.draw do
     get "my_tasks", to: "my_tasks#index"
     get "my_tasks/alert", to: "my_tasks#alert", as: :my_tasks_alert
     resource :website, only: %i[show update], controller: "website"
+    resource :subsidy_switch, only: %i[show update], controller: "subsidy_switch"
     resources :contact_entries, only: %i[create update destroy]
     resources :faq_items, only: %i[create update destroy]
     resources :customers, only: %i[index create edit update destroy] do

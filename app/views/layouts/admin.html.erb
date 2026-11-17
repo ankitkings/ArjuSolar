@@ -33,7 +33,8 @@
     <%= link_to admin_catalog_items_path do %>Parts<%= module_badge("parts") %><% end %>
     <%= link_to "Margins", admin_margins_path %>
     <%= link_to admin_stock_path do %>Stock<% if parts_short_count.positive? %><span class="nav-badge"><%= parts_short_count %></span><% end %><% end %>
-    <%= link_to admin_subsidy_applications_path do %>Subsidy<%= module_badge("subsidy") %><% end %>
+    <% if SubsidySwitch.on? %><%= link_to admin_subsidy_applications_path do %>Subsidy<%= module_badge("subsidy") %><% end %><% end %>
+    <%= link_to admin_subsidy_switch_path do %>Subsidy switch<span class="nav-badge" style="background:<%= SubsidySwitch.on? ? '#16a34a' : '#64748b' %>"><%= SubsidySwitch.on? ? "ON" : "OFF" %></span><% end %>
     <%= link_to "Website", admin_website_path %>
     <%= link_to admin_customers_path do %>Clients<%= module_badge("clients") %><% end %>
     <%= link_to admin_team_members_path do %>Team<%= module_badge("team") %><% end %>

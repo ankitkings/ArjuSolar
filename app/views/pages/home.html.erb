@@ -10,7 +10,7 @@
       <%= link_to "Request installation", new_installation_request_path, class: "s-btn sun big" %>
       <%= link_to "See solar systems & prices", systems_path, class: "s-btn ghost big" %>
     </div>
-    <div class="s-hero-trust"><span>✔ Free site visit</span><span>✔ Subsidy assistance</span><span>✔ Service &amp; AMC</span><span>✔ Clear, itemised quotation</span></div>
+    <div class="s-hero-trust"><span>✔ Free site visit</span><% if SubsidySwitch.on? %><span>✔ Subsidy assistance</span><% end %><span>✔ Service &amp; AMC</span><span>✔ Clear, itemised quotation</span></div>
   </div>
   <svg class="s-wave" viewBox="0 0 1440 70" preserveAspectRatio="none" aria-hidden="true"><path d="M0,40 C240,80 480,0 720,30 C960,60 1200,70 1440,20 L1440,70 L0,70 Z" fill="currentColor"/></svg>
 </section>
@@ -20,7 +20,7 @@
   <div class="s-wrap">
     <div class="s-stats-in reveal">
       <div class="s-stat"><b><%= installed.positive? ? installed : "Free" %></b><span><%= installed.positive? ? "Projects completed" : "Site visit & estimate" %></span></div>
-      <div class="s-stat"><b><%= kilowatts.positive? ? "#{format('%g', kilowatts.round(1))} kW" : "Subsidy" %></b><span><%= kilowatts.positive? ? "Solar capacity installed" : "PM Surya Ghar help" %></span></div>
+      <div class="s-stat"><b><%= kilowatts.positive? ? "#{format('%g', kilowatts.round(1))} kW" : (SubsidySwitch.on? ? "Subsidy" : "Support") %></b><span><%= kilowatts.positive? ? "Solar capacity installed" : (SubsidySwitch.on? ? "PM Surya Ghar help" : "Installation, service & maintenance") %></span></div>
       <div class="s-stat"><b>AMC</b><span>Service &amp; maintenance after installation</span></div>
       <% if site_setting.office_hours.present? %><div class="s-stat"><b>Open</b><span><%= site_setting.office_hours %></span></div><% end %>
     </div>
@@ -35,7 +35,7 @@
     <div class="s-grid c4">
       <div class="s-card reveal"><div class="s-icon sun">⚡</div><h3>High-efficiency panels</h3><p>Quality panels and inverters with proven performance and warranties.</p></div>
       <div class="s-card reveal"><div class="s-icon">🛠️</div><h3>Professional installation</h3><p>Trained installers, safe work and clear documentation of what was fitted.</p></div>
-      <div class="s-card reveal"><div class="s-icon green">🏛️</div><h3>Subsidy made easy</h3><p>We help with the PM Surya Ghar subsidy: documents, application and follow-up.</p></div>
+      <% if SubsidySwitch.on? %><div class="s-card reveal"><div class="s-icon green">🏛️</div><h3>Subsidy made easy</h3><p>We help with the PM Surya Ghar subsidy: documents, application and follow-up.</p></div><% end %>
       <div class="s-card reveal"><div class="s-icon">🔧</div><h3>Service you can count on</h3><p>Scheduled maintenance checks and quick support after your system is installed.</p></div>
     </div>
   </div>
@@ -55,9 +55,9 @@
 <% if site_setting.show_systems && @packages.present? && @packages.any? %>
 <section class="s-section">
   <div class="s-wrap">
-    <div class="s-head reveal"><span class="s-eyebrow">Ready-to-install systems</span><h2>Choose a solar system</h2><p>Clear package prices, with the subsidy already worked out for homes.</p></div>
+    <div class="s-head reveal"><span class="s-eyebrow">Ready-to-install systems</span><h2>Choose a solar system</h2><p><%= SubsidySwitch.on? ? "Clear package prices, with the subsidy already worked out for homes." : "Clear package prices for homes and businesses." %></p></div>
     <div class="s-grid c3"><% @packages.each do |package| %><%= render "pages/system_card", package: package %><% end %></div>
-    <p style="margin-top:26px"><%= link_to "All systems & subsidy details →", systems_path, class: "s-btn line" %></p>
+    <p style="margin-top:26px"><%= link_to (SubsidySwitch.on? ? "All systems & subsidy details →" : "All systems & prices →"), systems_path, class: "s-btn line" %></p>
   </div>
 </section>
 <% end %>
@@ -69,7 +69,7 @@
     <div class="s-steps">
       <div class="s-step reveal"><h4>Tell us</h4><p>Call, WhatsApp or send the form. We call you back and understand what you need.</p></div>
       <div class="s-step reveal"><h4>Free site visit</h4><p>Our engineer checks your roof and electricity use, then plans the right size.</p></div>
-      <div class="s-step reveal"><h4>Clear quotation</h4><p>You get an itemised quotation with the subsidy shown, to read in peace.</p></div>
+      <div class="s-step reveal"><h4>Clear quotation</h4><p>You get an itemised quotation<%= " with the subsidy shown" if SubsidySwitch.on? %>, to read in peace.</p></div>
       <div class="s-step reveal"><h4>Installation</h4><p>Your system is fitted by our installers with all parts reserved in advance.</p></div>
       <div class="s-step reveal"><h4>Start-up &amp; care</h4><p>We start the system, give the final touch and keep checking it afterwards.</p></div>
     </div>
@@ -88,6 +88,7 @@
 <% end %>
 
 <% faqs = FaqItem.active.listed.to_a %>
+<% faqs = faqs.reject { |f| "#{f.question} #{f.answer}" =~ /subsid/i } unless SubsidySwitch.on? %>
 <% if site_setting.show_faq && faqs.any? %>
 <section class="s-section soft">
   <div class="s-wrap">

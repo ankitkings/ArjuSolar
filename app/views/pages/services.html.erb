@@ -8,7 +8,7 @@
       <div class="reveal">
         <span class="s-eyebrow">For homes and shops</span><h2>Rooftop solar</h2>
         <p>A complete rooftop system sized for your family or shop, installed neatly and started properly.</p>
-        <ul class="s-checks"><li>Free site visit and shadow check</li><li>Subsidy assistance included</li><li>Net-metering support</li><li>Itemised quotation you can keep</li></ul>
+        <ul class="s-checks"><li>Free site visit and shadow check</li><% if SubsidySwitch.on? %><li>Subsidy assistance included</li><% end %><li>Net-metering support</li><li>Itemised quotation you can keep</li></ul>
         <p style="margin-top:22px"><%= link_to "See home systems", systems_path, class: "s-btn" %></p>
       </div>
     </div>

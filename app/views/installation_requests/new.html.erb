@@ -10,7 +10,7 @@
           <ul class="s-checks">
             <li>We call you to understand what you need</li>
             <li>Our engineer visits your site, free of charge</li>
-            <li>You get an itemised quotation, with the subsidy shown for homes</li>
+            <li>You get an itemised quotation<%= ", with the subsidy shown for homes" if SubsidySwitch.on? %></li>
             <li>After you accept, we plan and install your system</li>
           </ul>
         </div>

@@ -162,8 +162,10 @@
     <%= link_to admin_stock_path(tab: "order"), class: "db-tile #{parts_short_count.positive? ? 'warn' : 'ok'}" do %>
       <span class="e">📦</span><div><span class="n"><%= parts_short_count %></span><small>Parts to order</small></div>
     <% end %>
+    <% if SubsidySwitch.on? %>
     <%= link_to admin_service_requests_path(with_admin: 1), class: "db-tile #{@with_admin.positive? ? 'warn' : 'ok'}" do %>
       <span class="e">🏛️</span><div><span class="n"><%= @with_admin %></span><small>With the Admin (subsidy)</small></div>
+    <% end %>
     <% end %>
     <%= link_to admin_service_requests_path(unassigned: 1), class: "db-tile #{@unassigned.positive? ? 'bad' : 'ok'}" do %>
       <span class="e">🙋</span><div><span class="n"><%= @unassigned %></span><small>Unassigned requests</small></div>
@@ -171,7 +173,38 @@
     <%= link_to admin_maintenance_visits_path, class: "db-tile #{@maintenance_due.positive? ? 'warn' : 'ok'}" do %>
       <span class="e">🛠️</span><div><span class="n"><%= @maintenance_due %></span><small>Maintenance due (7 days)</small></div>
     <% end %>
+    <% if @cheques_waiting&.positive? %>
+      <%= link_to admin_payments_path, class: "db-tile warn" do %><span class="e">🧾</span><div><span class="n"><%= @cheques_waiting %></span><small>Cheques waiting for the bank</small></div><% end %>
+    <% end %>
   </div>
+
+  <%# ================= parts you ordered and are waiting for (only shown when something is on order) ================= %>
+  <% if @orders_to_receive&.any? %>
+    <div class="db-card" id="parts-to-receive">
+      <h2 class="db-title">📦 Parts to receive</h2>
+      <p class="db-sub"><%= pluralize(@orders_to_receive.size, "order") %> on the way, <%= inr(@orders_to_receive.sum { |o| (o.unit_cost || o.catalog_item.cost_price) * o.quantity }) %> at the actual prices. Press “Received” when the parts arrive, so they are added to the stock.</p>
+      <div class="table-wrap"><table>
+        <tr><th>Part</th><th class="right">Ordered</th><th>Supplier / note</th><th>Ordered on</th><th>Waiting</th><th>Arrived?</th></tr>
+        <% @orders_to_receive.each do |o| %>
+          <tr>
+            <td><b><%= o.catalog_item.name %></b></td>
+            <td class="right"><%= format("%g", o.quantity.to_f) %> <%= o.catalog_item.unit %></td>
+            <td><%= [o.supplier, o.note].compact_blank.join(" · ").presence || "—" %></td>
+            <td><%= l o.ordered_on, format: "%d %b %Y" %></td>
+            <td><%= distance_of_time_in_words(o.ordered_on.to_time, Time.current) %></td>
+            <td>
+              <%= form_with url: receive_order_admin_stock_path(o), method: :post, class: "inline-form" do %>
+                <%= hidden_field_tag :back, "dashboard" %>
+                <%= number_field_tag :received_quantity, format("%g", o.quantity.to_f), min: 0.01, step: 0.01, style: "width:90px" %>
+                <%= submit_tag "Received", class: "btn go" %>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      </table></div>
+      <p><%= link_to "Open the order panel →", admin_stock_path(tab: "order") %></p>
+    </div>
+  <% end %>
 
   <%# ================= charts ================= %>
   <div class="db-grid2">
@@ -296,6 +329,7 @@
     </div>
   </div>
 
+  <% if SubsidySwitch.on? %>
   <div class="db-card">
     <h2 class="db-title">☀️ PM Surya Ghar subsidy – what needs you</h2>
     <% if @subsidy_open.empty? %>
@@ -323,6 +357,7 @@
       <p><%= link_to "All subsidy applications →", admin_subsidy_applications_path %></p>
     <% end %>
   </div>
+  <% end %>
 
   <%# ================= team today ================= %>
   <div class="db-card">

@@ -1,7 +1,7 @@
 <div class="s-grid c3">
   <div class="s-card s-photo reveal">
     <div class="img-wrap"><%= image_tag SiteImages::RESIDENTIAL, alt: "Rooftop solar panels on a house", loading: "lazy" %></div>
-    <div class="body"><h3>Rooftop Solar for Homes</h3><p>End-to-end rooftop solutions for homes and shops, with help for the government subsidy.</p></div>
+    <div class="body"><h3>Rooftop Solar for Homes</h3><p><%= SubsidySwitch.on? ? "End-to-end rooftop solutions for homes and shops, with help for the government subsidy." : "End-to-end rooftop solutions for homes and shops." %></p></div>
   </div>
   <div class="s-card s-photo reveal">
     <div class="img-wrap"><%= image_tag SiteImages::COMMERCIAL, alt: "Solar panels on a commercial building", loading: "lazy" %></div>

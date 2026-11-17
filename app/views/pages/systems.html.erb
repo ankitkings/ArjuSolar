@@ -8,7 +8,7 @@
     <% else %>
       <div class="s-card"><p>Our system packages will be listed here soon. <%= link_to "Contact us", contact_path %> for a quotation.</p></div>
     <% end %>
-    <div id="subsidy"><%= render "pages/subsidy_info" %></div>
+    <% if SubsidySwitch.on? %><div id="subsidy"><%= render "pages/subsidy_info" %></div><% end %>
     <p class="muted small" style="margin-top:22px;color:var(--muted)">Prices are package prices; the final quotation is prepared after a free site visit.</p>
   </div>
 </section>

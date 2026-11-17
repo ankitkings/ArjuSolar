@@ -131,7 +131,7 @@ module ApplicationHelper
 
   # marks the menu entry of the page you are on
   def modern_theme_script
-    javascript_tag("window.PORTAL_LABEL = #{(session[:customer_id] ? 'My portal' : 'Client login').to_json};\n" + <<~'JS')
+    javascript_tag("window.SUBSIDY_OFF = #{SubsidySwitch.off?};\nwindow.PORTAL_LABEL = #{(session[:customer_id] ? 'My portal' : 'Client login').to_json};\n" + <<~'JS')
       document.addEventListener("DOMContentLoaded", function () {
         if (!document.body.classList.contains("admin")) {
           var nav = document.querySelector("header.site-header nav");
@@ -153,6 +153,14 @@ module ApplicationHelper
         document.querySelectorAll('body.admin input[name="q"]').forEach(function (box) {
           if (/^Search name \/ phone \/ email\s*$/i.test(box.getAttribute("placeholder") || "")) box.setAttribute("placeholder", "Search name / phone / email / assigned member");
         });
+        // subsidy switched off: the "subsidy applies" tick box of a quotation is hidden
+        if (window.SUBSIDY_OFF) {
+          document.querySelectorAll('body.admin input[name$="[subsidy_applies]"]').forEach(function (box) {
+            box.checked = false; box.disabled = true;
+            var wrap = box.closest("label") || box.parentElement;
+            if (wrap) wrap.style.display = "none";
+          });
+        }
       });
     JS
   end

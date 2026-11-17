@@ -11,7 +11,7 @@
         <%= simple_format(h(site_setting.about_text)) %>
         <ul class="s-checks">
           <li>Free site visit and a clear, itemised quotation</li>
-          <li>Help with the PM Surya Ghar subsidy for homes</li>
+          <% if SubsidySwitch.on? %><li>Help with the PM Surya Ghar subsidy for homes</li><% end %>
           <li>Installation by our own trained team</li>
           <li>Scheduled maintenance checks and quick support</li>
         </ul>
