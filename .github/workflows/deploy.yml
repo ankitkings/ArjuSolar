@@ -25,6 +25,8 @@ jobs:
             source /home/ubuntu/.rails_env
             
             cd /home/ubuntu/ArjuSolar
+            set -a; [ -f .env ] && . ./.env; set +a
+            export RAILS_ENV=production
             
             echo ">>> Pulling latest code..."
             git fetch origin
