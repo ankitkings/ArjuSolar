@@ -1,0 +1,37 @@
+<h1>System types</h1>
+<p class="muted">Every system is <b>on-grid</b>, <b>off-grid</b> or <b>hybrid</b>. The type decides what is added to the price of a quotation.</p>
+
+<div class="stats">
+  <% SystemType::TYPES.each do |key, label| %>
+    <div class="stat"><b><%= label %></b><span><%= SystemType::INFO[key] %></span></div>
+  <% end %>
+</div>
+<div class="panel">
+  <ul>
+    <li><b>On-grid:</b> the battery price is <b>not</b> added to the quotation. A battery added by mistake is left out.</li>
+    <li><b>Off-grid:</b> the battery is part of the price, and <b>no subsidy</b> is added.</li>
+    <li><b>Hybrid:</b> the battery is part of the price and the subsidy can apply.</li>
+  </ul>
+</div>
+
+<p>
+  <% SystemType::TYPES.each do |key, label| %><%= link_to "➕ Build an #{label.downcase} system", admin_new_package_builder_path(type: key), class: "btn go" %> <% end %>
+</p>
+<%= form_with url: admin_system_types_path, method: :patch do %>
+  <div class="table-wrap"><table>
+    <tr><th>System</th><th class="right">Capacity</th><th class="right">Price</th><th>Has a battery in its parts?</th><th>Type</th><th></th></tr>
+    <% @packages.each do |p| %>
+      <tr>
+        <td><b><%= p.name %></b></td>
+        <td class="right"><%= format("%g", p.capacity_kw.to_f) %> kW</td>
+        <td class="right"><%= inr(p.price) %></td>
+        <td><%= @with_battery.include?(p.id) ? "Yes" : "No" %></td>
+        <td><%= select_tag "types[#{p.id}]", options_for_select(SystemType::TYPES.map { |key, label| [label, key] }, p.system_type) %></td>
+        <td><%= link_to "Change parts", admin_edit_package_builder_path(p) %></td>
+      </tr>
+    <% end %>
+    <% if @packages.empty? %><tr><td colspan="6" class="muted">No systems yet. Use “Build a system” above.</td></tr><% end %>
+  </table></div>
+  <p><%= submit_tag "Save the types", class: "btn go" %></p>
+<% end %>
+<p class="muted small">A system with a battery in its parts cannot be on-grid: take the battery out under Systems first. A custom quotation (made from parts) is on-grid without a battery, hybrid with a battery and the subsidy, and off-grid with a battery and no subsidy.</p>

@@ -1,23 +1,58 @@
-<% packages = SolarPackage.available.includes(package_items: :catalog_item) %>
+<% packages = SolarPackage.available.includes(package_items: :catalog_item).to_a %>
 <% catalog = CatalogItem.available.to_a %>
 <% catalog_data = catalog.to_h { |c| [c.id, { name: c.name, cat: c.category, price: c.unit_price.to_f, unit: c.unit }] } %>
+<% by_type = packages.group_by(&:system_type) %>
+<% chosen = packages.find { |p| p.id == quote.solar_package_id } %>
 <% if quote.errors.any? %><div class="flash alert"><%= quote.errors.full_messages.to_sentence %></div><% end %>
 <% if packages.empty? %>
-  <p class="muted">No systems are set up yet. Ask the admin to add them (with prices) under Admin → Systems.</p>
+  <p class="muted">No systems are set up yet. Ask the admin to add them under Admin → Build a system.</p>
 <% else %>
-  <%= form_with model: quote, url: url, method: :post, class: "form" do |f| %>
-    <%= f.label :solar_package_id, "System (from the price list)" %>
-    <%= f.select :solar_package_id,
-          options_for_select(packages.map { |p|
-            parts = p.package_items.map { |pi| { name: pi.catalog_item.name, qty: pi.quantity.to_f, unit: pi.catalog_item.unit, price: pi.catalog_item.unit_price.to_f } }
-            [p.label, p.id, { "data-price" => p.price.to_s, "data-details" => p.details, "data-parts" => parts.to_json }]
-          }, quote.solar_package_id),
-          { include_blank: "Select a system…" }, { required: true, id: "quote_solar_package_id" } %>
+  <style>
+    .qt-types{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:6px 0 14px}
+    .qt-btn{display:flex;flex-direction:column;gap:4px;text-align:left;padding:12px 14px;border:2px solid #e2e8f0;border-radius:14px;background:#fff;cursor:pointer;font:inherit;transition:border-color .15s,box-shadow .15s}
+    .qt-btn b{font-size:1rem}.qt-btn span{font-size:.8rem;color:#64748b}.qt-btn em{font-style:normal;font-weight:700;color:#1d4ed8;font-size:.82rem}
+    .qt-btn:hover:not(:disabled){border-color:#3b82f6}.qt-btn.on{border-color:#2563eb;background:#eff6ff;box-shadow:0 0 0 4px rgba(37,99,235,.14)}
+    .qt-btn:disabled{opacity:.45;cursor:not-allowed}
+    .qp-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin:6px 0 12px}
+    .qp-card{display:flex;flex-direction:column;gap:3px;text-align:left;padding:11px 13px;border:2px solid #e2e8f0;border-radius:14px;background:#fff;cursor:pointer;font:inherit}
+    .qp-card[hidden]{display:none}.qp-card span{font-size:.82rem;color:#64748b}.qp-card strong{font-size:1.05rem}
+    .qp-card:hover{border-color:#3b82f6}.qp-card.on{border-color:#16a34a;background:#f0fdf4;box-shadow:0 0 0 4px rgba(22,163,74,.14)}
+  </style>
+
+  <%= form_with model: quote, url: url, method: :post, class: "form", html: { id: "quote-form-box" } do |f| %>
+    <div id="quote-type-step">
+      <h4>1. What kind of system?</h4>
+      <div class="qt-types">
+        <% SystemType::TYPES.each do |key, label| %>
+          <% count = (by_type[key] || []).size %>
+          <button type="button" class="qt-btn" data-type="<%= key %>" <%= "disabled" if count.zero? %>>
+            <b><%= label %> system</b><span><%= SystemType::INFO[key] %></span><em><%= count.zero? ? "none yet" : pluralize(count, "system") %></em>
+          </button>
+        <% end %>
+      </div>
+    </div>
+
+    <div id="quote-package-step" hidden>
+      <h4>2. Choose the <span id="qt-name"></span> system</h4>
+      <div class="qp-list">
+        <% packages.each do |p| %>
+          <% parts = p.package_items.map { |pi| { name: pi.catalog_item.name, qty: pi.quantity.to_f, unit: pi.catalog_item.unit, price: pi.catalog_item.unit_price.to_f } } %>
+          <button type="button" class="qp-card" data-id="<%= p.id %>" data-type="<%= p.system_type %>" data-price="<%= p.price.to_f %>" data-details="<%= p.details %>" data-parts="<%= parts.to_json %>" hidden>
+            <b><%= p.name %></b>
+            <span><%= format("%g", p.capacity_kw.to_f) %> kW · <%= p.panel_count %> panels · <%= p.panel_brand %></span>
+            <strong><%= inr(p.price) %></strong>
+          </button>
+        <% end %>
+      </div>
+    </div>
+
+    <%= f.hidden_field :solar_package_id, id: "quote_solar_package_id" %>
     <p id="quote-preview" class="muted small"></p>
+    <p id="quote-type-note" class="muted small"></p>
     <div class="table-wrap" id="quote-parts" style="display:none"></div>
 
     <h4>Extra parts (optional)</h4>
-    <p class="muted small">Add anything the client wants on top of this system, for example a battery. The price is added to the quote.</p>
+    <p class="muted small">Add anything the client wants on top of this system. The price is added to the quote.<span id="battery-note"></span></p>
     <div class="actions">
       <% if catalog.any? { |c| c.category == "battery" } %>
         <button type="button" class="btn hold add-extra" data-cat="battery">+ Battery</button>
@@ -31,7 +66,9 @@
 
     <%= f.label :discount, "Discount (₹, optional)" %>
     <%= f.number_field :discount, step: 0.01, min: 0, value: (quote.discount.to_f.positive? ? quote.discount : nil), id: "quote_discount" %>
-    <label><%= f.check_box :subsidy_applies %> Home (residential) – government subsidy (PM Surya Ghar) applies</label>
+    <% if SubsidySwitch.on? %>
+      <label id="subsidy-tick"><%= f.check_box :subsidy_applies %> Home (residential) – government subsidy (PM Surya Ghar) applies</label>
+    <% end %>
     <%= f.label :valid_until, "Quote valid until" %>
     <%= f.date_field :valid_until, value: (quote.valid_until || Date.current + Quote::DEFAULT_VALIDITY_DAYS), min: Date.current, required: true %>
     <%= f.label :notes, "Notes for the client (optional)" %><%= f.text_area :notes, rows: 2 %>
@@ -52,121 +89,143 @@
     (function () {
       var CATALOG = <%= raw json_escape(catalog_data.to_json) %>;
       var CATEGORIES = <%= raw json_escape(CatalogItem::CATEGORIES.to_json) %>;
-      var sel = document.getElementById("quote_solar_package_id");
-      var disc = document.getElementById("quote_discount");
+      var NAMES = { on_grid: "On-grid", off_grid: "Off-grid", hybrid: "Hybrid" };
+      var NOTES = { on_grid: "On-grid: no battery price is added.", off_grid: "Off-grid: the battery is part of the price. No subsidy.", hybrid: "Hybrid: battery and subsidy are possible." };
+      var hidden = document.getElementById("quote_solar_package_id");
+      var form = document.getElementById("quote-form-box");
+      var typeButtons = Array.prototype.slice.call(document.querySelectorAll(".qt-btn"));
+      var cards = Array.prototype.slice.call(document.querySelectorAll(".qp-card"));
+      var step2 = document.getElementById("quote-package-step");
       var box = document.getElementById("quote-preview");
       var partsBox = document.getElementById("quote-parts");
+      var disc = document.getElementById("quote_discount");
       var extrasBody = document.getElementById("extras-body");
       var extrasBox = document.getElementById("extras-box");
       var tpl = document.getElementById("extra-row-template");
+      var currentType = null;
 
       function inr(n) { return "₹" + Number(n).toLocaleString("en-IN", { maximumFractionDigits: 2 }); }
       function cell(row, text, right) { var td = document.createElement("td"); td.textContent = text; if (right) td.className = "right"; row.appendChild(td); return td; }
+      function chosenCard() { return cards.filter(function (c) { return c.dataset.id === hidden.value; })[0] || null; }
+      function systemParts() { var c = chosenCard(); return c ? JSON.parse(c.dataset.parts || "[]") : null; }
 
-      function systemParts() {
-        var o = sel.options[sel.selectedIndex];
-        return (o && o.dataset.parts) ? JSON.parse(o.dataset.parts) : null;
-      }
-
-      // the extra parts chosen so far
       function extraParts() {
         var list = [];
         extrasBody.querySelectorAll("tr").forEach(function (tr) {
           var item = CATALOG[tr.querySelector(".extra-select").value];
-          var qty = parseFloat(tr.querySelector(".extra-qty").value) || 0;
-          if (item) list.push({ name: item.name, qty: qty, unit: item.unit, price: item.price });
+          var q = parseFloat(tr.querySelector(".extra-qty").value) || 0;
+          if (item) list.push({ name: item.name, qty: q, unit: item.unit, price: item.price });
         });
         return list;
       }
 
-      function total() {
-        var parts = (systemParts() || []).concat(extraParts());
-        return parts.reduce(function (s, p) { return s + p.qty * p.price; }, 0);
-      }
-
-      function update() {
-        var o = sel.options[sel.selectedIndex];
-        if (!o || !o.dataset.price) { box.textContent = "Choose a system to see its price."; return; }
-        var d = parseFloat(disc.value) || 0, sum = total();
-        box.textContent = o.dataset.details + " — Total with extras " + inr(sum) + (d > 0 ? " − discount " + inr(d) + " = " + inr(Math.max(sum - d, 0)) : "");
-      }
-
-      // every part of the system and every extra with its price
-      function showParts() {
-        partsBox.innerHTML = "";
-        var base = systemParts();
-        if (!base) { partsBox.style.display = "none"; return; }
+      function refresh() {
+        var c = chosenCard(), base = systemParts();
         var extra = extraParts();
+        var d = parseFloat(disc.value) || 0;
+        partsBox.innerHTML = "";
+        if (!c) { box.textContent = currentType ? "Choose one of the systems above." : "Choose the kind of system first."; partsBox.style.display = "none"; return; }
+        var sum = base.concat(extra).reduce(function (s, p) { return s + p.qty * p.price; }, 0);
+        box.textContent = (c.dataset.details || "") + " — Total with extras " + inr(sum) + (d > 0 ? " − discount " + inr(d) + " = " + inr(Math.max(sum - d, 0)) : "");
         partsBox.style.display = "block";
         var table = document.createElement("table");
         var head = table.insertRow();
         ["Part", "Quantity", "Unit price", "Amount"].forEach(function (h, i) { var th = document.createElement("th"); th.textContent = h; if (i) th.className = "right"; head.appendChild(th); });
-        var sum = 0;
         base.concat(extra).forEach(function (p, i) {
-          var r = table.insertRow(), line = p.qty * p.price; sum += line;
-          cell(r, p.name + (i >= base.length ? " (extra)" : "")); cell(r, p.qty + " " + p.unit, true); cell(r, inr(p.price), true); cell(r, inr(line), true);
+          var r = table.insertRow();
+          cell(r, p.name + (i >= base.length ? " (extra)" : "")); cell(r, p.qty + " " + p.unit, true); cell(r, inr(p.price), true); cell(r, inr(p.qty * p.price), true);
         });
-        if (!base.length && !extra.length) {
-          var empty = table.insertRow(); var td = cell(empty, "The parts of this system are not listed yet – the admin can add them under Admin → Systems."); td.colSpan = 4;
-        } else {
-          var d = parseFloat(disc.value) || 0, t = table.insertRow();
-          var label = cell(t, d > 0 ? "Total (after discount " + inr(d) + ")" : "Total", true); label.colSpan = 3; label.style.fontWeight = "700";
-          var amount = cell(t, inr(Math.max(sum - d, 0)), true); amount.style.fontWeight = "700";
-        }
+        var t = table.insertRow();
+        var label = cell(t, d > 0 ? "Total (after discount " + inr(d) + ")" : "Total", true); label.colSpan = 3; label.style.fontWeight = "700";
+        var amount = cell(t, inr(Math.max(sum - d, 0)), true); amount.style.fontWeight = "700";
         partsBox.appendChild(table);
       }
 
-      function refresh() { update(); showParts(); }
+      // the kind of system decides about the battery and the subsidy
+      function applyRules() {
+        var onGrid = currentType === "on_grid", offGrid = currentType === "off_grid";
+        document.querySelectorAll('.add-extra[data-cat="battery"]').forEach(function (b) { b.style.display = onGrid ? "none" : ""; });
+        if (onGrid) {   // an on-grid system has no battery: batteries added earlier are taken out
+          Array.prototype.slice.call(extrasBody.querySelectorAll("tr")).forEach(function (tr) {
+            var item = CATALOG[tr.querySelector(".extra-select").value];
+            if (item && item.cat === "battery") tr.remove();
+          });
+          extrasBox.style.display = extrasBody.children.length ? "block" : "none";
+        }
+        var tick = form.querySelector('input[type="checkbox"][name="quote[subsidy_applies]"]');
+        if (tick) {
+          var wrap = document.getElementById("subsidy-tick");
+          if (offGrid) { tick.checked = false; tick.disabled = true; if (wrap) wrap.style.opacity = ".45"; }
+          else { tick.disabled = false; if (wrap) wrap.style.opacity = ""; }
+        }
+        document.getElementById("quote-type-note").textContent = currentType ? NOTES[currentType] : "";
+      }
 
+      function showType(type) {
+        currentType = type;
+        typeButtons.forEach(function (b) { b.classList.toggle("on", b.dataset.type === type); });
+        step2.hidden = !type;
+        document.getElementById("qt-name").textContent = type ? NAMES[type].toLowerCase() : "";
+        cards.forEach(function (c) { c.hidden = c.dataset.type !== type; });
+        var c = chosenCard();
+        if (c && c.dataset.type !== type) { hidden.value = ""; c.classList.remove("on"); }
+        applyRules();
+        refresh();
+      }
+
+      function choose(card) {
+        hidden.value = card.dataset.id;
+        cards.forEach(function (c) { c.classList.toggle("on", c === card); });
+        refresh();
+      }
+
+      // ----- extra parts -----
       function fill(select, cat) {
         select.innerHTML = "";
-        var blank = document.createElement("option");
-        blank.value = ""; blank.textContent = "Select a part…";
-        select.appendChild(blank);
+        var blank = document.createElement("option"); blank.value = ""; blank.textContent = "Select a part…"; select.appendChild(blank);
         Object.keys(CATEGORIES).forEach(function (c) {
           if (cat && c !== cat) return;
+          if (c === "battery" && currentType === "on_grid") return;
           var ids = Object.keys(CATALOG).filter(function (id) { return CATALOG[id].cat === c; });
           if (!ids.length) return;
-          var group = document.createElement("optgroup");
-          group.label = CATEGORIES[c];
+          var group = document.createElement("optgroup"); group.label = CATEGORIES[c];
           ids.forEach(function (id) {
-            var o = document.createElement("option");
-            o.value = id;
-            o.textContent = CATALOG[id].name + " — " + inr(CATALOG[id].price) + " / " + CATALOG[id].unit;
-            group.appendChild(o);
+            var o = document.createElement("option"); o.value = id;
+            o.textContent = CATALOG[id].name + " — " + inr(CATALOG[id].price) + " / " + CATALOG[id].unit; group.appendChild(o);
           });
           select.appendChild(group);
         });
       }
-
       function addExtra(cat) {
         var tr = tpl.content.firstElementChild.cloneNode(true);
         var select = tr.querySelector(".extra-select");
         fill(select, cat);
         function row() {
-          var item = CATALOG[select.value], qty = parseFloat(tr.querySelector(".extra-qty").value) || 0;
+          var item = CATALOG[select.value], q = parseFloat(tr.querySelector(".extra-qty").value) || 0;
           tr.querySelector(".extra-price").textContent = item ? inr(item.price) : "—";
-          tr.querySelector(".extra-line").textContent = item ? inr(item.price * qty) : "₹0";
+          tr.querySelector(".extra-line").textContent = item ? inr(item.price * q) : "₹0";
           refresh();
         }
         select.addEventListener("change", row);
         tr.querySelector(".extra-qty").addEventListener("input", row);
         tr.querySelector(".extra-remove").addEventListener("click", function () {
-          tr.remove();
-          extrasBox.style.display = extrasBody.children.length ? "block" : "none";
-          refresh();
+          tr.remove(); extrasBox.style.display = extrasBody.children.length ? "block" : "none"; refresh();
         });
         extrasBody.appendChild(tr);
         extrasBox.style.display = "block";
         refresh();
       }
 
-      document.querySelectorAll(".add-extra").forEach(function (b) {
-        b.addEventListener("click", function () { addExtra(b.dataset.cat); });
-      });
-      sel.addEventListener("change", refresh);
+      typeButtons.forEach(function (b) { b.addEventListener("click", function () { if (!b.disabled) showType(b.dataset.type); }); });
+      cards.forEach(function (c) { c.addEventListener("click", function () { choose(c); }); });
+      document.querySelectorAll(".add-extra").forEach(function (b) { b.addEventListener("click", function () { addExtra(b.dataset.cat); }); });
       disc.addEventListener("input", refresh);
-      refresh();
+      form.addEventListener("submit", function (e) {
+        if (!hidden.value) { e.preventDefault(); alert("Choose the kind of system and then the system first."); }
+      });
+
+      var start = chosenCard();
+      if (start) { showType(start.dataset.type); choose(start); } else { refresh(); }
     })();
   </script>
 <% end %>

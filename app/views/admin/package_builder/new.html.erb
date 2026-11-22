@@ -1,0 +1,4 @@
+<p><%= link_to "← System types", admin_system_types_path %></p>
+<h1>Build a system</h1>
+<p class="muted">Make a ready-made system from the parts you have in stock. It then appears on the website, in the quotation form and under Systems.</p>
+<%= render "form", url: admin_package_builder_path, method: :post, submit_label: "Create the system" %>

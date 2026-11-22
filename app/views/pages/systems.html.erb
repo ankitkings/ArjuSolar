@@ -4,7 +4,15 @@
 <section class="s-section">
   <div class="s-wrap">
     <% if @packages.any? %>
-      <div class="s-grid c3"><% @packages.each do |package| %><%= render "pages/system_card", package: package %><% end %></div>
+      <% chosen = SystemType::TYPES.key?(params[:type]) ? params[:type] : nil %>
+      <% shown = chosen ? @packages.select { |p| p.system_type == chosen } : @packages.to_a %>
+      <p class="s-tabs">
+        <%= link_to "All systems", systems_path, class: ("on" unless chosen) %>
+        <% SystemType::TYPES.each do |key, label| %><%= link_to label, systems_path(type: key), class: ("on" if chosen == key) %><% end %>
+      </p>
+      <% if chosen %><p class="s-type-note"><b><%= SystemType::TYPES[chosen] %>:</b> <%= SystemType::INFO[chosen] %></p><% end %>
+      <div class="s-grid c3"><% shown.each do |package| %><%= render "pages/system_card", package: package %><% end %></div>
+      <% if shown.empty? %><div class="s-card"><p>No <%= SystemType::TYPES[chosen].to_s.downcase %> system is listed at the moment. <%= link_to "Contact us", contact_path %> and we will plan one for you.</p></div><% end %>
     <% else %>
       <div class="s-card"><p>Our system packages will be listed here soon. <%= link_to "Contact us", contact_path %> for a quotation.</p></div>
     <% end %>

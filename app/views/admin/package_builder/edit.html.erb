@@ -1,0 +1,4 @@
+<p><%= link_to "← System types", admin_system_types_path %></p>
+<h1>Change the parts of <%= @package.name %></h1>
+<p class="muted">Change the type, the parts or their quantities. The price follows the parts.</p>
+<%= render "form", url: admin_update_package_builder_path(@package), method: :patch, submit_label: "Save the system" %>

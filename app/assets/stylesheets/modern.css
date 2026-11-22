@@ -67,7 +67,7 @@ body.admin .app-bar {
 }
 
 /* ---------- headings ---------- */
-body.admin main h1 { font-size: 1.75rem; letter-spacing: -.02em; color: #d4a115; }
+body.admin main h1 { font-size: 1.75rem; letter-spacing: -.02em; color: var(--m-ink); }
 body.admin main h1::after {
   content: ""; display: block; width: 54px; height: 4px; border-radius: 4px; margin-top: 8px;
   background: linear-gradient(90deg, #f59e0b, #fbbf24);
@@ -189,3 +189,14 @@ body.admin *::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
 /* the "Client login" link in the website menu */
 .site-header nav a.portal-link { background: #fbbf24; color: #0f172a !important; border-radius: 99px; padding: 6px 14px; font-weight: 700; }
+
+/* ---------- the sidebar stays where it is; only the page scrolls (and the sidebar itself, when it is long) ---------- */
+@media (min-width: 901px) {
+  body.admin > aside {
+    position: sticky; top: 0; align-self: flex-start;
+    height: 100vh; max-height: 100vh; overflow-y: auto; overscroll-behavior: contain;
+    scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.28) transparent;
+  }
+  body.admin > aside::-webkit-scrollbar { width: 6px; }
+  body.admin > aside::-webkit-scrollbar-thumb { background: rgba(255,255,255,.25); border-radius: 6px; }
+}

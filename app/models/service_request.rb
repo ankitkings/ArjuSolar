@@ -80,18 +80,24 @@ class ServiceRequest < ApplicationRecord
   # Site visitor: make a quote from the price list. On the first quote the request
   # moves to "Quote sent"; a later quote replaces the earlier one.
   # `package:` = a ready-made system; `items:` = [[catalog_item, quantity], ...] for a custom quote
-  def create_quote!(package: nil, items: [], system_name: nil, discount: nil, valid_until: nil, notes: nil, subsidy_applies: false, extra_items: [], by: nil)
+  def create_quote!(package: nil, items: [], system_name: nil, discount: nil, valid_until: nil, notes: nil, subsidy_applies: false, extra_items: [], system_type: nil, by: nil)
     transaction do
       quotes.where(status: "sent").update_all(status: "superseded")
       if package && items.empty?   # a ready-made system: list every part with its price
         items = package.package_items.includes(:catalog_item).map { |pi| [pi.catalog_item, pi.quantity] } + extra_items   # extras, e.g. a battery
       end
+      # on-grid / off-grid / hybrid: no battery price on-grid, no subsidy off-grid
+      type = SystemType.valid?(system_type) ? system_type.to_s : (package&.system_type.presence || SystemType.infer(items, subsidy_applies))
+      items = items.reject { |item, _| SystemType.battery?(item) } unless SystemType.battery_allowed?(type)
+      subsidy_applies = false unless SystemType.subsidy_allowed?(type)
+
       quote = quotes.build(solar_package: package, system_name: system_name.to_s.strip.presence,
                            discount: discount.presence, valid_until: valid_until.presence,
-                           notes: notes.to_s.strip.presence, subsidy_applies: SubsidySwitch.on? && subsidy_applies, team_member: by)
+                           notes: notes.to_s.strip.presence, subsidy_applies: SubsidySwitch.on? && subsidy_applies, system_type: type, team_member: by)
       items.each_with_index { |(catalog_item, qty), i| quote.quote_items.build(catalog_item: catalog_item, quantity: qty, position: i) }
       quote.save!
       text = "Quote #{quote.number} created: #{quote.system_name}, #{Rupees.display(quote.total)}"
+      text += " – #{SystemType::TYPES[type]} system"
       text += " (#{quote.quote_items.size} parts listed)" if quote.quote_items.any?
       text += " (after a discount of #{Rupees.display(quote.discount)})" if quote.discount.positive?
       if status == "site_visit"

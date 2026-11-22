@@ -29,12 +29,33 @@ module Admin
       end
     end
 
+    def show
+      @current_team_member = TeamMember.find(params[:id])
+      @month = parse_month(params[:month])
+      payroll = Payroll.new(@month)
+      @summary = payroll.summary(@current_team_member)
+      @days = payroll.days(@current_team_member)
+      @today = Attendance.find_by(team_member_id: @current_team_member.id, date: Date.current)
+      @on_leave = leave_today
+      @off_day = AttendanceSetting.current.sunday_off && Date.current.sunday?
+    end
+
     private
 
     def parse_date(value)
       Date.iso8601(value.to_s)
     rescue ArgumentError
       nil
+    end
+
+    def parse_month(value)
+      Date.strptime(value.to_s, "%Y-%m")
+    rescue ArgumentError
+      Date.current.beginning_of_month
+    end
+
+    def leave_today
+      LeaveRequest.approved.where(team_member_id: @current_team_member.id).where("from_date <= ? AND to_date >= ?", Date.current, Date.current).first
     end
   end
 end

@@ -90,6 +90,11 @@ Rails.application.routes.draw do
     get "my_tasks/alert", to: "my_tasks#alert", as: :my_tasks_alert
     resource :website, only: %i[show update], controller: "website"
     resource :subsidy_switch, only: %i[show update], controller: "subsidy_switch"
+    resource :system_types, only: %i[show update], controller: "system_types"
+    get "package_builder/new", to: "package_builder#new", as: :new_package_builder
+    post "package_builder", to: "package_builder#create", as: :package_builder
+    get "package_builder/:id/edit", to: "package_builder#edit", as: :edit_package_builder
+    patch "package_builder/:id", to: "package_builder#update", as: :update_package_builder
     resources :contact_entries, only: %i[create update destroy]
     resources :faq_items, only: %i[create update destroy]
     resources :customers, only: %i[index create edit update destroy] do
