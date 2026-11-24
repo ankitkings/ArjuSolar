@@ -1,0 +1,136 @@
+<% if @errors.present? %><div class="flash alert"><%= @errors.to_sentence %></div><% end %>
+<%= form_with scope: :package, url: url, method: method, class: "form", html: { id: "builder-form" } do |f| %>
+  <div class="panel">
+    <h3>1. What kind of system?</h3>
+    <div class="filters" style="box-shadow:none;padding:0">
+      <% SystemType::TYPES.each do |key, label| %>
+        <label style="font-weight:700"><%= radio_button_tag "package[system_type]", key, @package.system_type == key, class: "pk-type" %> <%= label %></label>
+      <% end %>
+    </div>
+    <p class="muted small" id="type-note"></p>
+  </div>
+
+  <div class="panel">
+    <h3>2. Choose the parts from your stock</h3>
+    <div class="filters" id="suggest-box" style="box-shadow:none;padding:0">
+      <div><label>System size (kW)</label><%= number_field_tag :suggest_kw, nil, min: 0.5, step: 0.5, id: "suggest-kw", style: "width:110px", placeholder: "e.g. 5" %></div>
+      <div><label>Batteries (off-grid / hybrid)</label><%= number_field_tag :suggest_batteries, 4, min: 1, step: 1, id: "suggest-batteries", style: "width:110px" %></div>
+      <div><button type="button" class="btn hold" id="suggest-btn">✨ Suggest panels, inverter &amp; battery from stock</button></div>
+    </div>
+    <p class="muted small" id="suggest-result">The suggestion uses the parts that are in stock. You can change every quantity below before saving.</p>
+
+    <% CatalogItem::CATEGORIES.each do |category, label| %>
+      <% list = @parts[category] || [] %>
+      <% next if list.empty? %>
+      <h4 style="margin:16px 0 6px"><%= label %></h4>
+      <div class="table-wrap"><table>
+        <tr><th>Part</th><th class="right">In stock</th><th class="right">Price (each)</th><th class="right">kW each</th><th>Quantity</th></tr>
+        <% list.each do |item| %>
+          <% free = item.tracks_stock? ? [item.available_quantity, 0].max : nil %>
+          <tr data-part data-cat="<%= item.category %>" data-kw="<%= item.capacity_kw.to_f %>" data-stock="<%= free.nil? ? 999999 : free.to_f %>" data-price="<%= item.unit_price.to_f %>" data-name="<%= item.name %>">
+            <td><b><%= item.name %></b></td>
+            <td class="right"><%= free.nil? ? "—" : "#{format('%g', free.to_f)} #{item.unit}" %></td>
+            <td class="right"><%= inr(item.unit_price) %></td>
+            <td class="right"><%= item.capacity_kw.to_f.positive? ? format("%g", item.capacity_kw.to_f) : "—" %></td>
+            <td><%= number_field_tag "parts[#{item.id}]", (@quantities[item.id] ? format("%g", @quantities[item.id].to_f) : nil), min: 0, step: "any", class: "part-qty", style: "width:90px", placeholder: "0" %></td>
+          </tr>
+        <% end %>
+      </table></div>
+    <% end %>
+    <% if @parts.empty? %><p class="muted">There are no parts yet. Add them under Parts first.</p><% end %>
+    <p style="font-size:1.2rem">Price of this system: <b id="total-price">₹0</b> <span class="muted small" id="parts-count"></span></p>
+  </div>
+
+  <div class="panel">
+    <h3>3. Name and details</h3>
+    <%= f.label :name, "Name of the system" %><%= f.text_field :name, value: @package.name, required: true, maxlength: 100, id: "package-name" %>
+    <%= f.label :capacity_kw, "Capacity (kW)" %><%= f.number_field :capacity_kw, value: (@package.capacity_kw && format("%g", @package.capacity_kw.to_f)), min: 0.5, step: 0.5, required: true, id: "package-kw" %>
+    <label style="font-weight:600"><%= f.check_box :active, checked: @package.active != false %> Show this system on the website and offer it in quotations</label>
+    <label style="font-weight:600" id="subsidy-label"><%= f.check_box :subsidy_eligible, checked: @package.subsidy_eligible != false %> The government subsidy can apply to this system (not for off-grid)</label>
+    <%= f.submit submit_label, class: "btn go" %>
+    <%= link_to "Cancel", admin_system_types_path, class: "btn hold" %>
+  </div>
+<% end %>
+
+<script>
+  (function () {
+    var money = function (n) { return "₹" + Number(n).toLocaleString("en-IN", { maximumFractionDigits: 2 }); };
+    var rows = Array.prototype.slice.call(document.querySelectorAll("tr[data-part]"));
+    var typeRadios = document.querySelectorAll(".pk-type");
+    var names = { on_grid: "On-grid", off_grid: "Off-grid", hybrid: "Hybrid" };
+    var info = {
+      on_grid: "On-grid: connected to the grid, no battery. The subsidy can apply.",
+      off_grid: "Off-grid: runs on batteries. A battery is needed. No subsidy.",
+      hybrid: "Hybrid: grid and battery. A battery is needed. The subsidy can apply."
+    };
+    function currentType() { var r = document.querySelector(".pk-type:checked"); return r ? r.value : "on_grid"; }
+    function qty(row) { return parseFloat(row.querySelector(".part-qty").value) || 0; }
+
+    function totals() {
+      var total = 0, lines = 0;
+      rows.forEach(function (row) { var q = qty(row); if (q > 0) { total += q * parseFloat(row.dataset.price); lines += 1; } });
+      document.getElementById("total-price").textContent = money(total);
+      document.getElementById("parts-count").textContent = lines ? "(" + lines + " parts)" : "";
+    }
+
+    function applyType() {
+      var type = currentType();
+      document.getElementById("type-note").textContent = info[type];
+      rows.forEach(function (row) {
+        if (row.dataset.cat !== "battery") return;
+        var box = row.querySelector(".part-qty");
+        var off = type === "on_grid";
+        box.disabled = off; if (off) box.value = "";
+        row.style.opacity = off ? ".45" : "";
+      });
+      var subsidy = document.querySelector('input[name="package[subsidy_eligible]"][type="checkbox"]');
+      if (subsidy) { subsidy.disabled = type === "off_grid"; if (type === "off_grid") subsidy.checked = false; }
+      totals();
+    }
+
+    function clear(cat) { rows.forEach(function (row) { if (row.dataset.cat === cat) row.querySelector(".part-qty").value = ""; }); }
+
+    // panels, inverter and battery from what is in stock
+    function suggest() {
+      var kw = parseFloat(document.getElementById("suggest-kw").value) || 0;
+      var type = currentType(), out = document.getElementById("suggest-result"), said = [];
+      if (kw <= 0) { out.textContent = "Type the size of the system in kW first."; return; }
+      var inStock = function (row) { return parseFloat(row.dataset.stock) > 0; };
+
+      var panels = rows.filter(function (r) { return r.dataset.cat === "panel" && inStock(r) && parseFloat(r.dataset.kw) > 0; })
+                       .sort(function (a, b) { return parseFloat(b.dataset.kw) - parseFloat(a.dataset.kw); });
+      clear("panel");
+      if (panels.length) {
+        var p = panels[0], n = Math.ceil(kw / parseFloat(p.dataset.kw));
+        p.querySelector(".part-qty").value = n;
+        said.push(n + " × " + p.dataset.name + (n > parseFloat(p.dataset.stock) ? " (stock has only " + p.dataset.stock + ")" : ""));
+      } else { said.push("no panel with its kW filled in is in stock"); }
+
+      var inverters = rows.filter(function (r) { return r.dataset.cat === "inverter" && inStock(r); });
+      clear("inverter");
+      var fit = inverters.filter(function (r) { return parseFloat(r.dataset.kw) >= kw; }).sort(function (a, b) { return parseFloat(a.dataset.kw) - parseFloat(b.dataset.kw); });
+      var pick = fit[0] || inverters.sort(function (a, b) { return parseFloat(b.dataset.kw) - parseFloat(a.dataset.kw); })[0];
+      if (pick) { pick.querySelector(".part-qty").value = 1; said.push("1 × " + pick.dataset.name + (fit[0] ? "" : " (the biggest in stock: check it is enough)")); }
+      else { said.push("no inverter in stock"); }
+
+      clear("battery");
+      if (type !== "on_grid") {
+        var batteries = rows.filter(function (r) { return r.dataset.cat === "battery" && inStock(r); });
+        var count = parseFloat(document.getElementById("suggest-batteries").value) || 1;
+        if (batteries[0]) { batteries[0].querySelector(".part-qty").value = count; said.push(count + " × " + batteries[0].dataset.name); }
+        else { said.push("no battery in stock"); }
+      }
+
+      var nameBox = document.getElementById("package-name"), kwBox = document.getElementById("package-kw");
+      if (!nameBox.value) nameBox.value = names[type] + " " + kw + " kW";
+      if (!kwBox.value) kwBox.value = kw;
+      out.textContent = "Suggested: " + said.join(", ") + ". Add mounting, cables and the other parts yourself, then save.";
+      totals();
+    }
+
+    typeRadios.forEach(function (r) { r.addEventListener("change", applyType); });
+    rows.forEach(function (row) { row.querySelector(".part-qty").addEventListener("input", totals); });
+    document.getElementById("suggest-btn").addEventListener("click", suggest);
+    applyType();
+  })();
+</script>

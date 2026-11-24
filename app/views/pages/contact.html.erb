@@ -20,6 +20,7 @@
         <% if site_setting.office_hours.present? %>
           <div class="item"><span class="s-icon sun">🕘</span><span><small>Office hours</small><b><%= site_setting.office_hours %></b></span></div>
         <% end %>
+        <div class="s-card"><h4>Already a client?</h4><p>Log in to follow your request, see your warranty and ask for a visit.</p><p style="margin-top:12px"><%= link_to "Client login", portal_login_path, class: "s-btn line" %></p></div>
       </div>
 
       <div class="s-card s-form-card reveal">

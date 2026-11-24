@@ -402,3 +402,11 @@ body.site .subsidy-box { background: linear-gradient(135deg, #f0fdf4, #e0f7fa); 
 .s-form-grid select { width: 100%; }
 @media (max-width: 640px) { .s-form-grid { grid-template-columns: 1fr; } }
 body.site .form select, body.site .form input[type=date] { width: 100%; padding: 13px 15px; font: inherit; border: 1.5px solid var(--line); border-radius: 14px; background: #fff; }
+
+/* ---------- system type (on-grid / off-grid / hybrid) ---------- */
+.s-type { position: absolute; right: 14px; top: 14px; padding: 6px 13px; border-radius: 99px; font-weight: 800; font-size: .8rem; color: #fff; background: rgba(11,18,36,.78); backdrop-filter: blur(4px); }
+.s-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 18px; }
+.s-tabs a { padding: 8px 16px; border-radius: 99px; text-decoration: none; font-weight: 700; font-size: .92rem; color: var(--ink-2); background: #fff; border: 1.5px solid var(--line); }
+.s-tabs a:hover { border-color: var(--brand); }
+.s-tabs a.on { color: #fff; background: linear-gradient(135deg, #3b82f6, #1d4ed8); border-color: transparent; }
+.s-type-note { color: var(--muted); margin: -4px 0 16px; }

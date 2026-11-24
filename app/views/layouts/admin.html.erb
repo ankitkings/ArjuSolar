@@ -30,6 +30,8 @@
     <%= link_to "Payment setup", admin_payment_settings_path %>
     <%= link_to admin_maintenance_visits_path do %>Maintenance<%= module_badge("maintenance") %><% end %>
     <%= link_to admin_solar_packages_path do %>Systems<%= module_badge("systems") %><% end %>
+    <%= link_to "System types", admin_system_types_path %>
+    <%= link_to "Build a system", admin_new_package_builder_path %>
     <%= link_to admin_catalog_items_path do %>Parts<%= module_badge("parts") %><% end %>
     <%= link_to "Margins", admin_margins_path %>
     <%= link_to admin_stock_path do %>Stock<% if parts_short_count.positive? %><span class="nav-badge"><%= parts_short_count %></span><% end %><% end %>

@@ -10,6 +10,6 @@
       <%= submit_tag "Log in", class: "btn" %>
     <% end %>
     <p class="pt-muted"><%= link_to "Forgot password?", portal_forgot_password_path %></p>
-    <p class="pt-muted">Do not have an account yet? We create it for you when you contact us – call <%= link_to (site_phone || "our office"), (site_phone_href || contact_path) %>. You will get an e-mail with a link to choose your password.</p>
+    <p class="pt-muted">Sent us a request with your e-mail address? Your account is already made: press “Forgot password?” and we will e-mail you a link to choose your password. Not sure? Call <%= link_to (site_phone || "us"), (site_phone_href || contact_path) %>.</p>
   </div>
 </div>

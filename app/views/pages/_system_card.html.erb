@@ -2,6 +2,7 @@
   <div class="img-wrap">
     <%= image_tag package_image_src(package), alt: "#{package.name} solar system", loading: "lazy" %>
     <span class="s-kw">⚡ <%= format("%g", package.capacity_kw.to_f) %> kW</span>
+    <span class="s-type"><%= SystemType::TYPES[package.system_type] %></span>
   </div>
   <div class="body">
     <h3><%= package.name %></h3>

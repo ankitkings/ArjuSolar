@@ -131,7 +131,7 @@ module ApplicationHelper
 
   # marks the menu entry of the page you are on
   def modern_theme_script
-    javascript_tag("window.SUBSIDY_OFF = #{SubsidySwitch.off?};\nwindow.PORTAL_LABEL = #{(session[:customer_id] ? 'My portal' : 'Client login').to_json};\n" + <<~'JS')
+    javascript_tag("window.SUBSIDY_OFF = #{SubsidySwitch.off?};\nwindow.PACKAGE_TYPES = #{package_types_json};\nwindow.PORTAL_LABEL = #{(session[:customer_id] ? 'My portal' : 'Client login').to_json};\n" + <<~'JS')
       document.addEventListener("DOMContentLoaded", function () {
         if (!document.body.classList.contains("admin")) {
           var nav = document.querySelector("header.site-header nav");
@@ -160,6 +160,27 @@ module ApplicationHelper
             var wrap = box.closest("label") || box.parentElement;
             if (wrap) wrap.style.display = "none";
           });
+        }
+        // the type of the chosen system decides about the battery and the subsidy of a quotation
+        var packageSelect = document.getElementById("quote_solar_package_id");
+        if (packageSelect && window.PACKAGE_TYPES && !document.getElementById("quote-type-step")) {
+          var typeNames = { on_grid: "On-grid", off_grid: "Off-grid", hybrid: "Hybrid" };
+          var typeNote = document.createElement("p");
+          typeNote.className = "muted small";
+          packageSelect.insertAdjacentElement("afterend", typeNote);
+          var applyType = function () {
+            var type = window.PACKAGE_TYPES[packageSelect.value];
+            typeNote.textContent = type ? "System type: " + typeNames[type] + (type === "on_grid" ? " – no battery price is added." : (type === "off_grid" ? " – no subsidy is added." : " – battery and subsidy are possible.")) : "";
+            document.querySelectorAll('.add-extra[data-cat="battery"]').forEach(function (button) { button.style.display = type === "on_grid" ? "none" : ""; });
+            var tick = document.querySelector('input[name$="[subsidy_applies]"]');
+            if (tick && !window.SUBSIDY_OFF) {
+              var label = tick.closest("label");
+              if (type === "off_grid") { tick.checked = false; tick.disabled = true; if (label) label.style.opacity = ".45"; }
+              else { tick.disabled = false; if (label) label.style.opacity = ""; }
+            }
+          };
+          packageSelect.addEventListener("change", applyType);
+          applyType();
         }
       });
     JS
@@ -195,5 +216,13 @@ module ApplicationHelper
   def module_badge(key)
     count = module_counts[key].to_i
     content_tag(:span, "#{count} new", class: "nav-badge", data: { module_badge: key }, title: "New since you last opened this page", style: ("display:none" unless count.positive?))
+  end
+
+  # { "12" => "on_grid", ... } for the quotation form (only for the team; nothing breaks before the update is installed)
+  def package_types_json
+    return "{}" unless current_admin || current_staff
+    SolarPackage.pluck(:id, :system_type).to_h.transform_keys(&:to_s).to_json
+  rescue ActiveRecord::StatementInvalid
+    "{}"
   end
 end
