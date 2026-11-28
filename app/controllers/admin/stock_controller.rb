@@ -49,7 +49,7 @@ module Admin
       if placed.empty?
         redirect_to admin_stock_path(tab: "order"), alert: "Choose a part and a quantity to order."
       else
-        redirect_to admin_stock_path(tab: "order"), notice: "Order recorded: #{placed.map { |o| "#{format('%g', o.quantity)} × #{o.catalog_item.name}" }.to_sentence}. Price at the actual prices: #{helpers.inr(placed.sum { |o| o.unit_cost.to_d * o.quantity })}."
+        redirect_to admin_stock_path(tab: "order"), notice: "Order recorded: #{placed.map { |o| "#{format('%g', o.quantity)} × #{o.catalog_item.name}" }.to_sentence}. Price at the actual prices: #{helpers.inr(placed.sum { |o| o.unit_cost.to_d * o.quantity })}.#{wallet_warning}"
       end
     end
 
@@ -98,6 +98,13 @@ module Admin
       else
         redirect_to admin_stock_path, alert: setting.errors.full_messages.to_sentence
       end
+    end
+
+    private
+
+    # the wallet is on and an order took it below zero (the balance itself is shown only on the password-protected Wallet page)
+    def wallet_warning
+      Wallet.on? && Wallet.current.balance.negative? ? " ⚠ The wallet balance is not enough for this order." : ""
     end
   end
 end

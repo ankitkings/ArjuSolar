@@ -1,0 +1,75 @@
+<% e = @earnings %>
+<% key = ->(d) { d.strftime("%Y-%m") } %>
+<h1>Earnings <span class="muted" style="font-size:1rem">🔒 owner only</span></h1>
+<p class="muted">What you earn as the owner, after the salaries, the parts you bought and other expenses, and the margin on every installation. (The wallet balance is a separate page.)</p>
+<p class="tabs">
+  <%= link_to "← #{(@month - 1.month).strftime('%B')}", admin_earnings_path(month: key.(@month - 1.month)), class: "tab" %>
+  <%= link_to "This month", admin_earnings_path, class: "tab #{'active' if @month == Date.current.beginning_of_month}" %>
+  <% if @month < Date.current.beginning_of_month %><%= link_to "#{(@month + 1.month).strftime('%B')} →", admin_earnings_path(month: key.(@month + 1.month)), class: "tab" %><% end %>
+  <%= link_to "Change the owner password", admin_owner_password_path, class: "tab" %>
+  <%= button_to "Lock now", admin_owner_lock_path, method: :delete, class: "tab", form: { style: "display:inline" } %>
+</p>
+<h2><%= @month.strftime("%B %Y") %></h2>
+
+<h3>Money view</h3>
+<div class="stats">
+  <div class="stat"><b><%= inr(e.received) %></b><span>Received from clients</span></div>
+  <div class="stat"><b>− <%= inr(e.parts_bought) %></b><span>Parts bought</span></div>
+  <div class="stat"><b>− <%= inr(e.salaries) %></b><span>Salaries paid</span></div>
+  <div class="stat"><b>− <%= inr(e.other_expenses) %></b><span>Other expenses</span></div>
+  <div class="stat <%= 'alert' if e.owner_cash.negative? %>"><b><%= inr(e.owner_cash) %></b><span><b>You earned this month</b> (money view)</span></div>
+</div>
+<p class="muted small">Money received counts cheques only after the bank received them. Parts bought are the orders marked “received” in the month, at the actual prices.</p>
+
+<h3>Margin on installations</h3>
+<div class="stats">
+  <div class="stat"><b><%= inr(e.billed_total) %></b><span>Billed for <%= pluralize(e.rows.size, "installation") %></span></div>
+  <div class="stat"><b><%= inr(e.margin_total) %></b><span>Margin on them (bill − cost of parts)</span></div>
+  <div class="stat <%= 'alert' if e.owner_from_installations.negative? %>"><b><%= inr(e.owner_from_installations) %></b><span><b>You earn from them</b> after salaries and expenses</span></div>
+</div>
+<div class="table-wrap"><table>
+  <tr><th>Installation</th><th>Client</th><th>Installed</th><th class="right">Bill</th><th class="right">Parts cost</th><th class="right">Your margin</th><th class="right">%</th><th class="right">Received</th><th class="right">Still to come</th></tr>
+  <% e.rows.each do |r| %>
+    <tr>
+      <td><%= link_to "##{r.request.id}", admin_service_request_path(r.request) %> · <%= format("%g", r.installation.capacity_kw.to_f) %> kW</td>
+      <td><%= r.request.name %></td>
+      <td><%= l r.installation.installed_on, format: "%d %b" %></td>
+      <td class="right"><%= r.total ? inr(r.total) : "—" %></td>
+      <td class="right"><%= r.parts_cost ? inr(r.parts_cost) : "unknown" %></td>
+      <td class="right"><b class="<%= 'overdue' if r.margin&.negative? %>"><%= r.margin ? inr(r.margin) : "—" %></b></td>
+      <td class="right"><%= r.margin_percent ? "#{r.margin_percent}%" : "—" %></td>
+      <td class="right"><%= inr(r.received) %></td>
+      <td class="right"><%= r.balance ? inr(r.balance) : "—" %></td>
+    </tr>
+  <% end %>
+  <% if e.rows.empty? %><tr><td colspan="9" class="muted">No installation was completed in <%= @month.strftime("%B %Y") %>.</td></tr><% end %>
+</table></div>
+<p class="muted small">The cost of the parts is the actual price of each part when the quotation was made (set under Margins). A bill that was not made yet shows “—”.</p>
+
+<h3>Other expenses of the business</h3>
+<%= form_with model: Expense.new, url: admin_expenses_path, method: :post, class: "filters" do |f| %>
+  <%= f.date_field :spent_on, value: Date.current, max: Date.current %>
+  <%= f.text_field :label, placeholder: "What for (rent, fuel, electricity …)", required: true, style: "min-width:230px" %>
+  <%= f.number_field :amount, min: 1, step: 0.01, placeholder: "Amount ₹", required: true, style: "width:130px" %>
+  <%= f.submit "+ Add expense", class: "btn go" %>
+<% end %>
+<div class="table-wrap"><table>
+  <tr><th>Date</th><th>For</th><th class="right">Amount</th><th></th></tr>
+  <% @expenses.each do |x| %>
+    <tr><td><%= l x.spent_on, format: "%d %b %Y" %></td><td><%= x.label %></td><td class="right"><%= inr(x.amount) %></td>
+      <td><%= button_to "Remove", admin_expense_path(x), method: :delete, class: "btn stop", form: { style: "display:inline", onsubmit: "return confirm('Remove this expense?')" } %></td></tr>
+  <% end %>
+  <% if @expenses.empty? %><tr><td colspan="4" class="muted">No other expense in <%= @month.strftime("%B %Y") %>.</td></tr><% end %>
+</table></div>
+
+<h2>The last 12 months</h2>
+<div class="table-wrap"><table>
+  <tr><th>Month</th><th class="right">Received</th><th class="right">Parts bought</th><th class="right">Salaries</th><th class="right">Expenses</th><th class="right">You earned (money view)</th><th class="right">Margin on installations</th></tr>
+  <% @history.each do |h| %>
+    <tr>
+      <td><%= link_to h.from.strftime("%B %Y"), admin_earnings_path(month: key.(h.from)) %></td>
+      <td class="right"><%= inr(h.received) %></td><td class="right"><%= inr(h.parts_bought) %></td><td class="right"><%= inr(h.salaries) %></td><td class="right"><%= inr(h.other_expenses) %></td>
+      <td class="right"><b class="<%= 'overdue' if h.owner_cash.negative? %>"><%= inr(h.owner_cash) %></b></td><td class="right"><%= inr(h.margin_total) %></td>
+    </tr>
+  <% end %>
+</table></div>
