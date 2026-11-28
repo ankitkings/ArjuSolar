@@ -1,0 +1,19 @@
+<h1>🔒 Owner password</h1>
+<div class="panel" style="max-width:520px">
+  <% if @lock.nil? %>
+    <p>The money pages (earnings, wallet, payroll, salary records, payment setup and margins) are protected by your own password, <b>not</b> your admin login. Choose it now. Keep it to yourself.</p>
+  <% else %>
+    <p>Type the owner password to open the money pages. They lock again after <%= OwnerLock::IDLE_MINUTES %> minutes without use.</p>
+  <% end %>
+  <% if @error %><div class="flash alert"><%= @error %></div><% end %>
+  <%= form_with url: admin_owner_unlock_path, method: :post, class: "form" do %>
+    <%= hidden_field_tag :return_to, @return_to %>
+    <%= label_tag :password, @lock.nil? ? "Choose the owner password (at least 8 characters)" : "Owner password" %>
+    <%= password_field_tag :password, nil, required: true, autofocus: true, autocomplete: (@lock.nil? ? "new-password" : "current-password") %>
+    <% if @lock.nil? %>
+      <%= label_tag :password_confirmation, "Type it again" %><%= password_field_tag :password_confirmation, nil, required: true, autocomplete: "new-password" %>
+    <% end %>
+    <%= submit_tag (@lock.nil? ? "Create the password and open" : "Open"), class: "btn go" %>
+  <% end %>
+  <% if @lock %><p class="muted small">Forgotten it? It can be reset in the server console with <code>bin/rails runner 'OwnerLock.reset!'</code>, after which you choose a new one.</p><% end %>
+</div>

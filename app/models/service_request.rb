@@ -94,7 +94,7 @@ class ServiceRequest < ApplicationRecord
       quote = quotes.build(solar_package: package, system_name: system_name.to_s.strip.presence,
                            discount: discount.presence, valid_until: valid_until.presence,
                            notes: notes.to_s.strip.presence, subsidy_applies: SubsidySwitch.on? && subsidy_applies, system_type: type, team_member: by)
-      items.each_with_index { |(catalog_item, qty), i| quote.quote_items.build(catalog_item: catalog_item, quantity: qty, position: i) }
+      items.each_with_index { |(catalog_item, qty), i| quote.quote_items.build(catalog_item: catalog_item, quantity: qty, position: i, cost_price: catalog_item.cost_price) }
       quote.save!
       text = "Quote #{quote.number} created: #{quote.system_name}, #{Rupees.display(quote.total)}"
       text += " – #{SystemType::TYPES[type]} system"

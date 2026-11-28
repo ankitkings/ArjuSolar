@@ -1,0 +1,50 @@
+<h1>Wallet <span class="muted" style="font-size:1rem">🔒 owner only</span></h1>
+<p class="muted">The balance of your business account. Every order for parts takes its total out of it. This is separate from the earnings (profit) report.</p>
+
+<% if @wallet.nil? || !@wallet.enabled? %>
+  <div class="panel" style="max-width:560px">
+    <h3><%= @wallet ? "The wallet is switched off" : "Set up the wallet" %></h3>
+    <p>Type how much money the business has now (for example <b>1,00,00,000</b> for one crore). From then on every order for parts is taken out of this balance.</p>
+    <%= form_with url: admin_wallet_setup_path, method: :post, class: "form" do %>
+      <%= label_tag :opening_balance, "Balance now (₹)" %><%= number_field_tag :opening_balance, @wallet&.opening_balance, min: 0, step: 0.01, required: true %>
+      <%= submit_tag (@wallet ? "Switch the wallet on" : "Start the wallet"), class: "btn go" %>
+    <% end %>
+  </div>
+<% else %>
+  <% balance = @wallet.balance %>
+  <div class="stats">
+    <div class="stat <%= 'alert' if balance.negative? %>"><b><%= inr(balance) %></b><span><%= balance.negative? ? "⚠ Overdrawn: the wallet is below zero" : "Balance in the wallet" %></span></div>
+    <div class="stat"><b><%= inr(@wallet.opening_balance) %></b><span>Started with, on <%= l @wallet.opened_on, format: "%d %b %Y" %></span></div>
+  </div>
+
+  <div class="panel">
+    <h3>Add or take out money</h3>
+    <%= form_with url: admin_wallet_entries_path, method: :post, class: "filters" do %>
+      <%= select_tag :kind, options_for_select([["Add money", "deposit"], ["Take money out", "withdrawal"]]) %>
+      <%= number_field_tag :amount, nil, min: 1, step: 0.01, placeholder: "Amount ₹", required: true, style: "width:140px" %>
+      <%= text_field_tag :label, nil, placeholder: "Note (optional)", style: "min-width:220px" %>
+      <%= submit_tag "Save", class: "btn go" %>
+    <% end %>
+  </div>
+
+  <div class="panel">
+    <h3>What the wallet follows</h3>
+    <p class="muted small">Orders for parts always take money out (and give it back if you cancel the order). You can also let it follow salaries and client payments.</p>
+    <%= form_with url: admin_wallet_settings_path, method: :patch, class: "form" do %>
+      <label style="font-weight:600"><%= check_box_tag :deduct_salaries, "1", @wallet.deduct_salaries? %> Salaries I pay also leave the wallet</label>
+      <label style="font-weight:600"><%= check_box_tag :add_client_payments, "1", @wallet.add_client_payments? %> Money received from clients also enters the wallet</label>
+      <label style="font-weight:600"><%= check_box_tag :enabled, "1", true %> The wallet is on (untick to switch it off; nothing is deleted)</label>
+      <%= submit_tag "Save", class: "btn" %>
+    <% end %>
+  </div>
+
+  <h2>Entries</h2>
+  <div class="table-wrap"><table>
+    <tr><th>Date</th><th>What</th><th>Note</th><th class="right">Money in / out</th></tr>
+    <% @entries.each do |x| %>
+      <tr><td><%= l x.happened_on, format: "%d %b %Y" %></td><td><%= x.kind_label %></td><td><%= x.label %></td>
+        <td class="right"><b style="color:<%= x.amount.positive? ? '#16a34a' : '#dc2626' %>"><%= x.amount.positive? ? "+" : "−" %> <%= inr(x.amount.abs) %></b></td></tr>
+    <% end %>
+    <% if @entries.empty? %><tr><td colspan="4" class="muted">No entry yet. The next order for parts will appear here.</td></tr><% end %>
+  </table></div>
+<% end %>

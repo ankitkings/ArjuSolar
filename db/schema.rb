@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_01_30_000000) do
+ActiveRecord::Schema[7.1].define(version: 2026_01_31_000000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -149,6 +149,16 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_30_000000) do
     t.index ["phone_key"], name: "index_customers_on_phone_key"
   end
 
+  create_table "expenses", force: :cascade do |t|
+    t.date "spent_on", null: false
+    t.string "label", null: false
+    t.decimal "amount", precision: 12, scale: 2, null: false
+    t.string "note"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["spent_on"], name: "index_expenses_on_spent_on"
+  end
+
   create_table "faq_items", force: :cascade do |t|
     t.string "question", null: false
     t.text "answer", null: false
@@ -252,6 +262,14 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_30_000000) do
     t.index ["key"], name: "index_overdue_limits_on_key", unique: true
   end
 
+  create_table "owner_locks", force: :cascade do |t|
+    t.string "password_digest", null: false
+    t.integer "failed_attempts", default: 0, null: false
+    t.datetime "locked_until"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
   create_table "package_items", force: :cascade do |t|
     t.integer "solar_package_id", null: false
     t.integer "catalog_item_id", null: false
@@ -310,6 +328,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_30_000000) do
     t.integer "position", default: 0, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.decimal "cost_price", precision: 10, scale: 2
     t.index ["catalog_item_id"], name: "index_quote_items_on_catalog_item_id"
     t.index ["quote_id"], name: "index_quote_items_on_quote_id"
   end
@@ -583,6 +602,29 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_30_000000) do
     t.datetime "visited_at", null: false
     t.index ["ip_address"], name: "index_visits_on_ip_address"
     t.index ["visited_at"], name: "index_visits_on_visited_at"
+  end
+
+  create_table "wallet_entries", force: :cascade do |t|
+    t.string "kind", null: false
+    t.decimal "amount", precision: 14, scale: 2, null: false
+    t.date "happened_on", null: false
+    t.string "label"
+    t.string "source_type"
+    t.bigint "source_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["happened_on"], name: "index_wallet_entries_on_happened_on"
+    t.index ["source_type", "source_id", "kind"], name: "index_wallet_entries_on_source_type_and_source_id_and_kind", unique: true
+  end
+
+  create_table "wallets", force: :cascade do |t|
+    t.decimal "opening_balance", precision: 14, scale: 2, default: "0.0", null: false
+    t.date "opened_on"
+    t.boolean "enabled", default: false, null: false
+    t.boolean "deduct_salaries", default: false, null: false
+    t.boolean "add_client_payments", default: false, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"

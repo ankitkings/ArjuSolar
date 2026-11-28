@@ -91,6 +91,17 @@ Rails.application.routes.draw do
     resource :website, only: %i[show update], controller: "website"
     resource :subsidy_switch, only: %i[show update], controller: "subsidy_switch"
     resource :system_types, only: %i[show update], controller: "system_types"
+    get "owner/unlock", to: "owner_unlock#new", as: :owner_unlock
+    post "owner/unlock", to: "owner_unlock#create"
+    delete "owner/lock", to: "owner_unlock#destroy", as: :owner_lock
+    get "owner/password", to: "owner_unlock#password", as: :owner_password
+    patch "owner/password", to: "owner_unlock#update_password"
+    get "earnings", to: "earnings#show", as: :earnings
+    resources :expenses, only: %i[create destroy]
+    get "wallet", to: "wallet#show", as: :wallet
+    post "wallet/setup", to: "wallet#setup", as: :wallet_setup
+    post "wallet/entries", to: "wallet#entry", as: :wallet_entries
+    patch "wallet/settings", to: "wallet#settings", as: :wallet_settings
     get "package_builder/new", to: "package_builder#new", as: :new_package_builder
     post "package_builder", to: "package_builder#create", as: :package_builder
     get "package_builder/:id/edit", to: "package_builder#edit", as: :edit_package_builder
